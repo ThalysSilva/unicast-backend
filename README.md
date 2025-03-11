@@ -1,6 +1,6 @@
 ## Unicast
 
-Criação de um projeto para auxilio na divulgação de noticias aos docentes
+Criação de um projeto para auxilio aos docentes na divulgação de informação dentro da universidade.
 
 ### Tecnologias utilizadas:
 - NestJs
