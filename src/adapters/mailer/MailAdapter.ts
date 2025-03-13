@@ -4,7 +4,7 @@ export type SendMailData = {
   body: string;
 };
 
-export type TransporterMail = {
+export type TransporterMailData = {
   host: string;
   port: number;
   auth: {
@@ -14,6 +14,6 @@ export type TransporterMail = {
 };
 
 export interface MailAdapter {
-  createTransporter: (transporter: TransporterMail) => Promise<void>;
+  createTransporter: (transporter: TransporterMailData) => Promise<void>;
   sendMail: (data: SendMailData) => Promise<void>;
 }

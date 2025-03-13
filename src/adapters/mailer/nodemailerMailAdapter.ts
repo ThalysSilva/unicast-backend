@@ -1,5 +1,5 @@
 import SMTPTransport from 'nodemailer/lib/smtp-transport';
-import { MailAdapter, SendMailData, TransporterMail } from './MailAdapter';
+import { MailAdapter, SendMailData, TransporterMailData } from './MailAdapter';
 import nodemailer from 'nodemailer';
 import { BadRequestError } from 'src/common/applicationError';
 
@@ -10,7 +10,7 @@ export class NodemailerMailAdapter implements MailAdapter {
   >;
   private transporterUser: string;
 
-  async createTransporter(data: TransporterMail) {
+  async createTransporter(data: TransporterMailData) {
     if (!this.transporter) {
       this.transporter = nodemailer.createTransport(data);
       this.transporterUser = data.auth.user;
