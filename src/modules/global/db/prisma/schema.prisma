@@ -6,6 +6,11 @@ datasource Database {
   provider = "postgresql"
   url      = env("POSTGRES_DATABASE_URL")
 }
+
+generator erd {
+  provider = "prisma-erd-generator"
+}
+
 model User {
   id           String   @id @default(uuid())
   email        String   @unique
@@ -14,6 +19,121 @@ model User {
   updatedAt    DateTime @updatedAt
   password     String
   refreshToken String?
+  salt         String
+
+  campuses          Campus[]
+  smtpInstances     SmtpInstance[]
+  whatsAppInstances WhatsAppInstance[]
 
   @@map("users")
+}
+
+model WhatsAppInstance {
+  id         String   @id @default(uuid())
+  phone      String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  userId     String
+  instanceId String
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@map("whatsapp_instances")
+}
+
+model SmtpInstance {
+  id        String   @id @default(uuid())
+  host      String
+  port      Int
+  email     String
+  password  String
+  iv        String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  userId    String
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@map("smtp_instances")
+}
+
+model Campus {
+  id          String   @id @default(uuid())
+  name        String
+  description String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  userOwnerId String
+
+  userOwner User      @relation(fields: [userOwnerId], references: [id])
+  programs  Program[]
+
+  @@map("campuses")
+}
+
+model Program {
+  id          String   @id @default(uuid())
+  name        String
+  description String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  campusId    String
+  active      Boolean @default(true)
+
+  campus  Campus   @relation(fields: [campusId], references: [id])
+  courses Course[]
+
+  @@map("programs")
+}
+
+model Course {
+  id          String   @id @default(uuid())
+  name        String
+  description String
+  year        Int
+  semester    Int
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  programId   String
+
+  program     Program      @relation(fields: [programId], references: [id])
+  enrollments Enrollment[]
+
+  @@map("courses")
+}
+
+model Student {
+  id         String        @id @default(uuid())
+  studentId  String        @unique
+  name       String?
+  phone      String?
+  email      String?
+  annotation String?
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
+  status     StudentStatus
+
+  enrollments Enrollment[]
+
+  @@map("students")
+}
+
+model Enrollment {
+  id        String   @id @default(uuid())
+  courseId  String
+  studentId String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  course  Course  @relation(fields: [courseId], references: [id])
+  student Student @relation(fields: [studentId], references: [id])
+
+  @@map("enrollments")
+}
+
+enum StudentStatus {
+  ACTIVE
+  CANCELED
+  GRADUATED
+  LOCKED
 }
