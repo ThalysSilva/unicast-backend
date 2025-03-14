@@ -130,4 +130,32 @@ describe('AuthenticationService', () => {
       );
     });
   });
+
+  describe('jwe', () => {
+    it('should return a login response with mocked JWE', async () => {
+      const createdAt = new Date();
+      const updatedAt = new Date();
+      const expectedDataResult = {
+        id: 'user123',
+        email: 'test@example.com',
+        name: 'User Name',
+      };
+      const userLoginData = {
+        ...expectedDataResult,
+        password: 'password',
+        salt: 'salt',
+        refreshToken: 'refreshToken',
+        createdAt,
+        updatedAt,
+      };
+      const result = await service.login(userLoginData);
+
+      expect(result).toHaveProperty('data');
+      expect(result.data).toEqual(expectedDataResult);
+      expect(result).toHaveProperty('token');
+      expect(result).toHaveProperty('refreshToken');
+      expect(result).toHaveProperty('jwe');
+      expect(result.jwe).toContain('mocked-jwe');
+    });
+  });
 });
