@@ -64,6 +64,7 @@ describe('AuthenticationService', () => {
         name: '',
         createdAt: new Date(),
         updatedAt: new Date(),
+        salt: '',
       };
 
       jwtServiceMock.verify.mockReturnValue(payload);
@@ -103,6 +104,7 @@ describe('AuthenticationService', () => {
         name: 'User Name',
         createdAt: new Date(),
         updatedAt: new Date(),
+        salt: '',
       };
 
       jwtServiceMock.verify.mockReturnValue(payload);

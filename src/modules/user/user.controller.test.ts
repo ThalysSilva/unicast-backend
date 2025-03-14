@@ -39,6 +39,7 @@ describe('UserController', () => {
       id: '1',
       createdAt: new Date(),
       updatedAt: new Date(),
+      salt: expect.any(String),
     };
 
     userServiceMock.create.mockResolvedValueOnce(createdUser);

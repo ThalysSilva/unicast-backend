@@ -9,8 +9,11 @@ import * as bcrypt from 'bcrypt';
 export class UserService {
   constructor(private readonly userRepository: UserRepository) {}
 
-  async create(user: Omit<OmitDefaultData<UserWithPassword>, 'refreshToken'>) {
-    const password = await bcrypt.hash(user.password, 10);
+  async create(
+    user: Omit<OmitDefaultData<UserWithPassword>, 'refreshToken' | 'salt'>,
+  ) {
+    const salt = await bcrypt.genSalt(10);
+    const password = await bcrypt.hash(user.password, salt);
 
     const emailExists = await this.userRepository.findByEmail(user.email);
     if (emailExists) {
@@ -20,6 +23,6 @@ export class UserService {
         saveLog: false,
       });
     }
-    return this.userRepository.create({ ...user, password });
+    return this.userRepository.create({ ...user, password, salt });
   }
 }

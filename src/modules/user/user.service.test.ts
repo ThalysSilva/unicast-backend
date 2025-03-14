@@ -27,7 +27,10 @@ describe('UserService', () => {
   });
 
   it('should create a new user', async () => {
-    const userInput: Omit<OmitDefaultData<UserWithPassword>, 'refreshToken'> = {
+    const userInput: Omit<
+      OmitDefaultData<UserWithPassword>,
+      'refreshToken' | 'salt'
+    > = {
       name: 'John Doe',
       email: 'johndoe@example.com',
       password: 'password123',
@@ -39,6 +42,7 @@ describe('UserService', () => {
       id: '1',
       createdAt: new Date(),
       updatedAt: new Date(),
+      salt: expect.any(String),
     };
 
     userRepositoryMock.create.mockResolvedValueOnce(userCreated);
@@ -50,11 +54,15 @@ describe('UserService', () => {
     expect(userRepositoryMock.create).toHaveBeenCalledWith({
       ...userInput,
       password: expect.any(String),
+      salt: expect.any(String),
     });
   });
 
   it('should throw an error if the email already exists', async () => {
-    const userInput: Omit<OmitDefaultData<UserWithPassword>, 'refreshToken'> = {
+    const userInput: Omit<
+      OmitDefaultData<UserWithPassword>,
+      'refreshToken' | 'salt'
+    > = {
       name: 'John Doe',
       email: 'johndoe@example.com',
       password: 'password123',
@@ -66,6 +74,7 @@ describe('UserService', () => {
       createdAt: new Date(),
       updatedAt: new Date(),
       refreshToken: 'refreshToken',
+      salt: expect.any(String),
     });
 
     await expect(service.create(userInput)).rejects.toThrow(

@@ -21,11 +21,8 @@ export class User {
     description: 'Data de atualização do usuário',
   })
   updatedAt: Date;
-  @ApiProperty({
-    example: '2021-09-20T00:00:00.000Z',
-    description: 'Data de exclusão do usuário',
-  })
   refreshToken?: string | null;
+  salt: string;
 }
 
 export class UserWithPassword extends User {
