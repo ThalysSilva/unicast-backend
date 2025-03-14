@@ -10,7 +10,7 @@ export class NodemailerMailAdapter implements MailAdapter {
   >;
   private transporterUser: string;
 
-  async createTransporter(data: TransporterMailData) {
+  async setTransporterConfig(data: TransporterMailData) {
     if (!this.transporter) {
       this.transporter = nodemailer.createTransport(data);
       this.transporterUser = data.auth.user;
@@ -30,7 +30,7 @@ export class NodemailerMailAdapter implements MailAdapter {
   async sendMail(data: SendMailData): Promise<void> {
     if (!this.transporter) {
       throw new BadRequestError({
-        message: 'Transporter not created',
+        message: 'Transporter configuration not set',
         action: 'sendMail',
       });
     }

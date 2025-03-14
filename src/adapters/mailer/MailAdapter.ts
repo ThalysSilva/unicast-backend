@@ -14,6 +14,6 @@ export type TransporterMailData = {
 };
 
 export interface MailAdapter {
-  createTransporter: (transporter: TransporterMailData) => Promise<void>;
+  setTransporterConfig: (data: TransporterMailData) => Promise<void>;
   sendMail: (data: SendMailData) => Promise<void>;
 }
