@@ -14,9 +14,12 @@ const config: Config.InitialOptions = {
   coverageDirectory: '../coverage',
   testEnvironment: 'node',
   modulePaths: ['node_modules', '<rootDir>/src'],
-  moduleNameMapper: pathsToModuleNameMapper(compilerOptions.paths || {}, {
-    prefix: '<rootDir>/', // prefix aponta para 'src'
-  }),
+  moduleNameMapper: {
+    ...pathsToModuleNameMapper(compilerOptions.paths || {}, {
+      prefix: '<rootDir>/',
+    }),
+    '^jose$': '<rootDir>/__mocks__/jose.ts',
+  },
 };
 
 export default config;

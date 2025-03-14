@@ -86,6 +86,7 @@ describe('AuthenticationController', () => {
       authenticationServiceMock.login.mockResolvedValue({
         token,
         data: {} as User,
+        jwe: expect.any(String),
         refreshToken,
       });
 

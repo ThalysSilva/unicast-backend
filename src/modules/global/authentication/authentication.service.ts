@@ -7,15 +7,18 @@ import {
   ApplicationError,
   NotAuthorizedError,
 } from 'src/common/applicationError';
-import { User } from 'src/@entities/user';
+import { UserWithPassword } from 'src/@entities/user';
 import { JwtPayload } from 'src/@types/jwt';
 import { ConfigService } from '@nestjs/config';
 import { omit } from 'lodash';
 import { UserRepository } from 'src/repositories/userRepository';
+import { pbkdf2Sync } from 'crypto';
+import { EncryptJWT } from 'jose';
 
 @Injectable()
 export class AuthenticationService {
   private refreshTokenConfig: JwtSignOptions;
+  private jweSecret: Uint8Array<ArrayBuffer>;
 
   constructor(
     private jwtService: JwtService,
@@ -23,9 +26,15 @@ export class AuthenticationService {
     private configService: ConfigService,
   ) {
     this.refreshTokenConfig = this.configService.get('refresh-jwt') ?? {};
+    const jweSecretHex = this.configService.get('JWE_SECRET_KEY') ?? '';
+    const jweSecretBuffer = Buffer.from(jweSecretHex, 'hex');
+    this.jweSecret = new Uint8Array(jweSecretBuffer);
   }
 
-  async validateUser(email: string, password: string): Promise<User | null> {
+  async validateUser(
+    email: string,
+    password: string,
+  ): Promise<UserWithPassword | null> {
     const user = await this.userRepository.findByEmail(email);
     if (!user) {
       return null;
@@ -49,20 +58,43 @@ export class AuthenticationService {
 
     if (!passwordValid) return null;
 
-    return user;
+    return { ...user, password };
   }
 
-  async login(user: User) {
+  private async generateJwe(password: string, salt: string) {
+    const smtpKey = pbkdf2Sync(
+      password,
+      Buffer.from(salt, 'hex'),
+      10000,
+      32,
+      'sha256',
+    );
+    const jwe = await new EncryptJWT({ smtpKey: smtpKey.toString('hex') })
+      .setProtectedHeader({ alg: 'dir', enc: 'A256GCM' })
+      .encrypt(this.jweSecret);
+
+    return jwe;
+  }
+
+  async login(user: UserWithPassword) {
     const payload = {
       email: user.email,
       userId: user.id,
     };
 
-    const tokens = await this.generateTokens(payload);
+    const accessTokens = await this.generateAccessTokens(payload);
+    const jwe = await this.generateJwe(user.password, user.salt);
 
     return {
-      data: omit(user, ['refreshToken', 'createdAt', 'updatedAt']),
-      ...tokens,
+      data: omit(user, [
+        'refreshToken',
+        'createdAt',
+        'updatedAt',
+        'salt',
+        'password',
+      ]),
+      jwe,
+      ...accessTokens,
     };
   }
 
@@ -89,7 +121,7 @@ export class AuthenticationService {
       });
     }
 
-    const tokens = await this.generateTokens(payload);
+    const tokens = await this.generateAccessTokens(payload);
 
     return {
       data: omit(user, ['refreshToken', 'createdAt', 'updatedAt']),
@@ -97,7 +129,7 @@ export class AuthenticationService {
     };
   }
 
-  private async generateTokens({ exp, iat, ...payload }: JwtPayload) {
+  private async generateAccessTokens({ exp, iat, ...payload }: JwtPayload) {
     doNothing([exp, iat]);
     const token = this.jwtService.sign(payload);
     const refreshToken = this.jwtService.sign(payload, this.refreshTokenConfig);
