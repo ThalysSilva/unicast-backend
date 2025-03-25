@@ -1,0 +1,40 @@
+version: "3.8"
+services:
+  postgres-todo-list-go:
+    container_name: postgres-todo-list-go
+    image: postgres:15
+    env_file:
+      - .env
+    environment:
+      - POSTGRES_USER=${DB_USER}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+      - POSTGRES_DB=${DB_NAME}
+    ports:
+      - "${DB_PORT}:${DB_PORT}"
+    command: ["postgres", "-p", "${DB_PORT}", "-c", "max_connections=1000"]
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - todo-list-go
+  api-todo-list-go:
+    container_name: api-todo-list-go
+    build: .
+    ports:
+      - "8080:8080"
+    depends_on:
+      - postgres-todo-list-go
+    environment:
+      - DB_HOST=${DB_HOST}
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_NAME=${DB_NAME}
+      - DB_PORT=${DB_PORT}
+      - JWT_SECRET=${JWT_SECRET}
+      - API_PORT=${API_PORT}
+    networks:
+      - todo-list-go
+volumes:
+  pgdata:
+networks:
+  todo-list-go:
+    driver: bridge
