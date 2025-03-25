@@ -27,6 +27,8 @@ func main() {
 		Jwe:          []byte(os.Getenv("JWE_SECRET")),
 	}
 
+	port := os.Getenv("API_PORT")
+
 	// Repositórios
 	userRepo := repositories.NewUserRepository(database.DB)
 
@@ -46,7 +48,7 @@ func main() {
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
 	// Inicia o servidor
-	if err := r.Run(":8080"); err != nil {
+	if err := r.Run(":" + port); err != nil {
 		log.Fatal(err)
 	}
 }
