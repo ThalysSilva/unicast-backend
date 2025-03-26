@@ -4,6 +4,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"net/http"
 	"todo-list-api/internal/services"
+	_"todo-list-api/internal/models"
 )
 
 // RegisterInput defines the input for user registration
@@ -18,9 +19,10 @@ type RegisterInput struct {
 // @Tags auth
 // @Accept json
 // @Produce json
+// @OperationId register
 // @Param user body RegisterInput true "User data"
-// @Success 201 {object} map[string]string
-// @Failure 400 {object} map[string]string
+// @Success 201
+// @Failure 400 {object} models.ErrorResponse
 // @Router /auth/register [post]
 func Register(authService services.AuthService) gin.HandlerFunc {
 	return func(c *gin.Context) {
@@ -33,7 +35,7 @@ func Register(authService services.AuthService) gin.HandlerFunc {
 			c.JSON(http.StatusBadRequest, gin.H{"error: ": err.Error()})
 			return
 		}
-		c.JSON(http.StatusCreated, gin.H{"message": "Usuário registrado com sucesso."})
+		c.JSON(http.StatusCreated, nil)
 	}
 }
 
@@ -49,8 +51,9 @@ type LoginInput struct {
 // @Accept json
 // @Produce json
 // @Param user body LoginInput true "User data"
-// @Success 200 {object} map[string]string
-// @Failure 401 {object} map[string]string
+// @OperationId login
+// @Success 200 {object} services.LoginResponse
+// @Failure 401 {object} models.ErrorResponse
 // @Router /auth/login [post]
 func Login(authService services.AuthService) gin.HandlerFunc {
 	return func(c *gin.Context) {
@@ -72,9 +75,13 @@ func Login(authService services.AuthService) gin.HandlerFunc {
 // @Description Logout a user and invalidate refresh token
 // @Tags auth
 // @Accept json
+// @OperationId logout
 // @Produce json
-// @Success 200 {object} map[string]string
-// @Failure 401 {object} map[string]string
+// @Param Authorization header string true "Bearer token"
+// @Security BearerAuth
+// @Param user_id path string true "User ID"
+// @Success 200 {object} object{message=string}
+// @Failure 401 {object} models.ErrorResponse
 // @Router /auth/logout [post]
 func Logout(authService services.AuthService) gin.HandlerFunc {
 	return func(c *gin.Context) {
@@ -96,10 +103,11 @@ type RefreshInput struct {
 // @Description Refresh access token using refresh token
 // @Tags auth
 // @Accept json
+// @OperationId refreshToken
 // @Produce json
 // @Param refresh_token body RefreshInput true "Refresh token"
-// @Success 200 {object} map[string]string
-// @Failure 401 {object} map[string]string
+// @Success 200 {object} services.RefreshResponse
+// @Failure 401 {object} models.ErrorResponse
 // @Router /auth/refresh [post]
 func Refresh(authService services.AuthService) gin.HandlerFunc {
 	return func(c *gin.Context) {
