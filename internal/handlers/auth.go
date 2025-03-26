@@ -10,7 +10,7 @@ import (
 
 // RegisterInput defines the input for user registration
 type RegisterInput struct {
-	Email    string `json:"email" validate:"email", binding:"required"`
+	Email    string `json:"email" binding:"required,email"`
 	Password string `json:"password" binding:"required"`
 	Name     string `json:"name" binding:"required"`
 }
@@ -29,11 +29,11 @@ func Register(authService services.AuthService) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var input RegisterInput
 		if err := c.ShouldBindJSON(&input); err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			c.Error(err)
 			return
 		}
 		if _, err := authService.Register(input.Email, input.Password, input.Name); err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error: ": err.Error()})
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
 		}
 		c.JSON(http.StatusCreated, nil)
@@ -42,7 +42,7 @@ func Register(authService services.AuthService) gin.HandlerFunc {
 
 // LoginInput defines the input for user login
 type LoginInput struct {
-	Email    string `json:"email" binding:"required"`
+	Email    string `json:"email" binding:"required,email"`
 	Password string `json:"password" binding:"required"`
 }
 

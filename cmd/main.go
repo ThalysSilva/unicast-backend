@@ -5,6 +5,7 @@ import (
 	"os"
 	_ "unicast-api/docs"
 	"unicast-api/internal/handlers"
+	"unicast-api/internal/middleware"
 	"unicast-api/internal/models"
 	"unicast-api/internal/repositories"
 	"unicast-api/internal/services"
@@ -35,6 +36,8 @@ func main() {
 	authService := services.NewAuthService(userRepo, secrets)
 
 	r := gin.Default()
+
+	r.Use(middleware.ValidationErrorHandler())
 
 	// Rotas de autenticação
 	authGroup := r.Group("/auth")

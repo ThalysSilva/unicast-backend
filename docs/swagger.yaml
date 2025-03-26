@@ -25,6 +25,7 @@ definitions:
       password:
         type: string
     required:
+    - email
     - name
     - password
     type: object
