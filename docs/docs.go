@@ -218,7 +218,6 @@ const docTemplate = `{
         "handlers.RegisterInput": {
             "type": "object",
             "required": [
-                "email",
                 "name",
                 "password"
             ],

@@ -3,10 +3,10 @@ package services
 import (
 	"errors"
 	"fmt"
-	"todo-list-api/internal/models"
-	"todo-list-api/internal/repositories"
-	"todo-list-api/pkg/auth"
-	"todo-list-api/pkg/utils"
+	"unicast-api/internal/models"
+	"unicast-api/internal/repositories"
+	"unicast-api/pkg/auth"
+	"unicast-api/pkg/utils"
 
 	"golang.org/x/crypto/bcrypt"
 )
@@ -55,10 +55,10 @@ func (s *authService) Register(email, password, name string) (userId string, err
 	}
 
 	user := &models.User{
-		Email:        email,
+		Email:    email,
 		Password: string(hash),
-		Name:         name,
-		Salt:         salt,
+		Name:     name,
+		Salt:     salt,
 	}
 
 	userId, err = s.userRepo.CreateUser(user)

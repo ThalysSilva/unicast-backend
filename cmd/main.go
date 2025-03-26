@@ -3,12 +3,12 @@ package main
 import (
 	"log"
 	"os"
-	_ "todo-list-api/docs"
-	"todo-list-api/internal/handlers"
-	"todo-list-api/internal/models"
-	"todo-list-api/internal/repositories"
-	"todo-list-api/internal/services"
-	"todo-list-api/pkg/database"
+	_ "unicast-api/docs"
+	"unicast-api/internal/handlers"
+	"unicast-api/internal/models"
+	"unicast-api/internal/repositories"
+	"unicast-api/internal/services"
+	"unicast-api/pkg/database"
 
 	"github.com/gin-gonic/gin"
 	swaggerFiles "github.com/swaggo/files"

@@ -1,10 +1,11 @@
 package middleware
 
 import (
-	"github.com/gin-gonic/gin"
 	"net/http"
 	"strings"
-	"todo-list-api/pkg/auth"
+	"unicast-api/pkg/auth"
+
+	"github.com/gin-gonic/gin"
 )
 
 func AuthMiddleware(accessTokenSecret []byte) gin.HandlerFunc {

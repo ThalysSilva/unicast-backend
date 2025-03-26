@@ -4,7 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"os"
-	"todo-list-api/pkg/utils"
+	"unicast-api/pkg/utils"
 
 	_ "github.com/lib/pq"
 )

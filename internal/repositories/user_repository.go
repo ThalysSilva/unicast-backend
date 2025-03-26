@@ -2,8 +2,8 @@ package repositories
 
 import (
 	"database/sql"
-	"todo-list-api/internal/models"
-	"todo-list-api/pkg/utils"
+	"unicast-api/internal/models"
+	"unicast-api/pkg/utils"
 )
 
 type UserRepository interface {
@@ -28,13 +28,13 @@ func (r *userRepository) CreateUser(user *models.User) (userId string, err error
 	if err != nil {
 		return "", trace(err)
 	}
-	return  userId, nil
+	return userId, nil
 }
 
 func (r *userRepository) GetUserByEmail(email string) (*models.User, error) {
 	trace := utils.TraceError("GetUserByEmail")
 	user := &models.User{}
-	query := "SELECT id, email, password_hash, refresh_token FROM users WHERE email = $1"
+	query := "SELECT id, email, password, refresh_token FROM users WHERE email = $1"
 	err := r.db.QueryRow(query, email).Scan(&user.ID, &user.Email, &user.Password, user.RefreshToken) // TO-CHECK: confirmar se o refresh está ok
 	if err == sql.ErrNoRows {
 		return nil, nil

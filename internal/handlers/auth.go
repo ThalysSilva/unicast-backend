@@ -1,15 +1,16 @@
 package handlers
 
 import (
-	"github.com/gin-gonic/gin"
 	"net/http"
-	"todo-list-api/internal/services"
-	_"todo-list-api/internal/models"
+	_ "unicast-api/internal/models"
+	"unicast-api/internal/services"
+
+	"github.com/gin-gonic/gin"
 )
 
 // RegisterInput defines the input for user registration
 type RegisterInput struct {
-	Email    string `json:"email" binding:"required"`
+	Email    string `json:"email" validate:"email", binding:"required"`
 	Password string `json:"password" binding:"required"`
 	Name     string `json:"name" binding:"required"`
 }
@@ -41,7 +42,7 @@ func Register(authService services.AuthService) gin.HandlerFunc {
 
 // LoginInput defines the input for user login
 type LoginInput struct {
-	Email string `json:"email" binding:"required"`
+	Email    string `json:"email" binding:"required"`
 	Password string `json:"password" binding:"required"`
 }
 

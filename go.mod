@@ -1,4 +1,4 @@
-module todo-list-api
+module unicast-api
 
 go 1.24.1
 
