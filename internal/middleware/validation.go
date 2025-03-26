@@ -8,10 +8,10 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
 )
-
+// ValidationErrorHandler é um middleware que intercepta erros de validação e os transforma em respostas JSON
 func ValidationErrorHandler() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		c.Next() // Executa o handler
+		c.Next() 
 
 		if len(c.Errors) == 0 {
 			return
@@ -22,7 +22,6 @@ func ValidationErrorHandler() gin.HandlerFunc {
 		for _, e := range c.Errors {
 			switch err := e.Err.(type) {
 			case validator.ValidationErrors:
-				// Erros de validação (ex.: campo required, email inválido)
 				for _, fe := range err {
 					switch fe.Tag() {
 					case "required":
@@ -34,10 +33,8 @@ func ValidationErrorHandler() gin.HandlerFunc {
 					}
 				}
 			case *json.SyntaxError:
-				// Erros de parsing de JSON (ex.: vírgula extra)
 				errMessages["general"] = "JSON inválido: sintaxe incorreta"
 			default:
-				// Outros erros são ignorados por este middleware
 				continue
 			}
 		}
