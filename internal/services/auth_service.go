@@ -56,7 +56,7 @@ func (s *authService) Register(email, password, name string) (userId string, err
 
 	user := &models.User{
 		Email:        email,
-		PasswordHash: string(hash),
+		Password: string(hash),
 		Name:         name,
 		Salt:         salt,
 	}
@@ -74,7 +74,7 @@ func (s *authService) Login(email, password string) (*LoginResponse, error) {
 	if user == nil {
 		return nil, trace(errors.New("usuário não encontrado"))
 	}
-	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(password)); err != nil {
+	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password)); err != nil {
 		return nil, trace(errors.New("senha inválida"))
 	}
 
@@ -120,7 +120,7 @@ func (s *authService) RefreshToken(refreshToken string) (*RefreshResponse, error
 	if err != nil {
 		return nil, trace(err)
 	}
-	if user == nil || user.RefreshToken != refreshToken {
+	if user == nil || *user.RefreshToken != refreshToken {
 		return nil, trace(errors.New("refresh token inválido"))
 	}
 	newAccessToken, err := auth.GenerateAccessToken(user.ID, user.Email, s.secrets.AccessToken)

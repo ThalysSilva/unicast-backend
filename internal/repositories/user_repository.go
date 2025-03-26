@@ -24,7 +24,7 @@ func NewUserRepository(db *sql.DB) UserRepository {
 func (r *userRepository) CreateUser(user *models.User) (userId string, err error) {
 	trace := utils.TraceError("CreateUser")
 	query := "INSERT INTO users (email, name, password, salt) VALUES ($1, $2) RETURNING id"
-	err = r.db.QueryRow(query, user.Email, user.Name, user.PasswordHash, user.Salt).Scan(&userId)
+	err = r.db.QueryRow(query, user.Email, user.Name, user.Password, user.Salt).Scan(&userId)
 	if err != nil {
 		return "", trace(err)
 	}
@@ -35,7 +35,7 @@ func (r *userRepository) GetUserByEmail(email string) (*models.User, error) {
 	trace := utils.TraceError("GetUserByEmail")
 	user := &models.User{}
 	query := "SELECT id, email, password_hash, refresh_token FROM users WHERE email = $1"
-	err := r.db.QueryRow(query, email).Scan(&user.ID, &user.Email, &user.PasswordHash, &user.RefreshToken)
+	err := r.db.QueryRow(query, email).Scan(&user.ID, &user.Email, &user.Password, user.RefreshToken) // TO-CHECK: confirmar se o refresh está ok
 	if err == sql.ErrNoRows {
 		return nil, nil
 	}
