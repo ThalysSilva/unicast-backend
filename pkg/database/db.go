@@ -11,8 +11,9 @@ import (
 
 var DB *sql.DB
 
+var trace = utils.TraceError
+
 func InitDB() error {
-	trace := utils.TraceError("InitDB")
 	connStr := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
 		os.Getenv("DB_HOST"), os.Getenv("DB_PORT"), os.Getenv("DB_USER"),
 		os.Getenv("DB_PASSWORD"), os.Getenv("DB_NAME"))
@@ -23,11 +24,11 @@ func InitDB() error {
 	DB, err = sql.Open("postgres", connStr)
 	if err != nil {
 		errorMounted := fmt.Errorf("falha ao conectar ao banco: %w", err)
-		return trace(errorMounted)
+		return trace("InitDb", errorMounted)
 	}
 	if err = DB.Ping(); err != nil {
 		errorMounted := fmt.Errorf("falha ao efetuar ping no banco: %w", err)
-		return trace(errorMounted)
+		return trace("InitDb", errorMounted)
 	}
 	fmt.Println("Banco de dados conectado!")
 	return nil

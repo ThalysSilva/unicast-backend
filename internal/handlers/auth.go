@@ -4,6 +4,7 @@ import (
 	"net/http"
 	_ "unicast-api/internal/models"
 	"unicast-api/internal/services"
+	"unicast-api/pkg/utils"
 
 	"github.com/gin-gonic/gin"
 )
@@ -33,7 +34,7 @@ func Register(authService services.AuthService) gin.HandlerFunc {
 			return
 		}
 		if _, err := authService.Register(input.Email, input.Password, input.Name); err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			utils.HandleErrorResponse(c, err)
 			return
 		}
 		c.JSON(http.StatusCreated, nil)
@@ -65,8 +66,7 @@ func Login(authService services.AuthService) gin.HandlerFunc {
 		}
 		loginResponse, err := authService.Login(input.Email, input.Password)
 		if err != nil {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
-			return
+			utils.HandleErrorResponse(c, err)
 		}
 		c.JSON(http.StatusOK, loginResponse)
 	}
@@ -88,8 +88,7 @@ func Logout(authService services.AuthService) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		userId, _ := c.Get("user_id")
 		if err := authService.Logout(userId.(string)); err != nil {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
-			return
+			utils.HandleErrorResponse(c, err)
 		}
 		c.JSON(http.StatusOK, gin.H{"message": "Usuário deslogado com sucesso."})
 	}
@@ -119,8 +118,7 @@ func Refresh(authService services.AuthService) gin.HandlerFunc {
 		}
 		response, err := authService.RefreshToken(input.RefreshToken)
 		if err != nil {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
-			return
+			utils.HandleErrorResponse(c, err)
 		}
 		c.JSON(http.StatusOK, response)
 	}

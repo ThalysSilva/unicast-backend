@@ -5,7 +5,6 @@ import (
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"time"
 	"unicast-api/pkg/utils"
@@ -22,8 +21,16 @@ type Claims struct {
 	jwt.StandardClaims
 }
 
+var customError = &utils.CustomError{}
+var makeError = customError.MakeError
+var trace = utils.TraceError
+
+var (
+	ErrTokenNotValid = makeError("Token inválido", 401)
+	ErrRefreshTokenNotValid = makeError("Refresh token inválido", 401)
+)
+
 func GenerateAccessToken(userID string, userEmail string, secret []byte) (string, error) {
-	trace := utils.TraceError("GenerateAccessToken")
 	expirationTime := time.Now().Add(15 * time.Minute)
 	claims := &Claims{
 		UserID: userID,
@@ -35,14 +42,13 @@ func GenerateAccessToken(userID string, userEmail string, secret []byte) (string
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	signedToken, err := token.SignedString(secret)
 	if err != nil {
-		return "", trace(err)
+		return "", trace("GenerateAccessToken", err)
 	}
 
 	return signedToken, nil
 }
 
 func GenerateRefreshToken(userID string, userEmail string, secret []byte) (string, error) {
-	trace := utils.TraceError("GenerateRefreshToken")
 	expirationTime := time.Now().Add(7 * 24 * time.Hour)
 	claims := &Claims{
 		UserID: userID,
@@ -54,33 +60,30 @@ func GenerateRefreshToken(userID string, userEmail string, secret []byte) (strin
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	signedToken, err := token.SignedString(secret)
 	if err != nil {
-		return "", trace(err)
+		return "", trace("GenerateRefreshToken", err)
 	}
 	return signedToken, nil
 }
 
 func GenerateSalt(length int) ([]byte, error) {
-	trace := utils.TraceError("GenerateSalt")
 	salt := make([]byte, length)
 
 	if _, err := rand.Read(salt); err != nil {
-		return nil, trace(err)
+		return nil, trace("GenerateSalt", err)
 	}
 
 	return salt, nil
 }
 func ValidateToken(tokenStr string, secret []byte) (*Claims, error) {
-	trace := utils.TraceError("ValidateToken")
 	claims := &Claims{}
 	token, err := jwt.ParseWithClaims(tokenStr, claims, func(token *jwt.Token) (any, error) {
 		return secret, nil
 	})
 	if err != nil {
-		return nil, trace(err)
+		return nil, trace("ValidateToken", err)
 	}
 	if !token.Valid {
-		err := fmt.Errorf("token inválido: %v", token)
-		return nil, trace(err)
+		return nil, trace("ValidateToken", ErrTokenNotValid)
 	}
 	return claims, nil
 }
@@ -88,30 +91,28 @@ func ValidateToken(tokenStr string, secret []byte) (*Claims, error) {
 // GenerateJWE criptografa o payload como JWE usando AES-256-GCM.
 // O payload é serializado para JSON antes da criptografia.
 func GenerateJWE(payload any, secret []byte) (string, error) {
-	trace := utils.TraceError("GenerateJWE")
 	payloadBytes, err := json.Marshal(payload)
 	if err != nil {
-		return "", trace(errors.New("falha ao serializar payload"))
+		return "", trace("GenerateJWE", err)
 	}
 
 	key, err := jwk.FromRaw(secret)
 	if err != nil {
-		return "", trace(err)
+		return "", trace("GenerateJWE", err)
 	}
 
 	jwe, err := jwe.Encrypt(payloadBytes, jwe.WithKey(jwa.A256GCM, key))
 	if err != nil {
-		return "", trace(err)
+		return "", trace("GenerateJWE", err)
 	}
 
 	return string(jwe), nil
 }
 
 func GenerateSmtpKey(password string, salt []byte) ([]byte, error) {
-	trace := utils.TraceError("GenerateSmtpKey")
 	if len(salt) < 8 {
 		err := fmt.Errorf("salt deve ter pelo menos 8 bytes. O atual tem %d bytes", len(salt))
-		return nil, trace(err)
+		return nil, trace("GenerateSmtpKey", &utils.CustomError{Err: err, HttpCode: 500})
 	}
 	return pbkdf2.Key(sha256.New, password, salt, 10000, 32)
 }
