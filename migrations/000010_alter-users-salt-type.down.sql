@@ -1,0 +1,1 @@
+ALTER TABLE users ALTER COLUMN salt TYPE TEXT USING (encode(salt, 'hex'));
