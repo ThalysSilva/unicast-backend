@@ -61,12 +61,13 @@ func Login(authService services.AuthService) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var input LoginInput
 		if err := c.ShouldBindJSON(&input); err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			c.Error(err)
 			return
 		}
 		loginResponse, err := authService.Login(input.Email, input.Password)
 		if err != nil {
 			utils.HandleErrorResponse(c, err)
+			return
 		}
 		c.JSON(http.StatusOK, loginResponse)
 	}
