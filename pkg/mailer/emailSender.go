@@ -3,10 +3,12 @@ package mailer
 import (
 	"errors"
 	"fmt"
-	"github.com/jordan-wright/email"
+	"math"
 	"net/smtp"
 	"sync"
 	"time"
+
+	"github.com/jordan-wright/email"
 )
 
 type SmtpAuthentication struct {
@@ -114,6 +116,7 @@ func NewEmailSender(config SmtpAuthentication, opts ...EmailSenderOption) EmailS
 
 func (m *emailSenderImpl) SendEmails(poolsForSend int, poolsForRetry int, groupSize int, timeout time.Duration) error {
 	data := m.data
+	expectedGroups := int(math.Ceil(float64(len(data.To)) / float64(groupSize)))
 	if !data.ContentType.IsValid() {
 		return errors.New("conteúdo do email inválido")
 	}
@@ -165,7 +168,7 @@ func (m *emailSenderImpl) SendEmails(poolsForSend int, poolsForRetry int, groupS
 
 	sendChan := emailsChan
 	if m.interceptChan != nil {
-		fanOutChan := make(chan *email.Email, len(data.To)/groupSize)
+		fanOutChan := make(chan *email.Email, expectedGroups)
 		go func() {
 			defer close(m.interceptChan)
 			defer close(fanOutChan)
