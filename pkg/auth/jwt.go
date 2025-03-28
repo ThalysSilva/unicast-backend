@@ -101,7 +101,7 @@ func GenerateJWE(payload any, secret []byte) (string, error) {
 		return "", trace("GenerateJWE", err)
 	}
 
-	jwe, err := jwe.Encrypt(payloadBytes, jwe.WithKey(jwa.A256GCM, key))
+	jwe, err := jwe.Encrypt(payloadBytes, jwe.WithKey(jwa.A256KW, key), jwe.WithContentEncryption(jwa.A256GCM))
 	if err != nil {
 		return "", trace("GenerateJWE", err)
 	}

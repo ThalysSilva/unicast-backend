@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/hex"
 	"log"
 	"os"
 	_ "unicast-api/docs"
@@ -22,17 +23,27 @@ func main() {
 	}
 
 	// Secrets
+	jweSecretHex := os.Getenv("JWE_SECRET")
+	jweSecret, err := hex.DecodeString(jweSecretHex)
+	if err != nil {
+		log.Fatalf("Erro ao decodificar JWE_SECRET: %v", err)
+	}
+	if len(jweSecret) != 32 {
+		log.Fatalf("JWE_SECRET tem tamanho inválido: %d bytes, esperado 32", len(jweSecret))
+	}
+
 	secrets := &models.Secrets{
 		AccessToken:  []byte(os.Getenv("ACCESS_TOKEN_SECRET")),
 		RefreshToken: []byte(os.Getenv("REFRESH_TOKEN_SECRET")),
-		Jwe:          []byte(os.Getenv("JWE_SECRET")),
+		Jwe:          jweSecret,
 	}
 
 	port := os.Getenv("API_PORT")
 
 	// Repositórios
 	userRepo := repositories.NewUserRepository(database.DB)
-
+	
+	// Serviços
 	authService := services.NewAuthService(userRepo, secrets)
 
 	r := gin.Default()
