@@ -35,7 +35,6 @@ func HandleErrorResponse(g *gin.Context, err error) {
 		return
 	}
 	errString := fmt.Sprintf("Erro interno inesperado: %s", err.Error())
-	fmt.Println(errString) // debug
 	g.JSON(http.StatusInternalServerError, gin.H{"error": errString})
 
 }
