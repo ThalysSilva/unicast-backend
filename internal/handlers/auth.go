@@ -106,7 +106,7 @@ type RefreshInput struct {
 // @Accept json
 // @OperationId refreshToken
 // @Produce json
-// @Param refresh_token body RefreshInput true "Refresh token"
+// @Param refreshToken body RefreshInput true "Refresh token"
 // @Success 200 {object} services.RefreshResponse
 // @Failure 401 {object} models.ErrorResponse
 // @Router /auth/refresh [post]
