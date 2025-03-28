@@ -53,7 +53,7 @@ func (r *userRepository) GetUserByEmail(email string) (*models.User, error) {
 		return nil, nil
 	}
 	if err != nil {
-		return nil, trace("CreateUser", err)
+		return nil, trace("GetUserByEmail", err)
 	}
 	return user, nil
 }
