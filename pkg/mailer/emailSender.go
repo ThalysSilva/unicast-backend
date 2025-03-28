@@ -78,7 +78,7 @@ type EmailSenderOption func(*emailSenderImpl)
 
 type emailSenderImpl struct {
 	data          *MailerData
-	interceptChan chan *email.Email // Canal opcional de interceptação
+	interceptChan chan *email.Email
 }
 
 func WithInterceptChan(ch chan *email.Email) EmailSenderOption {
@@ -170,7 +170,7 @@ func (m *emailSenderImpl) SendEmails(poolsForSend int, poolsForRetry int, groupS
 			defer close(m.interceptChan)
 			defer close(fanOutChan)
 			for email := range emailsChan {
-				m.interceptChan <- email // Buffer grande, sem descarte
+				m.interceptChan <- email
 				fanOutChan <- email
 			}
 		}()
