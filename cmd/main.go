@@ -56,6 +56,9 @@ func main() {
 		authGroup.POST("/register", handlers.Register(authService))
 		authGroup.POST("/login", handlers.Login(authService))
 		authGroup.POST("/refresh", handlers.Refresh(authService))
+		// Com autenticação
+		authGroup.Use(middleware.UseAuthentication(secrets.AccessToken))
+		authGroup.POST("/logout", handlers.Logout(authService))
 	}
 
 	// Swagger
