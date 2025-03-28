@@ -3,10 +3,10 @@ package mailer
 import (
 	"errors"
 	"fmt"
+	"github.com/jordan-wright/email"
 	"net/smtp"
 	"sync"
 	"time"
-	"github.com/jordan-wright/email"
 )
 
 type SmtpAuthentication struct {
@@ -58,6 +58,19 @@ type EmailToRetry struct {
 func (e *EmailSentError) Error() string {
 	return fmt.Sprintf("Failed to send email from %s to %v with subject %s and body %s", e.From, e.To, e.Subject, e.Body)
 }
+type emailPool interface {
+	Send(e *email.Email, timeout time.Duration) error
+	Close()
+}
+// newPoolFunc é uma variável interna que pode ser sobrescrita nos testes
+var newPoolFunc = func(host string, pools int, auth smtp.Auth) (emailPool, error) {
+	return email.NewPool(host, pools, auth)
+}
+// newEmailChannelsFunc é uma variável interna que pode ser sobrescrita nos testes
+var newEmailChannelsFunc = func(bufferSize int) (chan *email.Email, chan *EmailToRetry) {
+	return make(chan *email.Email, bufferSize), make(chan *EmailToRetry, bufferSize)
+}
+
 
 type EmailSender interface {
 	// SendEmails envia os emails para os destinatários especificados em concorrência.
@@ -108,8 +121,7 @@ func (m *MailerData) SendEmails(poolsForSend int, poolsForRetry int, groupSize i
 		return errors.New("nenhum corpo fornecido")
 	}
 
-	emailsChan := make(chan *email.Email, poolsForSend)
-	emailsRetryChan := make(chan *EmailToRetry, len(m.To))
+	emailsChan, emailsRetryChan := newEmailChannelsFunc(len(m.To))
 	emailsWithErrors := EmailSentError{
 		From:    m.From,
 		Subject: m.Subject,
@@ -126,7 +138,7 @@ func (m *MailerData) SendEmails(poolsForSend int, poolsForRetry int, groupSize i
 
 	smtpPlainAuth := smtp.PlainAuth("", m.SmtpAuthentication.Username, m.SmtpAuthentication.Password, m.SmtpAuthentication.Host)
 
-	pool, err := email.NewPool(
+	pool, err := newPoolFunc(
 		m.SmtpAuthentication.Host+":"+fmt.Sprint(m.SmtpAuthentication.Port),
 		totalPools,
 		smtpPlainAuth,
