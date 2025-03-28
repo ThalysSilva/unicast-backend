@@ -14,7 +14,14 @@ import (
 )
 
 type mockEmailPool struct {
-	sendErr error
+	// Erro a ser retornado no envio
+	sendErr       error  
+	// Falhar apenas no primeiro envio
+	failFirstSend bool   
+	// Contador de envios para controlar retries
+	sendCount     int    
+	// Mutex para controle de concorrência
+	mu            sync.Mutex
 }
 
 const qtyMillisecondsToSleep = 5
@@ -22,6 +29,12 @@ const sleepTime = qtyMillisecondsToSleep * time.Millisecond
 
 func (m *mockEmailPool) Send(e *email.Email, timeout time.Duration) error {
 	time.Sleep(sleepTime)
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.sendCount++
+	if m.failFirstSend && m.sendCount == 1 {
+		return errors.New("failed to send email on first attempt")
+	}
 	return m.sendErr
 }
 
@@ -37,6 +50,7 @@ func mockNewPoolFuncWithError(host string, pools int, auth smtp.Auth) (emailPool
 
 var originalNewPoolFunc = newPoolFunc
 
+// Teste de Envio de Email com sucesso
 func TestSendEmails_Success(t *testing.T) {
 	newPoolFunc = mockNewPoolFunc
 	t.Cleanup(func() {
@@ -61,6 +75,7 @@ func TestSendEmails_Success(t *testing.T) {
 	assert.Nil(t, err, "Expected no error on email send")
 }
 
+// Verificar Erro de Envio com contentType inválido
 func TestSendEmails_InvalidContentType(t *testing.T) {
 	newPoolFunc = mockNewPoolFunc
 	t.Cleanup(func() {
@@ -79,7 +94,7 @@ func TestSendEmails_InvalidContentType(t *testing.T) {
 	senderImpl.data.To = []string{"recipient@example.com"}
 	senderImpl.data.Subject = "Test Subject"
 	senderImpl.data.Body = "Test Body"
-	senderImpl.data.ContentType = "invalid" // ContentType inválido
+	senderImpl.data.ContentType = "invalid"
 
 	err := sender.SendEmails(2, 2, 1, 5*time.Second)
 	assert.NotNil(t, err)
@@ -96,7 +111,6 @@ func TestSendEmails_FailureOnPoolCreation(t *testing.T) {
 		Password: "pass",
 	})
 
-	// Configurar os dados
 	senderImpl := sender.(*emailSenderImpl)
 	senderImpl.data.From = "sender@example.com"
 	senderImpl.data.To = []string{"test123@test.com"}
@@ -121,7 +135,6 @@ func TestSendEmails_FailureOnSend(t *testing.T) {
 		Password: "pass",
 	})
 
-	// Configurar os dados
 	senderImpl := sender.(*emailSenderImpl)
 	senderImpl.data.From = "sender@example.com"
 	senderImpl.data.To = []string{"test123@test.com"}
@@ -134,6 +147,7 @@ func TestSendEmails_FailureOnSend(t *testing.T) {
 	assert.IsType(t, &EmailSentError{}, err)
 }
 
+/// Teste de envio em massa com interceptação
 func TestSendEmails_MassiveWithInterception(t *testing.T) {
 	newPoolFunc = mockNewPoolFunc
 	t.Cleanup(func() {
@@ -193,6 +207,25 @@ func TestSendEmails_MassiveWithInterception(t *testing.T) {
 		assert.Equal(t, "Massive Test Subject", email.Subject, "Assunto incorreto")
 		assert.Equal(t, "This is a massive test email.", string(email.Text), "Corpo incorreto")
 	}
+}
+// Verificar Envio em Massa sem Interceptação  verificando o tempo de execução
+func TestSendEmails_Massive(t *testing.T) {
+	newPoolFunc = mockNewPoolFunc
+	t.Cleanup(func() {
+		newPoolFunc = originalNewPoolFunc
+	})
+
+	numRecipients := 1000
+	groupSize := 50
+	expectedGroups := int(math.Floor(float64(numRecipients) / float64(groupSize)))
+	poolsForSend := 4
+	poolsForRetry := 4
+	timeout := 5 * time.Second
+
+	recipients := make([]string, numRecipients)
+	for i := range numRecipients {
+		recipients[i] = fmt.Sprintf("recipient%d@example.com", i)
+	}
 
 	senderBench := NewEmailSender(SmtpAuthentication{
 		Host:     "smtp.example.com",
@@ -215,5 +248,73 @@ func TestSendEmails_MassiveWithInterception(t *testing.T) {
 	expectedMinDuration := time.Duration(expectedGroups*qtyMillisecondsToSleep/poolsForSend) * time.Millisecond
 	assert.GreaterOrEqual(t, duration, expectedMinDuration, "Tempo de execução deveria ser pelo menos %v", expectedMinDuration)
 	t.Logf("Tempo de execução para %d destinatários: %v", numRecipients, duration)
+}
 
+// Verificar Retry Bem-Sucedido
+func TestSendEmails_RetrySuccess(t *testing.T) {
+	newPoolFunc = func(host string, pools int, auth smtp.Auth) (emailPool, error) {
+		return &mockEmailPool{
+			failFirstSend: true, 
+			sendErr:       nil,  
+		}, nil
+	}
+	t.Cleanup(func() {
+		newPoolFunc = originalNewPoolFunc
+	})
+
+	sender := NewEmailSender(SmtpAuthentication{
+		Host:     "smtp.example.com",
+		Port:     587,
+		Username: "user",
+		Password: "pass",
+	})
+
+	senderImpl := sender.(*emailSenderImpl)
+	senderImpl.data.From = "sender@example.com"
+	senderImpl.data.To = []string{"recipient1@example.com", "recipient2@example.com"}
+	senderImpl.data.Subject = "Assunto de Teste de Retry"
+	senderImpl.data.Body = "Essa é uma mensagem de teste para retry."
+	senderImpl.data.ContentType = TextPlain
+
+	err := sender.SendEmails(1, 1, 1, 5*time.Second)
+	assert.Nil(t, err, "Esperado sucesso após retry")
+
+	// O mock falha no primeiro envio, mas succeeds no retry, então o resultado deve ser nil
+}
+
+// Verificar Erro Persistente
+func TestSendEmails_PersistentFailure(t *testing.T) {
+	newPoolFunc = func(host string, pools int, auth smtp.Auth) (emailPool, error) {
+		return &mockEmailPool{
+			sendErr: errors.New("falha de erro persistente"),
+		}, nil
+	}
+	t.Cleanup(func() {
+		newPoolFunc = originalNewPoolFunc
+	})
+
+	sender := NewEmailSender(SmtpAuthentication{
+		Host:     "smtp.example.com",
+		Port:     587,
+		Username: "user",
+		Password: "pass",
+	})
+
+	senderImpl := sender.(*emailSenderImpl)
+	senderImpl.data.From = "sender@example.com"
+	senderImpl.data.To = []string{"recipient1@example.com", "recipient2@example.com"}
+	senderImpl.data.Subject = "Assunto de Teste de Falha Persistente"
+	senderImpl.data.Body = "Essa é uma mensagem de teste de falha persistente."
+	senderImpl.data.ContentType = TextPlain
+
+	err := sender.SendEmails(1, 1, 1, 5*time.Second)
+	assert.NotNil(t, err, "Esperado erro após falha persistente")
+	assert.IsType(t, &EmailSentError{}, err, "Erro deve ser do tipo EmailSentError")
+
+	emailErr, ok := err.(*EmailSentError)
+	assert.True(t, ok)
+	assert.ElementsMatch(t, []string{"recipient1@example.com", "recipient2@example.com"}, emailErr.To, "Todos os destinatários devem estar presentes")
+	assert.Equal(t, "sender@example.com", emailErr.From, "From deve ser o mesmo")
+	assert.Equal(t, "Assunto de Teste de Falha Persistente", emailErr.Subject, "Assunto deve ser o mesmo")
+	assert.Equal(t, "Essa é uma mensagem de teste de falha persistente.", emailErr.Body, "Assunto deve ser o mesmo")
 }
