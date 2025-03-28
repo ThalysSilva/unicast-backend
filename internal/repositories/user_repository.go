@@ -46,10 +46,9 @@ func (r *userRepository) CreateUser(user *models.User) (userId string, err error
 
 func (r *userRepository) GetUserByEmail(email string) (*models.User, error) {
 	user := &models.User{}
-	var salt string
-	query := "SELECT id, email, password, refresh_token, salt FROM users WHERE email = $1"
-	err := r.db.QueryRow(query, email).Scan(&user.ID, &user.Email, &user.Password, user.RefreshToken, &salt ) // TO-CHECK: confirmar se o refresh está ok
-	user.Salt = []byte(salt)
+	query := "SELECT id, email, password, name, refresh_token, salt FROM users WHERE email = $1"
+	err := r.db.QueryRow(query, email).Scan(&user.ID, &user.Email, &user.Password, &user.Name, &user.RefreshToken, &user.Salt ) // TO-CHECK: confirmar se o refresh está ok
+
 	if err == sql.ErrNoRows {
 		return nil, nil
 	}
