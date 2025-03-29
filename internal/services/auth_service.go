@@ -77,7 +77,7 @@ func (s *authService) Register(email, password, name string) (userId string, err
 		Salt:     salt,
 	}
 
-	userId, err = s.userRepo.CreateUser(user)
+	userId, err = s.userRepo.Create(user)
 	if err != nil {
 		return "", trace("Register", err)
 	}
@@ -85,7 +85,7 @@ func (s *authService) Register(email, password, name string) (userId string, err
 }
 
 func (s *authService) Login(email, password string) (*LoginResponse, error) {
-	user, err := s.userRepo.GetUserByEmail(email)
+	user, err := s.userRepo.FindByEmail(email)
 	if err != nil {
 		return nil, trace("Login", err)
 	}
@@ -98,7 +98,7 @@ func (s *authService) Login(email, password string) (*LoginResponse, error) {
 
 	accessToken, err := auth.GenerateAccessToken(user.ID, user.Email, s.secrets.AccessToken)
 	if err != nil {
-		return nil, trace("Login",err)
+		return nil, trace("Login", err)
 	}
 
 	refreshToken, err := auth.GenerateRefreshToken(user.ID, user.Email, s.secrets.RefreshToken)
@@ -133,7 +133,7 @@ func (s *authService) RefreshToken(refreshToken string) (*RefreshResponse, error
 	if err != nil {
 		return nil, trace("RefreshToken", err)
 	}
-	user, err := s.userRepo.GetUserByEmail(claims.Email)
+	user, err := s.userRepo.FindByEmail(claims.Email)
 	if err != nil {
 		return nil, trace("RefreshToken", err)
 	}
