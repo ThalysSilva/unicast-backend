@@ -2,6 +2,7 @@ package services
 
 import (
 	"unicast-api/internal/models"
+	"unicast-api/internal/models/entities"
 	"unicast-api/internal/repositories"
 	"unicast-api/pkg/auth"
 	"unicast-api/pkg/utils"
@@ -10,14 +11,14 @@ import (
 )
 
 type LoginResponse struct {
-	User         *models.User `json:"user"`
+	User         *entities.User `json:"user"`
 	AccessToken  string       `json:"accessToken"`
 	RefreshToken string       `json:"refreshToken"`
 	JWE          string       `json:"jwe"`
 }
 
 type RefreshResponse struct {
-	User         *models.User `json:"user"`
+	User         *entities.User `json:"user"`
 	AccessToken  string       `json:"accessToken"`
 	RefreshToken string       `json:"refreshToken"`
 	JWE          string       `json:"-"`
@@ -70,7 +71,7 @@ func (s *authService) Register(email, password, name string) (userId string, err
 		return "", trace("Register", ErrGenerateSalt)
 	}
 
-	user := &models.User{
+	user := &entities.User{
 		Email:    email,
 		Password: string(hash),
 		Name:     name,

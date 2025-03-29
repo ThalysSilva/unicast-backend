@@ -2,21 +2,21 @@ package repositories
 
 import (
 	"database/sql"
-	"unicast-api/internal/models"
+	"unicast-api/internal/models/entities"
 	"unicast-api/pkg/utils"
 
 	"github.com/lib/pq"
 )
 
 type UserRepository interface {
-	Create(user *models.User) (userId string, err error)
-	FindByEmail(email string) (*models.User, error)
+	Create(user *entities.User) (userId string, err error)
+	FindByEmail(email string) (*entities.User, error)
 	SaveRefreshToken(userId string, refreshToken string) error
 	Logout(userId string) error
-	FindByID(id string) (*models.User, error)
+	FindByID(id string) (*entities.User, error)
 }
 
-type userRepository struct {
+type userInstanceRepository struct {
 	db *sql.DB
 }
 
@@ -29,11 +29,11 @@ var (
 )
 
 func NewUserRepository(db *sql.DB) UserRepository {
-	return &userRepository{db: db}
+	return &userInstanceRepository{db: db}
 }
 
 // Cria um novo usuário no banco de dados e retorna o ID do usuário criado. Se o usuário já existir, retorna um erro.
-func (r *userRepository) Create(user *models.User) (userId string, err error) {
+func (r *userInstanceRepository) Create(user *entities.User) (userId string, err error) {
 	query := "INSERT INTO users (email, name, password, salt) VALUES ($1, $2, $3 ,$4) RETURNING id"
 	err = r.db.QueryRow(query, user.Email, user.Name, user.Password, string(user.Salt)).Scan(&userId)
 	if err != nil {
@@ -48,7 +48,7 @@ func (r *userRepository) Create(user *models.User) (userId string, err error) {
 }
 
 // Atualiza um usuário existente
-func (r *userRepository) Update(user *models.User) error {
+func (r *userInstanceRepository) Update(user *entities.User) error {
 	query := `
 			UPDATE users
 			SET email = $2, name = $3, password = $5, refresh_token = $6, salt = $7
@@ -59,7 +59,7 @@ func (r *userRepository) Update(user *models.User) error {
 }
 
 // Busca um usuário pelo ID
-func (r *userRepository) FindByID(id string) (*models.User, error) {
+func (r *userInstanceRepository) FindByID(id string) (*entities.User, error) {
 	query := `
 			SELECT id, email, name, created_at, updated_at, password, refresh_token, salt
 			FROM users
@@ -67,7 +67,7 @@ func (r *userRepository) FindByID(id string) (*models.User, error) {
 	`
 	row := r.db.QueryRow(query, id)
 
-	user := &models.User{}
+	user := &entities.User{}
 	var refreshToken sql.NullString
 	err := row.Scan(&user.ID, &user.Email, &user.Name, &user.CreatedAt,  &user.Password, &refreshToken, &user.Salt)
 	if err != nil {
@@ -84,8 +84,8 @@ func (r *userRepository) FindByID(id string) (*models.User, error) {
 }
 
 // Encontra um usuário no banco de dados pelo email. Se o usuário não existir, retorna nil. Se ocorrer um erro, retorna o erro.
-func (r *userRepository) FindByEmail(email string) (*models.User, error) {
-	user := &models.User{}
+func (r *userInstanceRepository) FindByEmail(email string) (*entities.User, error) {
+	user := &entities.User{}
 	query := "SELECT id, email, password, name, refresh_token, salt FROM users WHERE email = $1"
 	err := r.db.QueryRow(query, email).Scan(&user.ID, &user.Email, &user.Password, &user.Name, &user.RefreshToken, &user.Salt) // TO-CHECK: confirmar se o refresh está ok
 
@@ -99,7 +99,7 @@ func (r *userRepository) FindByEmail(email string) (*models.User, error) {
 }
 
 // Salva o token de atualização do usuário no banco de dados.
-func (r *userRepository) SaveRefreshToken(userId string, refreshToken string) error {
+func (r *userInstanceRepository) SaveRefreshToken(userId string, refreshToken string) error {
 	query := "UPDATE users SET refresh_token = $1 WHERE id = $2"
 
 	if _, err := r.db.Exec(query, refreshToken, userId); err != nil {
@@ -110,7 +110,7 @@ func (r *userRepository) SaveRefreshToken(userId string, refreshToken string) er
 }
 
 // Remove o token de atualização do usuário no banco de dados.
-func (r *userRepository) Logout(userId string) error {
+func (r *userInstanceRepository) Logout(userId string) error {
 	query := "UPDATE users SET refresh_token = NULL WHERE id = $1"
 
 	if _, err := r.db.Exec(query, userId); err != nil {

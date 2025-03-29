@@ -1,12 +1,14 @@
-package models
+package entities
 
 import "time"
 
-type Campus struct {
+type Course struct {
 	ID          string    `json:"id"`
 	Name        string    `json:"name" validate:"required"`
 	Description string    `json:"description"`
+	Year        int       `json:"year" validate:"required"`
+	Semester    int       `json:"semester" validate:"required"`
 	CreatedAt   time.Time `json:"-"`
 	UpdatedAt   time.Time `json:"-"`
-	UserOwnerID string    `json:"-"`
+	ProgramID   string    `json:"-"`
 }
