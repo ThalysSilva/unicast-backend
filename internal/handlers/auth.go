@@ -9,15 +9,15 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// RegisterInput defines the input for user registration
+// RegisterInput Define o input para o registro do usuário
 type RegisterInput struct {
 	Email    string `json:"email" binding:"required,email"`
 	Password string `json:"password" binding:"required"`
 	Name     string `json:"name" binding:"required"`
 }
 
-// @Summary Register a new user
-// @Description Register a new user with username and password
+// @Summary Registra um novo usuário
+// @Description Registra um novo usuário no sistema
 // @Tags auth
 // @Accept json
 // @Produce json
@@ -41,14 +41,14 @@ func Register(authService services.AuthService) gin.HandlerFunc {
 	}
 }
 
-// LoginInput defines the input for user login
+// LoginInput define o input para o login do usuário
 type LoginInput struct {
 	Email    string `json:"email" binding:"required,email"`
 	Password string `json:"password" binding:"required"`
 }
 
-// @Summary Login a user
-// @Description Login a user and return access and refresh tokens
+// @Summary Gera o acesso a um usuário
+// @Description Gera o acesso a um usuário no sistema
 // @Tags auth
 // @Accept json
 // @Produce json
@@ -76,8 +76,8 @@ func Login(authService services.AuthService) gin.HandlerFunc {
 	}
 }
 
-// @Summary Logout a user
-// @Description Logout a user and invalidate refresh token
+// @Summary Remove o acesso a um usuário
+// @Description Remove o acesso a um usuário do sistema
 // @Tags auth
 // @Accept json
 // @OperationId logout
@@ -98,13 +98,13 @@ func Logout(authService services.AuthService) gin.HandlerFunc {
 	}
 }
 
-// RefreshInput defines the input for token refresh
+// RefreshInput Define o input para o refresh do token
 type RefreshInput struct {
 	RefreshToken string `json:"refreshToken" binding:"required"`
 }
 
-// @Summary Refresh access token
-// @Description Refresh access token using refresh token
+// @Summary Atualiza o Refresh Token do usuário
+// @Description Atualiza o Refresh Token do usuário no sistema
 // @Tags auth
 // @Accept json
 // @OperationId refreshToken

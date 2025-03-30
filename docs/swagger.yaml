@@ -1,5 +1,5 @@
 definitions:
-  handlers.LoginInput:
+  internal_handlers.LoginInput:
     properties:
       email:
         type: string
@@ -9,14 +9,56 @@ definitions:
     - email
     - password
     type: object
-  handlers.RefreshInput:
+  internal_handlers.MessageDataResponse:
+    properties:
+      emailsFailed:
+        items:
+          $ref: '#/definitions/unicast-api_internal_models_entities.Student'
+        type: array
+      whatsappFailed:
+        items:
+          $ref: '#/definitions/unicast-api_internal_models_entities.Student'
+        type: array
+    type: object
+  internal_handlers.MessageInput:
+    properties:
+      attachment:
+        items:
+          $ref: '#/definitions/unicast-api_internal_models.Attachment'
+        type: array
+      body:
+        type: string
+      from:
+        type: string
+      jwe:
+        type: string
+      smtp_id:
+        type: string
+      subject:
+        type: string
+      to:
+        items:
+          type: string
+        type: array
+      whatsapp_id:
+        type: string
+    required:
+    - body
+    - from
+    - jwe
+    - smtp_id
+    - subject
+    - to
+    - whatsapp_id
+    type: object
+  internal_handlers.RefreshInput:
     properties:
       refreshToken:
         type: string
     required:
     - refreshToken
     type: object
-  handlers.RegisterInput:
+  internal_handlers.RegisterInput:
     properties:
       email:
         type: string
@@ -29,12 +71,64 @@ definitions:
     - name
     - password
     type: object
-  models.ErrorResponse:
+  unicast-api_internal_models.Attachment:
+    properties:
+      data:
+        items:
+          type: integer
+        type: array
+      fileName:
+        type: string
+    type: object
+  unicast-api_internal_models.DefaultResponse-internal_handlers_MessageDataResponse:
+    properties:
+      data:
+        $ref: '#/definitions/internal_handlers.MessageDataResponse'
+      message:
+        type: string
+    type: object
+  unicast-api_internal_models.DefaultResponse-unicast-api_internal_services_LoginResponse:
+    properties:
+      data:
+        $ref: '#/definitions/unicast-api_internal_services.LoginResponse'
+      message:
+        type: string
+    type: object
+  unicast-api_internal_models.ErrorResponse:
     properties:
       error:
         type: string
     type: object
-  models.User:
+  unicast-api_internal_models_entities.Student:
+    properties:
+      annotation:
+        type: string
+      email:
+        type: string
+      id:
+        type: string
+      name:
+        type: string
+      phone:
+        type: string
+      status:
+        $ref: '#/definitions/unicast-api_internal_models_entities.StudentStatus'
+      studentId:
+        type: string
+    type: object
+  unicast-api_internal_models_entities.StudentStatus:
+    enum:
+    - ACTIVE
+    - CANCELED
+    - GRADUATED
+    - LOCKED
+    type: string
+    x-enum-varnames:
+    - StudentStatusActive
+    - StudentStatusCanceled
+    - StudentStatusGraduated
+    - StudentStatusLocked
+  unicast-api_internal_models_entities.User:
     properties:
       email:
         type: string
@@ -46,7 +140,7 @@ definitions:
     - email
     - name
     type: object
-  services.LoginResponse:
+  unicast-api_internal_services.LoginResponse:
     properties:
       accessToken:
         type: string
@@ -55,16 +149,16 @@ definitions:
       refreshToken:
         type: string
       user:
-        $ref: '#/definitions/models.User'
+        $ref: '#/definitions/unicast-api_internal_models_entities.User'
     type: object
-  services.RefreshResponse:
+  unicast-api_internal_services.RefreshResponse:
     properties:
       accessToken:
         type: string
       refreshToken:
         type: string
       user:
-        $ref: '#/definitions/models.User'
+        $ref: '#/definitions/unicast-api_internal_models_entities.User'
     type: object
 info:
   contact: {}
@@ -73,33 +167,33 @@ paths:
     post:
       consumes:
       - application/json
-      description: Login a user and return access and refresh tokens
+      description: Gera o acesso a um usuário no sistema
       parameters:
       - description: User data
         in: body
         name: user
         required: true
         schema:
-          $ref: '#/definitions/handlers.LoginInput'
+          $ref: '#/definitions/internal_handlers.LoginInput'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/services.LoginResponse'
+            $ref: '#/definitions/unicast-api_internal_models.DefaultResponse-unicast-api_internal_services_LoginResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/models.ErrorResponse'
-      summary: Login a user
+            $ref: '#/definitions/unicast-api_internal_models.ErrorResponse'
+      summary: Gera o acesso a um usuário
       tags:
       - auth
   /auth/logout:
     post:
       consumes:
       - application/json
-      description: Logout a user and invalidate refresh token
+      description: Remove o acesso a um usuário do sistema
       parameters:
       - description: Bearer token
         in: header
@@ -124,50 +218,50 @@ paths:
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/models.ErrorResponse'
+            $ref: '#/definitions/unicast-api_internal_models.ErrorResponse'
       security:
       - BearerAuth: []
-      summary: Logout a user
+      summary: Remove o acesso a um usuário
       tags:
       - auth
   /auth/refresh:
     post:
       consumes:
       - application/json
-      description: Refresh access token using refresh token
+      description: Atualiza o Refresh Token do usuário no sistema
       parameters:
       - description: Refresh token
         in: body
-        name: refresh_token
+        name: refreshToken
         required: true
         schema:
-          $ref: '#/definitions/handlers.RefreshInput'
+          $ref: '#/definitions/internal_handlers.RefreshInput'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/services.RefreshResponse'
+            $ref: '#/definitions/unicast-api_internal_services.RefreshResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/models.ErrorResponse'
-      summary: Refresh access token
+            $ref: '#/definitions/unicast-api_internal_models.ErrorResponse'
+      summary: Atualiza o Refresh Token do usuário
       tags:
       - auth
   /auth/register:
     post:
       consumes:
       - application/json
-      description: Register a new user with username and password
+      description: Registra um novo usuário no sistema
       parameters:
       - description: User data
         in: body
         name: user
         required: true
         schema:
-          $ref: '#/definitions/handlers.RegisterInput'
+          $ref: '#/definitions/internal_handlers.RegisterInput'
       produces:
       - application/json
       responses:
@@ -176,8 +270,34 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/models.ErrorResponse'
-      summary: Register a new user
+            $ref: '#/definitions/unicast-api_internal_models.ErrorResponse'
+      summary: Registra um novo usuário
       tags:
       - auth
+  /message/send:
+    post:
+      consumes:
+      - application/json
+      description: Envia uma mensagem via email e WhatsApp
+      parameters:
+      - description: Message data
+        in: body
+        name: message
+        required: true
+        schema:
+          $ref: '#/definitions/internal_handlers.MessageInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/unicast-api_internal_models.DefaultResponse-internal_handlers_MessageDataResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/unicast-api_internal_models.ErrorResponse'
+      summary: Envia uma mensagem
+      tags:
+      - message
 swagger: "2.0"

@@ -26,8 +26,8 @@ type MessageDataResponse struct {
 	WhatsappFailed []entities.Student `json:"whatsappFailed"`
 }
 
-// @Summary Send a message
-// @Description Send a message via email and WhatsApp
+// @Summary Envia uma mensagem
+// @Description Envia uma mensagem via email e WhatsApp
 // @OperationId sendMessage
 // @Tags message
 // @Accept json

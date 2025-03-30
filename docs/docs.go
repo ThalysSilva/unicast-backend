@@ -17,7 +17,7 @@ const docTemplate = `{
     "paths": {
         "/auth/login": {
             "post": {
-                "description": "Login a user and return access and refresh tokens",
+                "description": "Gera o acesso a um usuário no sistema",
                 "consumes": [
                     "application/json"
                 ],
@@ -27,7 +27,7 @@ const docTemplate = `{
                 "tags": [
                     "auth"
                 ],
-                "summary": "Login a user",
+                "summary": "Gera o acesso a um usuário",
                 "parameters": [
                     {
                         "description": "User data",
@@ -35,7 +35,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/handlers.LoginInput"
+                            "$ref": "#/definitions/internal_handlers.LoginInput"
                         }
                     }
                 ],
@@ -43,13 +43,13 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/services.LoginResponse"
+                            "$ref": "#/definitions/unicast-api_internal_models.DefaultResponse-unicast-api_internal_services_LoginResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/models.ErrorResponse"
+                            "$ref": "#/definitions/unicast-api_internal_models.ErrorResponse"
                         }
                     }
                 }
@@ -62,7 +62,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Logout a user and invalidate refresh token",
+                "description": "Remove o acesso a um usuário do sistema",
                 "consumes": [
                     "application/json"
                 ],
@@ -72,7 +72,7 @@ const docTemplate = `{
                 "tags": [
                     "auth"
                 ],
-                "summary": "Logout a user",
+                "summary": "Remove o acesso a um usuário",
                 "parameters": [
                     {
                         "type": "string",
@@ -104,7 +104,7 @@ const docTemplate = `{
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/models.ErrorResponse"
+                            "$ref": "#/definitions/unicast-api_internal_models.ErrorResponse"
                         }
                     }
                 }
@@ -112,7 +112,7 @@ const docTemplate = `{
         },
         "/auth/refresh": {
             "post": {
-                "description": "Refresh access token using refresh token",
+                "description": "Atualiza o Refresh Token do usuário no sistema",
                 "consumes": [
                     "application/json"
                 ],
@@ -122,15 +122,15 @@ const docTemplate = `{
                 "tags": [
                     "auth"
                 ],
-                "summary": "Refresh access token",
+                "summary": "Atualiza o Refresh Token do usuário",
                 "parameters": [
                     {
                         "description": "Refresh token",
-                        "name": "refresh_token",
+                        "name": "refreshToken",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/handlers.RefreshInput"
+                            "$ref": "#/definitions/internal_handlers.RefreshInput"
                         }
                     }
                 ],
@@ -138,13 +138,13 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/services.RefreshResponse"
+                            "$ref": "#/definitions/unicast-api_internal_services.RefreshResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/models.ErrorResponse"
+                            "$ref": "#/definitions/unicast-api_internal_models.ErrorResponse"
                         }
                     }
                 }
@@ -152,7 +152,7 @@ const docTemplate = `{
         },
         "/auth/register": {
             "post": {
-                "description": "Register a new user with username and password",
+                "description": "Registra um novo usuário no sistema",
                 "consumes": [
                     "application/json"
                 ],
@@ -162,7 +162,7 @@ const docTemplate = `{
                 "tags": [
                     "auth"
                 ],
-                "summary": "Register a new user",
+                "summary": "Registra um novo usuário",
                 "parameters": [
                     {
                         "description": "User data",
@@ -170,7 +170,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/handlers.RegisterInput"
+                            "$ref": "#/definitions/internal_handlers.RegisterInput"
                         }
                     }
                 ],
@@ -181,7 +181,47 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/models.ErrorResponse"
+                            "$ref": "#/definitions/unicast-api_internal_models.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/message/send": {
+            "post": {
+                "description": "Envia uma mensagem via email e WhatsApp",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "message"
+                ],
+                "summary": "Envia uma mensagem",
+                "parameters": [
+                    {
+                        "description": "Message data",
+                        "name": "message",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/internal_handlers.MessageInput"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/unicast-api_internal_models.DefaultResponse-internal_handlers_MessageDataResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/unicast-api_internal_models.ErrorResponse"
                         }
                     }
                 }
@@ -189,7 +229,7 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "handlers.LoginInput": {
+        "internal_handlers.LoginInput": {
             "type": "object",
             "required": [
                 "email",
@@ -204,7 +244,68 @@ const docTemplate = `{
                 }
             }
         },
-        "handlers.RefreshInput": {
+        "internal_handlers.MessageDataResponse": {
+            "type": "object",
+            "properties": {
+                "emailsFailed": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/unicast-api_internal_models_entities.Student"
+                    }
+                },
+                "whatsappFailed": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/unicast-api_internal_models_entities.Student"
+                    }
+                }
+            }
+        },
+        "internal_handlers.MessageInput": {
+            "type": "object",
+            "required": [
+                "body",
+                "from",
+                "jwe",
+                "smtp_id",
+                "subject",
+                "to",
+                "whatsapp_id"
+            ],
+            "properties": {
+                "attachment": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/unicast-api_internal_models.Attachment"
+                    }
+                },
+                "body": {
+                    "type": "string"
+                },
+                "from": {
+                    "type": "string"
+                },
+                "jwe": {
+                    "type": "string"
+                },
+                "smtp_id": {
+                    "type": "string"
+                },
+                "subject": {
+                    "type": "string"
+                },
+                "to": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "whatsapp_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "internal_handlers.RefreshInput": {
             "type": "object",
             "required": [
                 "refreshToken"
@@ -215,7 +316,7 @@ const docTemplate = `{
                 }
             }
         },
-        "handlers.RegisterInput": {
+        "internal_handlers.RegisterInput": {
             "type": "object",
             "required": [
                 "email",
@@ -234,7 +335,43 @@ const docTemplate = `{
                 }
             }
         },
-        "models.ErrorResponse": {
+        "unicast-api_internal_models.Attachment": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                },
+                "fileName": {
+                    "type": "string"
+                }
+            }
+        },
+        "unicast-api_internal_models.DefaultResponse-internal_handlers_MessageDataResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/internal_handlers.MessageDataResponse"
+                },
+                "message": {
+                    "type": "string"
+                }
+            }
+        },
+        "unicast-api_internal_models.DefaultResponse-unicast-api_internal_services_LoginResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/unicast-api_internal_services.LoginResponse"
+                },
+                "message": {
+                    "type": "string"
+                }
+            }
+        },
+        "unicast-api_internal_models.ErrorResponse": {
             "type": "object",
             "properties": {
                 "error": {
@@ -242,7 +379,48 @@ const docTemplate = `{
                 }
             }
         },
-        "models.User": {
+        "unicast-api_internal_models_entities.Student": {
+            "type": "object",
+            "properties": {
+                "annotation": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "phone": {
+                    "type": "string"
+                },
+                "status": {
+                    "$ref": "#/definitions/unicast-api_internal_models_entities.StudentStatus"
+                },
+                "studentId": {
+                    "type": "string"
+                }
+            }
+        },
+        "unicast-api_internal_models_entities.StudentStatus": {
+            "type": "string",
+            "enum": [
+                "ACTIVE",
+                "CANCELED",
+                "GRADUATED",
+                "LOCKED"
+            ],
+            "x-enum-varnames": [
+                "StudentStatusActive",
+                "StudentStatusCanceled",
+                "StudentStatusGraduated",
+                "StudentStatusLocked"
+            ]
+        },
+        "unicast-api_internal_models_entities.User": {
             "type": "object",
             "required": [
                 "email",
@@ -260,7 +438,7 @@ const docTemplate = `{
                 }
             }
         },
-        "services.LoginResponse": {
+        "unicast-api_internal_services.LoginResponse": {
             "type": "object",
             "properties": {
                 "accessToken": {
@@ -273,11 +451,11 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "user": {
-                    "$ref": "#/definitions/models.User"
+                    "$ref": "#/definitions/unicast-api_internal_models_entities.User"
                 }
             }
         },
-        "services.RefreshResponse": {
+        "unicast-api_internal_services.RefreshResponse": {
             "type": "object",
             "properties": {
                 "accessToken": {
@@ -287,7 +465,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "user": {
-                    "$ref": "#/definitions/models.User"
+                    "$ref": "#/definitions/unicast-api_internal_models_entities.User"
                 }
             }
         }
