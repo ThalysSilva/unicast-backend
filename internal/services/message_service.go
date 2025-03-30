@@ -6,6 +6,8 @@ import (
 	"unicast-api/internal/models"
 	"unicast-api/internal/models/entities"
 	"unicast-api/internal/repositories"
+	"unicast-api/pkg/auth"
+	"unicast-api/pkg/encryption"
 	"unicast-api/pkg/mailer"
 )
 
@@ -15,7 +17,7 @@ type SendResponse struct {
 }
 
 type MessageService interface {
-	Send(message *models.Message) (emailsFails, whatsappFails []entities.Student, err error)
+	Send(message *models.Message) (emailsFails, whatsappFails *[]entities.Student, err error)
 }
 
 type messageService struct {
@@ -23,6 +25,7 @@ type messageService struct {
 	smtpRepository     repositories.SmtpRepository
 	userRepository     repositories.UserRepository
 	studentRepository  repositories.StudentRepository
+	jweSecret          []byte
 }
 
 var (
@@ -31,12 +34,13 @@ var (
 	ErrStudentsNotFound = makeError("estudantes não encontrado.", 404)
 )
 
-func NewMessageService(whatsAppRepository repositories.WhatsAppRepository, smtpRepository repositories.SmtpRepository, userRepository repositories.UserRepository, studentRepository repositories.StudentRepository) MessageService {
+func NewMessageService(whatsAppRepository repositories.WhatsAppRepository, smtpRepository repositories.SmtpRepository, userRepository repositories.UserRepository, studentRepository repositories.StudentRepository, jweSecret []byte) MessageService {
 	return &messageService{
 		whatsAppRepository: whatsAppRepository,
 		smtpRepository:     smtpRepository,
 		userRepository:     userRepository,
 		studentRepository:  studentRepository,
+		jweSecret:          jweSecret,
 	}
 }
 
@@ -61,7 +65,7 @@ func extractEmailFailedStudents(err error, students []*entities.Student) ([]enti
 	return nil, err
 }
 
-func (s *messageService) Send(message *models.Message) (emailsFails, whatsappFails []entities.Student, err error) {
+func (s *messageService) Send(message *models.Message) (emailsFails, whatsappFails *[]entities.Student, err error) {
 	students, err := s.studentRepository.FindByIDs(message.To)
 	if err != nil {
 		return nil, nil, trace("Send", err)
@@ -85,12 +89,23 @@ func (s *messageService) Send(message *models.Message) (emailsFails, whatsappFai
 	if whatsapp == nil {
 		return nil, nil, trace("Send", ErrSmtpNotFound)
 	}
+
+	decryptedJwe, err := auth.DecryptJWE[JwePayload](message.Jwe, s.jweSecret)
+	if err != nil {
+		return nil, nil, trace("Send", err)
+	}
+
+	decryptedSmtpPassword, err := encryption.DecryptSmtpPassword([]byte(smtp.Password), []byte(decryptedJwe.SmtpKey), []byte(smtp.IV))
 	sender := mailer.NewEmailSender(mailer.SmtpAuthentication{
 		Host:     smtp.Host,
 		Port:     smtp.Port,
 		Username: smtp.Email,
-		Password: smtp.Password,
+		Password: decryptedSmtpPassword,
 	})
+	if err != nil {
+		return nil, nil, trace("Send", err)
+	}
+
 	attachments := []mailer.Attachment{}
 	if message.Attachments != nil {
 		for _, attachment := range *message.Attachments {
@@ -127,5 +142,5 @@ func (s *messageService) Send(message *models.Message) (emailsFails, whatsappFai
 
 	// Ainda falta implementar a parte do whatsapp
 
-	return *emailFailedStudents, *whatsappFailedStudents, nil
+	return emailFailedStudents, whatsappFailedStudents, nil
 }
