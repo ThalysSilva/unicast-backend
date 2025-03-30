@@ -34,11 +34,17 @@ func (c ContentType) IsValid() bool {
 	}
 }
 
+type Attachment struct {
+	FileName string
+	Data     []byte
+}
+
 type MailerData struct {
 	From               string
 	To                 []string
 	Subject            string
 	Body               string
+	Attachments        *[]Attachment
 	ContentType        ContentType
 	SmtpAuthentication SmtpAuthentication
 }
@@ -99,6 +105,12 @@ type EmailSender interface {
 	// Se o envio for bem-sucedido, nil será retornado.
 	// Se houver erros, um EmailSentError será retornado com os detalhes do erro.
 	SendEmails(poolsForSend int, poolsForRetry int, groupSize int, timeout time.Duration) error
+	// SetData define os dados do email a serem enviados.
+	// Se os dados não forem válidos, um erro será retornado.
+	// Os dados incluem o remetente, destinatário, assunto, corpo e tipo de conteúdo do email.
+	// Se os dados forem válidos, eles serão armazenados para envio posterior.
+	// Se os dados não forem válidos, um erro será retornado.
+	SetData(data *MailerData) error
 }
 
 var wgEmailsDispatch sync.WaitGroup
@@ -114,7 +126,27 @@ func NewEmailSender(config SmtpAuthentication, opts ...EmailSenderOption) EmailS
 	return sender
 }
 
+func (m *emailSenderImpl) SetData(data *MailerData) error {
+	if len(data.To) == 0 {
+		return errors.New("nenhum destinatário fornecido")
+	}
+	if len(data.From) == 0 {
+		return errors.New("nenhum remetente fornecido")
+	}
+	if len(data.Subject) == 0 {
+		return errors.New("nenhum assunto fornecido")
+	}
+	if len(data.Body) == 0 {
+		return errors.New("nenhum corpo fornecido")
+	}
+	m.data = data
+	return nil
+}
+
 func (m *emailSenderImpl) SendEmails(poolsForSend int, poolsForRetry int, groupSize int, timeout time.Duration) error {
+	if m.data == nil {
+		return errors.New("nenhum dado fornecido")
+	}
 	data := m.data
 	expectedGroups := int(math.Ceil(float64(len(data.To)) / float64(groupSize)))
 	if !data.ContentType.IsValid() {
@@ -244,6 +276,10 @@ func (m *emailSenderImpl) SendEmails(poolsForSend int, poolsForRetry int, groupS
 	wgEmailsDispatch.Wait()
 	close(emailsRetryChan)
 	wgEmailsRetry.Wait()
+
+	if len(emailsWithErrors.To) == len(data.To) {
+		return errors.New("todos os emails falharam")
+	}
 
 	if len(emailsWithErrors.To) > 0 {
 		return &emailsWithErrors
