@@ -25,7 +25,7 @@ func (r *whatsAppInstanceRepository) Create(instance *entities.WhatsAppInstance)
 	return err
 }
 
-// FindByID busca uma instância de WhatsApp pelo ID
+// Busca uma instância de WhatsApp pelo ID
 func (r *whatsAppInstanceRepository) FindByID(id string) (*entities.WhatsAppInstance, error) {
 	query := `
         SELECT id, phone, created_at, updated_at, user_id, instance_id
