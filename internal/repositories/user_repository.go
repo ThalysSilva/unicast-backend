@@ -2,8 +2,8 @@ package repositories
 
 import (
 	"database/sql"
-	"unicast-api/internal/models/entities"
-	"unicast-api/pkg/utils"
+	"github.com/ThalysSilva/unicast-backend/internal/models/entities"
+	"github.com/ThalysSilva/unicast-backend/pkg/utils"
 
 	"github.com/lib/pq"
 )

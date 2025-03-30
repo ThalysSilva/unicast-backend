@@ -1,6 +1,6 @@
 package repositories
 
-import "unicast-api/internal/models/entities"
+import "github.com/ThalysSilva/unicast-backend/internal/models/entities"
 
 type CampusRepository interface {
 	Create(program *entities.Campus) error

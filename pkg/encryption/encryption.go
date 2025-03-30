@@ -7,7 +7,7 @@ import (
 	"crypto/rand"
 	"crypto/sha256"
 	"io"
-	"unicast-api/pkg/utils"
+	"github.com/ThalysSilva/unicast-backend/pkg/utils"
 )
 
 var customError = &utils.CustomError{}

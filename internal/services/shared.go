@@ -1,6 +1,6 @@
 package services
 
-import "unicast-api/pkg/utils"
+import "github.com/ThalysSilva/unicast-backend/pkg/utils"
 
 var customError = utils.CustomError{}
 var makeError = customError.MakeError

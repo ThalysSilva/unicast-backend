@@ -3,7 +3,7 @@ package middleware
 import (
 	"net/http"
 	"strings"
-	"unicast-api/pkg/auth"
+	"github.com/ThalysSilva/unicast-backend/pkg/auth"
 
 	"github.com/gin-gonic/gin"
 )

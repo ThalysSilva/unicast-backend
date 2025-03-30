@@ -4,7 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"strings"
-	"unicast-api/internal/models/entities"
+	"github.com/ThalysSilva/unicast-backend/internal/models/entities"
 )
 
 // Gerencia operações de banco para Student

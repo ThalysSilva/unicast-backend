@@ -1,4 +1,93 @@
 definitions:
+  github_com_ThalysSilva_unicast-backend_internal_models.Attachment:
+    properties:
+      data:
+        items:
+          type: integer
+        type: array
+      fileName:
+        type: string
+    type: object
+  ? github_com_ThalysSilva_unicast-backend_internal_models.DefaultResponse-github_com_ThalysSilva_unicast-backend_internal_services_LoginResponse
+  : properties:
+      data:
+        $ref: '#/definitions/github_com_ThalysSilva_unicast-backend_internal_services.LoginResponse'
+      message:
+        type: string
+    type: object
+  github_com_ThalysSilva_unicast-backend_internal_models.DefaultResponse-internal_handlers_MessageDataResponse:
+    properties:
+      data:
+        $ref: '#/definitions/internal_handlers.MessageDataResponse'
+      message:
+        type: string
+    type: object
+  github_com_ThalysSilva_unicast-backend_internal_models.ErrorResponse:
+    properties:
+      error:
+        type: string
+    type: object
+  github_com_ThalysSilva_unicast-backend_internal_models_entities.Student:
+    properties:
+      annotation:
+        type: string
+      email:
+        type: string
+      id:
+        type: string
+      name:
+        type: string
+      phone:
+        type: string
+      status:
+        $ref: '#/definitions/github_com_ThalysSilva_unicast-backend_internal_models_entities.StudentStatus'
+      studentId:
+        type: string
+    type: object
+  github_com_ThalysSilva_unicast-backend_internal_models_entities.StudentStatus:
+    enum:
+    - ACTIVE
+    - CANCELED
+    - GRADUATED
+    - LOCKED
+    type: string
+    x-enum-varnames:
+    - StudentStatusActive
+    - StudentStatusCanceled
+    - StudentStatusGraduated
+    - StudentStatusLocked
+  github_com_ThalysSilva_unicast-backend_internal_models_entities.User:
+    properties:
+      email:
+        type: string
+      id:
+        type: string
+      name:
+        type: string
+    required:
+    - email
+    - name
+    type: object
+  github_com_ThalysSilva_unicast-backend_internal_services.LoginResponse:
+    properties:
+      accessToken:
+        type: string
+      jwe:
+        type: string
+      refreshToken:
+        type: string
+      user:
+        $ref: '#/definitions/github_com_ThalysSilva_unicast-backend_internal_models_entities.User'
+    type: object
+  github_com_ThalysSilva_unicast-backend_internal_services.RefreshResponse:
+    properties:
+      accessToken:
+        type: string
+      refreshToken:
+        type: string
+      user:
+        $ref: '#/definitions/github_com_ThalysSilva_unicast-backend_internal_models_entities.User'
+    type: object
   internal_handlers.LoginInput:
     properties:
       email:
@@ -13,18 +102,18 @@ definitions:
     properties:
       emailsFailed:
         items:
-          $ref: '#/definitions/unicast-api_internal_models_entities.Student'
+          $ref: '#/definitions/github_com_ThalysSilva_unicast-backend_internal_models_entities.Student'
         type: array
       whatsappFailed:
         items:
-          $ref: '#/definitions/unicast-api_internal_models_entities.Student'
+          $ref: '#/definitions/github_com_ThalysSilva_unicast-backend_internal_models_entities.Student'
         type: array
     type: object
   internal_handlers.MessageInput:
     properties:
       attachment:
         items:
-          $ref: '#/definitions/unicast-api_internal_models.Attachment'
+          $ref: '#/definitions/github_com_ThalysSilva_unicast-backend_internal_models.Attachment'
         type: array
       body:
         type: string
@@ -71,95 +160,6 @@ definitions:
     - name
     - password
     type: object
-  unicast-api_internal_models.Attachment:
-    properties:
-      data:
-        items:
-          type: integer
-        type: array
-      fileName:
-        type: string
-    type: object
-  unicast-api_internal_models.DefaultResponse-internal_handlers_MessageDataResponse:
-    properties:
-      data:
-        $ref: '#/definitions/internal_handlers.MessageDataResponse'
-      message:
-        type: string
-    type: object
-  unicast-api_internal_models.DefaultResponse-unicast-api_internal_services_LoginResponse:
-    properties:
-      data:
-        $ref: '#/definitions/unicast-api_internal_services.LoginResponse'
-      message:
-        type: string
-    type: object
-  unicast-api_internal_models.ErrorResponse:
-    properties:
-      error:
-        type: string
-    type: object
-  unicast-api_internal_models_entities.Student:
-    properties:
-      annotation:
-        type: string
-      email:
-        type: string
-      id:
-        type: string
-      name:
-        type: string
-      phone:
-        type: string
-      status:
-        $ref: '#/definitions/unicast-api_internal_models_entities.StudentStatus'
-      studentId:
-        type: string
-    type: object
-  unicast-api_internal_models_entities.StudentStatus:
-    enum:
-    - ACTIVE
-    - CANCELED
-    - GRADUATED
-    - LOCKED
-    type: string
-    x-enum-varnames:
-    - StudentStatusActive
-    - StudentStatusCanceled
-    - StudentStatusGraduated
-    - StudentStatusLocked
-  unicast-api_internal_models_entities.User:
-    properties:
-      email:
-        type: string
-      id:
-        type: string
-      name:
-        type: string
-    required:
-    - email
-    - name
-    type: object
-  unicast-api_internal_services.LoginResponse:
-    properties:
-      accessToken:
-        type: string
-      jwe:
-        type: string
-      refreshToken:
-        type: string
-      user:
-        $ref: '#/definitions/unicast-api_internal_models_entities.User'
-    type: object
-  unicast-api_internal_services.RefreshResponse:
-    properties:
-      accessToken:
-        type: string
-      refreshToken:
-        type: string
-      user:
-        $ref: '#/definitions/unicast-api_internal_models_entities.User'
-    type: object
 info:
   contact: {}
 paths:
@@ -181,11 +181,11 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/unicast-api_internal_models.DefaultResponse-unicast-api_internal_services_LoginResponse'
+            $ref: '#/definitions/github_com_ThalysSilva_unicast-backend_internal_models.DefaultResponse-github_com_ThalysSilva_unicast-backend_internal_services_LoginResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/unicast-api_internal_models.ErrorResponse'
+            $ref: '#/definitions/github_com_ThalysSilva_unicast-backend_internal_models.ErrorResponse'
       summary: Gera o acesso a um usuário
       tags:
       - auth
@@ -218,7 +218,7 @@ paths:
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/unicast-api_internal_models.ErrorResponse'
+            $ref: '#/definitions/github_com_ThalysSilva_unicast-backend_internal_models.ErrorResponse'
       security:
       - BearerAuth: []
       summary: Remove o acesso a um usuário
@@ -242,11 +242,11 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/unicast-api_internal_services.RefreshResponse'
+            $ref: '#/definitions/github_com_ThalysSilva_unicast-backend_internal_services.RefreshResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/unicast-api_internal_models.ErrorResponse'
+            $ref: '#/definitions/github_com_ThalysSilva_unicast-backend_internal_models.ErrorResponse'
       summary: Atualiza o Refresh Token do usuário
       tags:
       - auth
@@ -270,7 +270,7 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/unicast-api_internal_models.ErrorResponse'
+            $ref: '#/definitions/github_com_ThalysSilva_unicast-backend_internal_models.ErrorResponse'
       summary: Registra um novo usuário
       tags:
       - auth
@@ -292,11 +292,11 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/unicast-api_internal_models.DefaultResponse-internal_handlers_MessageDataResponse'
+            $ref: '#/definitions/github_com_ThalysSilva_unicast-backend_internal_models.DefaultResponse-internal_handlers_MessageDataResponse'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/unicast-api_internal_models.ErrorResponse'
+            $ref: '#/definitions/github_com_ThalysSilva_unicast-backend_internal_models.ErrorResponse'
       summary: Envia uma mensagem
       tags:
       - message

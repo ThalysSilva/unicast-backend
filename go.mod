@@ -1,4 +1,4 @@
-module unicast-api
+module github.com/ThalysSilva/unicast-backend
 
 go 1.24.1
 

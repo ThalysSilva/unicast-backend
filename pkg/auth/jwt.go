@@ -4,7 +4,7 @@ import (
 	"crypto/rand"
 	"encoding/json"
 	"time"
-	"unicast-api/pkg/utils"
+	"github.com/ThalysSilva/unicast-backend/pkg/utils"
 
 	"github.com/dgrijalva/jwt-go"
 	"github.com/lestrrat-go/jwx/v2/jwa"

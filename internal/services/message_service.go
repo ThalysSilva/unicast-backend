@@ -3,12 +3,12 @@ package services
 import (
 	"errors"
 	"time"
-	"unicast-api/internal/models"
-	"unicast-api/internal/models/entities"
-	"unicast-api/internal/repositories"
-	"unicast-api/pkg/auth"
-	"unicast-api/pkg/encryption"
-	"unicast-api/pkg/mailer"
+	"github.com/ThalysSilva/unicast-backend/internal/models"
+	"github.com/ThalysSilva/unicast-backend/internal/models/entities"
+	"github.com/ThalysSilva/unicast-backend/internal/repositories"
+	"github.com/ThalysSilva/unicast-backend/pkg/auth"
+	"github.com/ThalysSilva/unicast-backend/pkg/encryption"
+	"github.com/ThalysSilva/unicast-backend/pkg/mailer"
 )
 
 type SendResponse struct {

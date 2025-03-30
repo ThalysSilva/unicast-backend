@@ -2,9 +2,9 @@ package handlers
 
 import (
 	"net/http"
-	"unicast-api/internal/models"
-	"unicast-api/internal/services"
-	"unicast-api/pkg/utils"
+	"github.com/ThalysSilva/unicast-backend/internal/models"
+	"github.com/ThalysSilva/unicast-backend/internal/services"
+	"github.com/ThalysSilva/unicast-backend/pkg/utils"
 
 	"github.com/gin-gonic/gin"
 )

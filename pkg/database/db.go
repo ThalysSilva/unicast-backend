@@ -4,7 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"os"
-	"unicast-api/pkg/utils"
+	"github.com/ThalysSilva/unicast-backend/pkg/utils"
 
 	_ "github.com/lib/pq"
 )

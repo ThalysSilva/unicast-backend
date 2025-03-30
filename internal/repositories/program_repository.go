@@ -2,7 +2,7 @@ package repositories
 
 import (
 	"database/sql"
-	"unicast-api/internal/models/entities"
+	"github.com/ThalysSilva/unicast-backend/internal/models/entities"
 )
 
 // Gerencia operações de banco para Program

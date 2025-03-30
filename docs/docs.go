@@ -43,13 +43,13 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/unicast-api_internal_models.DefaultResponse-unicast-api_internal_services_LoginResponse"
+                            "$ref": "#/definitions/github_com_ThalysSilva_unicast-backend_internal_models.DefaultResponse-github_com_ThalysSilva_unicast-backend_internal_services_LoginResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/unicast-api_internal_models.ErrorResponse"
+                            "$ref": "#/definitions/github_com_ThalysSilva_unicast-backend_internal_models.ErrorResponse"
                         }
                     }
                 }
@@ -104,7 +104,7 @@ const docTemplate = `{
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/unicast-api_internal_models.ErrorResponse"
+                            "$ref": "#/definitions/github_com_ThalysSilva_unicast-backend_internal_models.ErrorResponse"
                         }
                     }
                 }
@@ -138,13 +138,13 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/unicast-api_internal_services.RefreshResponse"
+                            "$ref": "#/definitions/github_com_ThalysSilva_unicast-backend_internal_services.RefreshResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/unicast-api_internal_models.ErrorResponse"
+                            "$ref": "#/definitions/github_com_ThalysSilva_unicast-backend_internal_models.ErrorResponse"
                         }
                     }
                 }
@@ -181,7 +181,7 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/unicast-api_internal_models.ErrorResponse"
+                            "$ref": "#/definitions/github_com_ThalysSilva_unicast-backend_internal_models.ErrorResponse"
                         }
                     }
                 }
@@ -215,13 +215,13 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/unicast-api_internal_models.DefaultResponse-internal_handlers_MessageDataResponse"
+                            "$ref": "#/definitions/github_com_ThalysSilva_unicast-backend_internal_models.DefaultResponse-internal_handlers_MessageDataResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/unicast-api_internal_models.ErrorResponse"
+                            "$ref": "#/definitions/github_com_ThalysSilva_unicast-backend_internal_models.ErrorResponse"
                         }
                     }
                 }
@@ -229,6 +229,140 @@ const docTemplate = `{
         }
     },
     "definitions": {
+        "github_com_ThalysSilva_unicast-backend_internal_models.Attachment": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                },
+                "fileName": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_ThalysSilva_unicast-backend_internal_models.DefaultResponse-github_com_ThalysSilva_unicast-backend_internal_services_LoginResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/github_com_ThalysSilva_unicast-backend_internal_services.LoginResponse"
+                },
+                "message": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_ThalysSilva_unicast-backend_internal_models.DefaultResponse-internal_handlers_MessageDataResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/internal_handlers.MessageDataResponse"
+                },
+                "message": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_ThalysSilva_unicast-backend_internal_models.ErrorResponse": {
+            "type": "object",
+            "properties": {
+                "error": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_ThalysSilva_unicast-backend_internal_models_entities.Student": {
+            "type": "object",
+            "properties": {
+                "annotation": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "phone": {
+                    "type": "string"
+                },
+                "status": {
+                    "$ref": "#/definitions/github_com_ThalysSilva_unicast-backend_internal_models_entities.StudentStatus"
+                },
+                "studentId": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_ThalysSilva_unicast-backend_internal_models_entities.StudentStatus": {
+            "type": "string",
+            "enum": [
+                "ACTIVE",
+                "CANCELED",
+                "GRADUATED",
+                "LOCKED"
+            ],
+            "x-enum-varnames": [
+                "StudentStatusActive",
+                "StudentStatusCanceled",
+                "StudentStatusGraduated",
+                "StudentStatusLocked"
+            ]
+        },
+        "github_com_ThalysSilva_unicast-backend_internal_models_entities.User": {
+            "type": "object",
+            "required": [
+                "email",
+                "name"
+            ],
+            "properties": {
+                "email": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_ThalysSilva_unicast-backend_internal_services.LoginResponse": {
+            "type": "object",
+            "properties": {
+                "accessToken": {
+                    "type": "string"
+                },
+                "jwe": {
+                    "type": "string"
+                },
+                "refreshToken": {
+                    "type": "string"
+                },
+                "user": {
+                    "$ref": "#/definitions/github_com_ThalysSilva_unicast-backend_internal_models_entities.User"
+                }
+            }
+        },
+        "github_com_ThalysSilva_unicast-backend_internal_services.RefreshResponse": {
+            "type": "object",
+            "properties": {
+                "accessToken": {
+                    "type": "string"
+                },
+                "refreshToken": {
+                    "type": "string"
+                },
+                "user": {
+                    "$ref": "#/definitions/github_com_ThalysSilva_unicast-backend_internal_models_entities.User"
+                }
+            }
+        },
         "internal_handlers.LoginInput": {
             "type": "object",
             "required": [
@@ -250,13 +384,13 @@ const docTemplate = `{
                 "emailsFailed": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/unicast-api_internal_models_entities.Student"
+                        "$ref": "#/definitions/github_com_ThalysSilva_unicast-backend_internal_models_entities.Student"
                     }
                 },
                 "whatsappFailed": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/unicast-api_internal_models_entities.Student"
+                        "$ref": "#/definitions/github_com_ThalysSilva_unicast-backend_internal_models_entities.Student"
                     }
                 }
             }
@@ -276,7 +410,7 @@ const docTemplate = `{
                 "attachment": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/unicast-api_internal_models.Attachment"
+                        "$ref": "#/definitions/github_com_ThalysSilva_unicast-backend_internal_models.Attachment"
                     }
                 },
                 "body": {
@@ -332,140 +466,6 @@ const docTemplate = `{
                 },
                 "password": {
                     "type": "string"
-                }
-            }
-        },
-        "unicast-api_internal_models.Attachment": {
-            "type": "object",
-            "properties": {
-                "data": {
-                    "type": "array",
-                    "items": {
-                        "type": "integer"
-                    }
-                },
-                "fileName": {
-                    "type": "string"
-                }
-            }
-        },
-        "unicast-api_internal_models.DefaultResponse-internal_handlers_MessageDataResponse": {
-            "type": "object",
-            "properties": {
-                "data": {
-                    "$ref": "#/definitions/internal_handlers.MessageDataResponse"
-                },
-                "message": {
-                    "type": "string"
-                }
-            }
-        },
-        "unicast-api_internal_models.DefaultResponse-unicast-api_internal_services_LoginResponse": {
-            "type": "object",
-            "properties": {
-                "data": {
-                    "$ref": "#/definitions/unicast-api_internal_services.LoginResponse"
-                },
-                "message": {
-                    "type": "string"
-                }
-            }
-        },
-        "unicast-api_internal_models.ErrorResponse": {
-            "type": "object",
-            "properties": {
-                "error": {
-                    "type": "string"
-                }
-            }
-        },
-        "unicast-api_internal_models_entities.Student": {
-            "type": "object",
-            "properties": {
-                "annotation": {
-                    "type": "string"
-                },
-                "email": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "string"
-                },
-                "name": {
-                    "type": "string"
-                },
-                "phone": {
-                    "type": "string"
-                },
-                "status": {
-                    "$ref": "#/definitions/unicast-api_internal_models_entities.StudentStatus"
-                },
-                "studentId": {
-                    "type": "string"
-                }
-            }
-        },
-        "unicast-api_internal_models_entities.StudentStatus": {
-            "type": "string",
-            "enum": [
-                "ACTIVE",
-                "CANCELED",
-                "GRADUATED",
-                "LOCKED"
-            ],
-            "x-enum-varnames": [
-                "StudentStatusActive",
-                "StudentStatusCanceled",
-                "StudentStatusGraduated",
-                "StudentStatusLocked"
-            ]
-        },
-        "unicast-api_internal_models_entities.User": {
-            "type": "object",
-            "required": [
-                "email",
-                "name"
-            ],
-            "properties": {
-                "email": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "string"
-                },
-                "name": {
-                    "type": "string"
-                }
-            }
-        },
-        "unicast-api_internal_services.LoginResponse": {
-            "type": "object",
-            "properties": {
-                "accessToken": {
-                    "type": "string"
-                },
-                "jwe": {
-                    "type": "string"
-                },
-                "refreshToken": {
-                    "type": "string"
-                },
-                "user": {
-                    "$ref": "#/definitions/unicast-api_internal_models_entities.User"
-                }
-            }
-        },
-        "unicast-api_internal_services.RefreshResponse": {
-            "type": "object",
-            "properties": {
-                "accessToken": {
-                    "type": "string"
-                },
-                "refreshToken": {
-                    "type": "string"
-                },
-                "user": {
-                    "$ref": "#/definitions/unicast-api_internal_models_entities.User"
                 }
             }
         }
