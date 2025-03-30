@@ -18,7 +18,17 @@ type MessageInput struct {
 	From        string               `json:"from" binding:"required"`
 	Attachments *[]models.Attachment `json:"attachment"`
 }
-
+// @Summary Send a message
+// @Description Send a message via email and WhatsApp
+// @OperationId sendMessage
+// @Tags message
+// @Accept json
+// @Produce json
+// @Param message body MessageInput true "Message data"
+// @Success 200 {object} services.SendResponse
+// @Failure 400 {object} models.ErrorResponse
+// @Router /message/send [post]
+// Send handles the sending of messages via email and WhatsApp
 func Send(messageService services.MessageService) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var input MessageInput
