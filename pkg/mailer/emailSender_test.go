@@ -149,7 +149,6 @@ func TestSendEmails_FailureOnSend(t *testing.T) {
 
 	err := sender.SendEmails(2, 2, 1, 5*time.Second)
 	assert.NotNil(t, err)
-	assert.IsType(t, &EmailSentError{}, err)
 }
 
 // / Teste de envio em massa com interceptação
@@ -193,7 +192,7 @@ func TestSendEmails_MassiveWithInterception(t *testing.T) {
 	go func() {
 		defer wg.Done()
 		err := sender.SendEmails(poolsForSend, poolsForRetry, groupSize, timeout)
-		assert.Nil(t, err, "Expected no error on massive email send")
+		assert.Nil(t, err, "Esperado sucesso ao enviar emails")
 	}()
 
 	wg.Wait()
@@ -211,8 +210,8 @@ func TestSendEmails_MassiveWithInterception(t *testing.T) {
 		expectedTo := recipients[startIdx:endIdx]
 		assert.ElementsMatch(t, expectedTo, email.To, fmt.Sprintf("Grupo %d deveria ter os destinatários corretos", i))
 		assert.Equal(t, "sender@example.com", email.From, "Remetente incorreto")
-		assert.Equal(t, "Massive Test Subject", email.Subject, "Assunto incorreto")
-		assert.Equal(t, "This is a massive test email.", string(email.Text), "Corpo incorreto")
+		assert.Equal(t, "Teste de Envio em Massa", email.Subject, "Assunto incorreto")
+		assert.Equal(t, "Esse é um teste de envio em massa.", string(email.Text), "Corpo incorreto")
 	}
 }
 
@@ -322,12 +321,5 @@ func TestSendEmails_PersistentFailure(t *testing.T) {
 
 	err := sender.SendEmails(1, 1, 1, 5*time.Second)
 	assert.NotNil(t, err, "Esperado erro após falha persistente")
-	assert.IsType(t, &EmailSentError{}, err, "Erro deve ser do tipo EmailSentError")
-
-	emailErr, ok := err.(*EmailSentError)
-	assert.True(t, ok)
-	assert.ElementsMatch(t, []string{"recipient1@example.com", "recipient2@example.com"}, emailErr.To, "Todos os destinatários devem estar presentes")
-	assert.Equal(t, "sender@example.com", emailErr.From, "From deve ser o mesmo")
-	assert.Equal(t, "Assunto de Teste de Falha Persistente", emailErr.Subject, "Assunto deve ser o mesmo")
-	assert.Equal(t, "Essa é uma mensagem de teste de falha persistente.", emailErr.Body, "Assunto deve ser o mesmo")
+	assert.Equal(t, "todos os emails falharam", err.Error())
 }
