@@ -2,7 +2,7 @@ package handlers
 
 import (
 	"net/http"
-	_ "unicast-api/internal/models"
+	"unicast-api/internal/models"
 	"unicast-api/internal/services"
 	"unicast-api/pkg/utils"
 
@@ -54,7 +54,7 @@ type LoginInput struct {
 // @Produce json
 // @Param user body LoginInput true "User data"
 // @OperationId login
-// @Success 200 {object} services.LoginResponse
+// @Success 200 {object} models.DefaultResponse[services.LoginResponse]
 // @Failure 401 {object} models.ErrorResponse
 // @Router /auth/login [post]
 func Login(authService services.AuthService) gin.HandlerFunc {
@@ -69,7 +69,10 @@ func Login(authService services.AuthService) gin.HandlerFunc {
 			utils.HandleErrorResponse(c, err)
 			return
 		}
-		c.JSON(http.StatusOK, loginResponse)
+		c.JSON(http.StatusOK, models.DefaultResponse[services.LoginResponse]{
+			Message: "Login realizado com sucesso.",
+			Data:    *loginResponse,
+		})
 	}
 }
 

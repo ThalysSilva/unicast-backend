@@ -3,6 +3,7 @@ package handlers
 import (
 	"net/http"
 	"unicast-api/internal/models"
+	"unicast-api/internal/models/entities"
 	"unicast-api/internal/services"
 	"unicast-api/pkg/utils"
 
@@ -10,14 +11,21 @@ import (
 )
 
 type MessageInput struct {
+	Jwe         string               `json:"jwe" binding:"required"`
 	SmtpId      string               `json:"smtp_id" binding:"required"`
-	WhatsappId  string               `json:"whatsapp_id"`
+	WhatsappId  string               `json:"whatsapp_id" binding:"required"`
 	Subject     string               `json:"subject" binding:"required"`
 	Body        string               `json:"body" binding:"required"`
 	To          []string             `json:"to" binding:"required"`
 	From        string               `json:"from" binding:"required"`
 	Attachments *[]models.Attachment `json:"attachment"`
 }
+
+type MessageDataResponse struct {
+	EmailsFailed   []entities.Student `json:"emailsFailed"`
+	WhatsappFailed []entities.Student `json:"whatsappFailed"`
+}
+
 // @Summary Send a message
 // @Description Send a message via email and WhatsApp
 // @OperationId sendMessage
@@ -25,7 +33,7 @@ type MessageInput struct {
 // @Accept json
 // @Produce json
 // @Param message body MessageInput true "Message data"
-// @Success 200 {object} services.SendResponse
+// @Success 200 {object} models.DefaultResponse[MessageDataResponse]
 // @Failure 400 {object} models.ErrorResponse
 // @Router /message/send [post]
 // Send handles the sending of messages via email and WhatsApp
@@ -38,6 +46,7 @@ func Send(messageService services.MessageService) gin.HandlerFunc {
 		}
 
 		emailsFailed, whatsappFailed, err := messageService.Send(&models.Message{
+			Jwe:         input.Jwe,
 			To:          input.To,
 			From:        input.From,
 			Subject:     input.Subject,
@@ -50,10 +59,12 @@ func Send(messageService services.MessageService) gin.HandlerFunc {
 			utils.HandleErrorResponse(c, err)
 			return
 		}
-		c.JSON(http.StatusOK, gin.H{
-			"message":  "Mensagem enviada com sucesso",
-			"emailsFailed":   emailsFailed,
-			"whatsappFailed": whatsappFailed,
+		c.JSON(http.StatusOK, models.DefaultResponse[MessageDataResponse]{
+			Message: "Mensagem enviada com sucesso",
+			Data: MessageDataResponse{
+				EmailsFailed:   *emailsFailed,
+				WhatsappFailed: *whatsappFailed,
+			},
 		})
 	}
 }
