@@ -1,8 +1,10 @@
 package repositories
 
 import (
-    "database/sql"
-    "unicast-api/internal/models/entities"
+	"database/sql"
+	"fmt"
+	"strings"
+	"unicast-api/internal/models/entities"
 )
 
 // Gerencia operações de banco para Student
@@ -57,6 +59,57 @@ func (r *studentInstanceRepository) FindByID(id string) (*entities.Student, erro
         student.Annotation = &annotation.String
     }
     return student, nil
+}
+
+// Busca estudantes por IDs
+// Se a lista estiver vazia, retorna nil
+func (r *studentInstanceRepository) FindByIDs(studentIds []string) ([]*entities.Student, error) {
+	if len(studentIds) == 0 {
+			return nil, nil
+	}
+	
+	placeholders := make([]string, len(studentIds))
+	args := make([]interface{}, len(studentIds))
+	for i, id := range studentIds {
+			placeholders[i] = fmt.Sprintf("$%d", i+1)
+			args[i] = id
+	}
+
+	query := fmt.Sprintf(`
+			SELECT id, student_id, name, phone, email, annotation, created_at, updated_at, status
+			FROM students
+			WHERE id IN (%s)
+	`, strings.Join(placeholders, ","))
+
+	rows, err := r.db.Query(query, args...)
+	if err != nil {
+			return nil, err
+	}
+	defer rows.Close()
+
+	students := make([]*entities.Student, 0, len(studentIds))
+	for rows.Next() {
+			student := &entities.Student{}
+			var name, phone, email, annotation sql.NullString
+			err := rows.Scan(&student.ID, &student.StudentID, &name, &phone, &email, &annotation, &student.CreatedAt, &student.UpdatedAt, &student.Status)
+			if err != nil {
+					return nil, err
+			}
+			if name.Valid {
+					student.Name = &name.String
+			}
+			if phone.Valid {
+					student.Phone = &phone.String
+			}
+			if email.Valid {
+					student.Email = &email.String
+			}
+			if annotation.Valid {
+					student.Annotation = &annotation.String
+			}
+			students = append(students, student)
+	}
+	return students, nil
 }
 
 // Atualiza um estudante

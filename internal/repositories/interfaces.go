@@ -43,6 +43,7 @@ type StudentRepository interface {
 	FindByID(id string) (*entities.Student, error)
 	Update(student *entities.Student) error
 	Delete(id string) error
+	FindByIDs(ids []string) ([]*entities.Student, error)
 }
 
 type EnrollmentRepository interface {
