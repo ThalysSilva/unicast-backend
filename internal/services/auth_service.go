@@ -5,6 +5,7 @@ import (
 	"unicast-api/internal/models/entities"
 	"unicast-api/internal/repositories"
 	"unicast-api/pkg/auth"
+	"unicast-api/pkg/encryption"
 
 	"golang.org/x/crypto/bcrypt"
 )
@@ -102,7 +103,7 @@ func (s *authService) Login(email, password string) (*LoginResponse, error) {
 		return nil, trace("Login", err)
 	}
 
-	smtpKey, err := auth.GenerateSmtpKey(password, user.Salt)
+	smtpKey, err := encryption.GenerateSmtpKey(password, user.Salt)
 	if err != nil {
 		return nil, trace("Login", err)
 	}

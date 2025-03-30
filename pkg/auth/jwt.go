@@ -1,11 +1,8 @@
 package auth
 
 import (
-	"crypto/pbkdf2"
 	"crypto/rand"
-	"crypto/sha256"
 	"encoding/json"
-	"fmt"
 	"time"
 	"unicast-api/pkg/utils"
 
@@ -21,13 +18,18 @@ type Claims struct {
 	jwt.StandardClaims
 }
 
+type JwePayload struct {
+	SmtpEncryptedKey string `json:"smtp_encrypted_key"`
+}
+
 var customError = &utils.CustomError{}
 var makeError = customError.MakeError
 var trace = utils.TraceError
 
 var (
-	ErrTokenNotValid = makeError("Token inválido", 401)
+	ErrTokenNotValid        = makeError("Token inválido", 401)
 	ErrRefreshTokenNotValid = makeError("Refresh token inválido", 401)
+	ErrInvalidJweSecret     = makeError("JWE secret inválido", 401)
 )
 
 func GenerateAccessToken(userID string, userEmail string, secret []byte) (string, error) {
@@ -109,10 +111,27 @@ func GenerateJWE(payload any, secret []byte) (string, error) {
 	return string(jwe), nil
 }
 
-func GenerateSmtpKey(password string, salt []byte) ([]byte, error) {
-	if len(salt) < 8 {
-		err := fmt.Errorf("salt deve ter pelo menos 8 bytes. O atual tem %d bytes", len(salt))
-		return nil, trace("GenerateSmtpKey", &utils.CustomError{Err: err, HttpCode: 500})
+
+
+func DecryptJWE[T any](jweToken string, secret []byte) (T, error) {
+
+	if len(secret) != 32 {
+		return *new(T), trace("DecryptJWE", ErrInvalidJweSecret)
 	}
-	return pbkdf2.Key(sha256.New, password, salt, 10000, 32)
+	key, err := jwk.FromRaw(secret)
+	if err != nil {
+		return *new(T), trace("DecryptJWE", err)
+	}
+
+	decryptedBytes, err := jwe.Decrypt([]byte(jweToken), jwe.WithKey(jwa.A256KW, key))
+	if err != nil {
+		return *new(T), trace("DecryptJWE", err)
+	}
+
+	var decryptedPayload T
+	if err := json.Unmarshal(decryptedBytes, &decryptedPayload); err != nil {
+		return *new(T), trace("DecryptJWE", err)
+	}
+
+	return decryptedPayload, nil
 }
