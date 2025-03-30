@@ -5,23 +5,22 @@ import (
 	"unicast-api/internal/models/entities"
 	"unicast-api/internal/repositories"
 	"unicast-api/pkg/auth"
-	"unicast-api/pkg/utils"
 
 	"golang.org/x/crypto/bcrypt"
 )
 
 type LoginResponse struct {
 	User         *entities.User `json:"user"`
-	AccessToken  string       `json:"accessToken"`
-	RefreshToken string       `json:"refreshToken"`
-	JWE          string       `json:"jwe"`
+	AccessToken  string         `json:"accessToken"`
+	RefreshToken string         `json:"refreshToken"`
+	JWE          string         `json:"jwe"`
 }
 
 type RefreshResponse struct {
 	User         *entities.User `json:"user"`
-	AccessToken  string       `json:"accessToken"`
-	RefreshToken string       `json:"refreshToken"`
-	JWE          string       `json:"-"`
+	AccessToken  string         `json:"accessToken"`
+	RefreshToken string         `json:"refreshToken"`
+	JWE          string         `json:"-"`
 }
 type JwePayload struct {
 	SmtpKey string `json:"smtpKey"`
@@ -37,10 +36,6 @@ type authService struct {
 	userRepo repositories.UserRepository
 	secrets  *models.Secrets
 }
-
-var customError = utils.CustomError{}
-var makeError = customError.MakeError
-var trace = utils.TraceError
 
 var (
 	ErrUserNotFound         = makeError("User not found", 404)
