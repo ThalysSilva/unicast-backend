@@ -9,6 +9,11 @@ import (
 	"unicast-api/pkg/mailer"
 )
 
+type SendResponse struct {
+	EmailsFailed   []entities.Student `json:"emailsFailed"`
+	WhatsappFailed []entities.Student `json:"whatsappFailed"`
+}
+
 type MessageService interface {
 	Send(message *models.Message) (emailsFails, whatsappFails []entities.Student, err error)
 }
