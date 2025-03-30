@@ -48,7 +48,6 @@ func EncryptSmtpPassword(smtpPassword string, smtpKey []byte) (encryptedSmtpPass
 		return nil, nil, trace("EncryptSmtpPassword", err)
 	}
 
-	// Criptografar a senha SMTP (IV é concatenado ao início do resultado)
 	ciphertext := gcm.Seal(nil, iv, []byte(smtpPassword), nil)
 	return ciphertext, iv, nil
 }
