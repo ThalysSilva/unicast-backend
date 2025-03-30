@@ -8,13 +8,6 @@ import (
 	"github.com/lib/pq"
 )
 
-type UserRepository interface {
-	Create(user *entities.User) (userId string, err error)
-	FindByEmail(email string) (*entities.User, error)
-	SaveRefreshToken(userId string, refreshToken string) error
-	Logout(userId string) error
-	FindByID(id string) (*entities.User, error)
-}
 
 type userInstanceRepository struct {
 	db *sql.DB
