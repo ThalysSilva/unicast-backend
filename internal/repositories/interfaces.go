@@ -9,6 +9,13 @@ type CampusRepository interface {
 	Delete(id string) error
 }
 
+type CourseRepository interface {
+	Create(course *entities.Course) error
+	FindByID(id string) (*entities.Course, error)
+	Update(course *entities.Course) error
+	Delete(id string) error
+}
+
 type ProgramRepository interface {
 	Create(program *entities.Program) error
 	FindByID(id string) (*entities.Program, error)
@@ -52,7 +59,3 @@ type EnrollmentRepository interface {
 	Update(enrollment *entities.Enrollment) error
 	Delete(id string) error
 }
-
-
-
-
