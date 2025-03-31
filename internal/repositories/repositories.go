@@ -1,6 +1,12 @@
 package repositories
 
-import "github.com/ThalysSilva/unicast-backend/internal/models/entities"
+import (
+	"database/sql"
+
+	"github.com/ThalysSilva/unicast-backend/internal/models/entities"
+)
+
+
 
 type CampusRepository interface {
 	Create(program *entities.Campus) error
@@ -58,4 +64,22 @@ type EnrollmentRepository interface {
 	FindByID(id string) (*entities.Enrollment, error)
 	Update(enrollment *entities.Enrollment) error
 	Delete(id string) error
+}
+
+type Options struct {
+	Db *sql.DB
+}
+
+type Container struct {
+	User       UserRepository
+	Course     CourseRepository
+	Enrollment EnrollmentRepository
+}
+
+func New(options Options) *Container {
+	return &Container{
+		User:       NewUserRepository(options.Db),
+		Course:     NewCourseRepository(options.Db),
+		Enrollment: NewEnrollmentRepository(options.Db),
+	}
 }
