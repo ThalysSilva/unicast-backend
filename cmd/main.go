@@ -9,6 +9,7 @@ import (
 	"github.com/ThalysSilva/unicast-backend/internal/handlers"
 	"github.com/ThalysSilva/unicast-backend/internal/middleware"
 	"github.com/ThalysSilva/unicast-backend/internal/models"
+	"github.com/ThalysSilva/unicast-backend/internal/repositories"
 	"github.com/ThalysSilva/unicast-backend/internal/services"
 	"github.com/ThalysSilva/unicast-backend/pkg/database"
 
@@ -41,10 +42,10 @@ func main() {
 	port := os.Getenv("API_PORT")
 
 	// Repositórios
-	userRepo := repositories.NewUserRepository(database.DB)
+	repos := repositories.New(repositories.Options{Db: database.DB})
 
 	// Serviços
-	authService := services.NewAuthService(userRepo, secrets)
+	authService := services.NewAuthService(repos.User, secrets)
 
 	r := gin.Default()
 
