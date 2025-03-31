@@ -1,7 +1,9 @@
-package repositories
+package native
 
 import (
 	"database/sql"
+
+	"github.com/ThalysSilva/unicast-backend/internal/interfaces"
 	"github.com/ThalysSilva/unicast-backend/internal/models/entities"
 )
 
@@ -11,7 +13,7 @@ type whatsAppInstanceRepository struct {
 }
 
 // Cria uma nova instância do repositório
-func NewWhatsAppInstanceRepository(db *sql.DB) WhatsAppRepository {
+func NewWhatsAppInstanceRepository(db *sql.DB) interfaces.WhatsAppRepository {
 	return &whatsAppInstanceRepository{db: db}
 }
 

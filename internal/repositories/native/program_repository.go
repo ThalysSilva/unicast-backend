@@ -1,7 +1,9 @@
-package repositories
+package native
 
 import (
 	"database/sql"
+
+	"github.com/ThalysSilva/unicast-backend/internal/interfaces"
 	"github.com/ThalysSilva/unicast-backend/internal/models/entities"
 )
 
@@ -11,7 +13,7 @@ type programInstanceRepository struct {
 }
 
 // Cria uma nova instância do repositório
-func NewProgramRepository(db *sql.DB) ProgramRepository {
+func NewProgramRepository(db *sql.DB) interfaces.ProgramRepository {
 	return &programInstanceRepository{db: db}
 }
 

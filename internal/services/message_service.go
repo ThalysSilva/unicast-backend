@@ -3,9 +3,10 @@ package services
 import (
 	"errors"
 	"time"
+
+	"github.com/ThalysSilva/unicast-backend/internal/interfaces"
 	"github.com/ThalysSilva/unicast-backend/internal/models"
 	"github.com/ThalysSilva/unicast-backend/internal/models/entities"
-	"github.com/ThalysSilva/unicast-backend/internal/repositories"
 	"github.com/ThalysSilva/unicast-backend/pkg/auth"
 	"github.com/ThalysSilva/unicast-backend/pkg/encryption"
 	"github.com/ThalysSilva/unicast-backend/pkg/mailer"
@@ -21,10 +22,10 @@ type MessageService interface {
 }
 
 type messageService struct {
-	whatsAppRepository repositories.WhatsAppRepository
-	smtpRepository     repositories.SmtpRepository
-	userRepository     repositories.UserRepository
-	studentRepository  repositories.StudentRepository
+	whatsAppRepository interfaces.WhatsAppRepository
+	smtpRepository     interfaces.SmtpRepository
+	userRepository     interfaces.UserRepository
+	studentRepository  interfaces.StudentRepository
 	jweSecret          []byte
 }
 
@@ -34,7 +35,7 @@ var (
 	ErrStudentsNotFound = makeError("estudantes não encontrado.", 404)
 )
 
-func NewMessageService(whatsAppRepository repositories.WhatsAppRepository, smtpRepository repositories.SmtpRepository, userRepository repositories.UserRepository, studentRepository repositories.StudentRepository, jweSecret []byte) MessageService {
+func NewMessageService(whatsAppRepository interfaces.WhatsAppRepository, smtpRepository interfaces.SmtpRepository, userRepository interfaces.UserRepository, studentRepository interfaces.StudentRepository, jweSecret []byte) MessageService {
 	return &messageService{
 		whatsAppRepository: whatsAppRepository,
 		smtpRepository:     smtpRepository,

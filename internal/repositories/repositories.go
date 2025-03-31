@@ -3,83 +3,35 @@ package repositories
 import (
 	"database/sql"
 
-	"github.com/ThalysSilva/unicast-backend/internal/models/entities"
+	"github.com/ThalysSilva/unicast-backend/internal/interfaces"
+	"github.com/ThalysSilva/unicast-backend/internal/repositories/native"
 )
-
-
-
-type CampusRepository interface {
-	Create(program *entities.Campus) error
-	FindByID(id string) (*entities.Campus, error)
-	Update(program *entities.Campus) error
-	Delete(id string) error
-}
-
-type CourseRepository interface {
-	Create(course *entities.Course) error
-	FindByID(id string) (*entities.Course, error)
-	Update(course *entities.Course) error
-	Delete(id string) error
-}
-
-type ProgramRepository interface {
-	Create(program *entities.Program) error
-	FindByID(id string) (*entities.Program, error)
-	Update(program *entities.Program) error
-	Delete(id string) error
-}
-
-type SmtpRepository interface {
-	Create(instance *entities.SmtpInstance) error
-	FindByID(id string) (*entities.SmtpInstance, error)
-	Update(instance *entities.SmtpInstance) error
-	Delete(id string) error
-}
-
-type UserRepository interface {
-	Create(user *entities.User) (userId string, err error)
-	FindByEmail(email string) (*entities.User, error)
-	SaveRefreshToken(userId string, refreshToken string) error
-	Logout(userId string) error
-	FindByID(id string) (*entities.User, error)
-}
-
-type WhatsAppRepository interface {
-	Create(instance *entities.WhatsAppInstance) error
-	FindByID(id string) (*entities.WhatsAppInstance, error)
-	Update(instance *entities.WhatsAppInstance) error
-	Delete(id string) error
-}
-
-type StudentRepository interface {
-	Create(student *entities.Student) error
-	FindByID(id string) (*entities.Student, error)
-	Update(student *entities.Student) error
-	Delete(id string) error
-	FindByIDs(ids []string) ([]*entities.Student, error)
-}
-
-type EnrollmentRepository interface {
-	Create(enrollment *entities.Enrollment) error
-	FindByID(id string) (*entities.Enrollment, error)
-	Update(enrollment *entities.Enrollment) error
-	Delete(id string) error
-}
 
 type Options struct {
 	Db *sql.DB
 }
 
 type Container struct {
-	User       UserRepository
-	Course     CourseRepository
-	Enrollment EnrollmentRepository
+	User       interfaces.UserRepository
+	Course     interfaces.CourseRepository
+	Enrollment interfaces.EnrollmentRepository
+	SmtpInstance interfaces.SmtpRepository
+	WhatsAppInstance interfaces.WhatsAppRepository
+	Campus     interfaces.CampusRepository
+	Program    interfaces.ProgramRepository
+	Student    interfaces.StudentRepository
 }
 
 func New(options Options) *Container {
 	return &Container{
-		User:       NewUserRepository(options.Db),
-		Course:     NewCourseRepository(options.Db),
-		Enrollment: NewEnrollmentRepository(options.Db),
+		User:       native.NewUserRepository(options.Db),
+		Course:     native.NewCourseRepository(options.Db),
+		Enrollment: native.NewEnrollmentRepository(options.Db),
+		SmtpInstance: native.NewSmtpInstanceRepository(options.Db),
+		WhatsAppInstance: native.NewWhatsAppInstanceRepository(options.Db),
+		Campus:     native.NewCampusRepository(options.Db),
+		Program:    native.NewProgramRepository(options.Db),
+		Student:    native.NewStudentRepository(options.Db),
+		
 	}
 }

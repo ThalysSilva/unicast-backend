@@ -1,9 +1,9 @@
 package services
 
 import (
+	"github.com/ThalysSilva/unicast-backend/internal/interfaces"
 	"github.com/ThalysSilva/unicast-backend/internal/models"
 	"github.com/ThalysSilva/unicast-backend/internal/models/entities"
-	"github.com/ThalysSilva/unicast-backend/internal/repositories"
 	"github.com/ThalysSilva/unicast-backend/pkg/auth"
 	"github.com/ThalysSilva/unicast-backend/pkg/encryption"
 
@@ -34,7 +34,7 @@ type AuthService interface {
 }
 
 type authService struct {
-	userRepo repositories.UserRepository
+	userRepo interfaces.UserRepository
 	secrets  *models.Secrets
 }
 
@@ -52,7 +52,7 @@ var (
 	ErrSaveRefreshToken     = makeError("Error saving refresh token", 500)
 )
 
-func NewAuthService(userRepo repositories.UserRepository, secrets *models.Secrets) AuthService {
+func NewAuthService(userRepo interfaces.UserRepository, secrets *models.Secrets) AuthService {
 	return &authService{userRepo: userRepo, secrets: secrets}
 }
 

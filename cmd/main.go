@@ -4,11 +4,11 @@ import (
 	"encoding/hex"
 	"log"
 	"os"
+
 	_ "github.com/ThalysSilva/unicast-backend/docs"
 	"github.com/ThalysSilva/unicast-backend/internal/handlers"
 	"github.com/ThalysSilva/unicast-backend/internal/middleware"
 	"github.com/ThalysSilva/unicast-backend/internal/models"
-	"github.com/ThalysSilva/unicast-backend/internal/repositories"
 	"github.com/ThalysSilva/unicast-backend/internal/services"
 	"github.com/ThalysSilva/unicast-backend/pkg/database"
 
@@ -42,7 +42,7 @@ func main() {
 
 	// Repositórios
 	userRepo := repositories.NewUserRepository(database.DB)
-	
+
 	// Serviços
 	authService := services.NewAuthService(userRepo, secrets)
 

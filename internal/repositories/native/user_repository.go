@@ -1,27 +1,23 @@
-package repositories
+package native
 
 import (
 	"database/sql"
+
+	"github.com/ThalysSilva/unicast-backend/internal/interfaces"
 	"github.com/ThalysSilva/unicast-backend/internal/models/entities"
-	"github.com/ThalysSilva/unicast-backend/pkg/utils"
 
 	"github.com/lib/pq"
 )
-
 
 type userInstanceRepository struct {
 	db *sql.DB
 }
 
-var customError = &utils.CustomError{}
-var makeError = customError.MakeError
-var trace = utils.TraceError
-
 var (
-	ErrUserAlreadyExists = makeError("Usuário já existe", 409)
+	ErrUserAlreadyExists = MakeError("Usuário já existe", 409)
 )
 
-func NewUserRepository(db *sql.DB) UserRepository {
+func NewUserRepository(db *sql.DB) interfaces.UserRepository {
 	return &userInstanceRepository{db: db}
 }
 
@@ -32,10 +28,10 @@ func (r *userInstanceRepository) Create(user *entities.User) (userId string, err
 	if err != nil {
 		if pqErr, ok := err.(*pq.Error); ok {
 			if pqErr.Code == "23505" {
-				return "", trace("CreateUser", ErrUserAlreadyExists)
+				return "", Trace("CreateUser", ErrUserAlreadyExists)
 			}
 		}
-		return "", trace("CreateUser", err)
+		return "", Trace("CreateUser", err)
 	}
 	return userId, nil
 }
@@ -62,16 +58,16 @@ func (r *userInstanceRepository) FindByID(id string) (*entities.User, error) {
 
 	user := &entities.User{}
 	var refreshToken sql.NullString
-	err := row.Scan(&user.ID, &user.Email, &user.Name, &user.CreatedAt,  &user.Password, &refreshToken, &user.Salt)
+	err := row.Scan(&user.ID, &user.Email, &user.Name, &user.CreatedAt, &user.Password, &refreshToken, &user.Salt)
 	if err != nil {
-			if err == sql.ErrNoRows {
-					return nil, nil
-			}
-			return nil, err
+		if err == sql.ErrNoRows {
+			return nil, nil
+		}
+		return nil, err
 	}
 
 	if refreshToken.Valid {
-			user.RefreshToken = &refreshToken.String
+		user.RefreshToken = &refreshToken.String
 	}
 	return user, nil
 }
@@ -86,7 +82,7 @@ func (r *userInstanceRepository) FindByEmail(email string) (*entities.User, erro
 		return nil, nil
 	}
 	if err != nil {
-		return nil, trace("GetUserByEmail", err)
+		return nil, Trace("GetUserByEmail", err)
 	}
 	return user, nil
 }
@@ -96,7 +92,7 @@ func (r *userInstanceRepository) SaveRefreshToken(userId string, refreshToken st
 	query := "UPDATE users SET refresh_token = $1 WHERE id = $2"
 
 	if _, err := r.db.Exec(query, refreshToken, userId); err != nil {
-		return trace("SaveRefreshToken", err)
+		return Trace("SaveRefreshToken", err)
 
 	}
 	return nil
@@ -107,7 +103,7 @@ func (r *userInstanceRepository) Logout(userId string) error {
 	query := "UPDATE users SET refresh_token = NULL WHERE id = $1"
 
 	if _, err := r.db.Exec(query, userId); err != nil {
-		return trace("Logout", err)
+		return Trace("Logout", err)
 	}
 	return nil
 }

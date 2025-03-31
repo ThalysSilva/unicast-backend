@@ -1,7 +1,9 @@
-package repositories
+package native
 
 import (
 	"database/sql"
+
+	"github.com/ThalysSilva/unicast-backend/internal/interfaces"
 	"github.com/ThalysSilva/unicast-backend/internal/models/entities"
 )
 
@@ -11,7 +13,7 @@ type smtpInstanceRepository struct {
 }
 
 // Cria uma nova instância do repositório
-func NewSmtpInstanceRepository(db *sql.DB) SmtpRepository {
+func NewSmtpInstanceRepository(db *sql.DB) interfaces.SmtpRepository {
 	return &smtpInstanceRepository{db: db}
 }
 

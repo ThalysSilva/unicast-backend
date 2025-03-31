@@ -1,7 +1,9 @@
-package repositories
+package native
 
 import (
 	"database/sql"
+
+	"github.com/ThalysSilva/unicast-backend/internal/interfaces"
 	"github.com/ThalysSilva/unicast-backend/internal/models/entities"
 )
 
@@ -11,7 +13,7 @@ type courseInstanceRepository struct {
 }
 
 // Cria uma nova instância do repositório
-func NewCourseRepository(db *sql.DB) CourseRepository {
+func NewCourseRepository(db *sql.DB) interfaces.CourseRepository {
 	return &courseInstanceRepository{db: db}
 }
 
