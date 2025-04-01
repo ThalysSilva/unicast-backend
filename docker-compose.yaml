@@ -1,40 +1,103 @@
-version: "3.8"
 services:
-  postgres-todo-list-go:
-    container_name: postgres-todo-list-go
-    image: postgres:15
+  unicast-api:
+    container_name: unicast-api
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        POSTGRES_DATABASE_URL: ${POSTGRES_DATABASE_URL}
+        API_PORT: ${API_PORT}
+    ports:
+      - '${API_PORT}:${API_PORT}'
     env_file:
       - .env
-    environment:
-      - POSTGRES_USER=${DB_USER}
-      - POSTGRES_PASSWORD=${DB_PASSWORD}
-      - POSTGRES_DB=${DB_NAME}
-    ports:
-      - "${DB_PORT}:${DB_PORT}"
-    command: ["postgres", "-p", "${DB_PORT}", "-c", "max_connections=1000"]
-    volumes:
-      - pgdata:/var/lib/postgresql/data
+    depends_on:
+      - mongo-unicast
+      - postgres-unicast
     networks:
-      - todo-list-go
-  api-todo-list-go:
-    container_name: api-todo-list-go
-    build: .
+      - unicast-network
+
+  postgres-unicast:
+    container_name: postgres-unicast
+    image: postgres:15
+    command:
+      ["postgres", "-p", "${POSTGRES_PORT}", "-c", "max_connections=1000"]
+    restart: always
+    ports:
+      - "${POSTGRES_PORT}:${POSTGRES_PORT}"
+    environment:
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_USER=${POSTGRES_USER}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - unicast-network
+
+  mongo-unicast:
+    image: mongo:6.0
+    container_name: mongo-unicast
+    ports:
+      - "27017:27017"
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=${MONGO_INITDB_ROOT_USERNAME}
+      - MONGO_INITDB_ROOT_PASSWORD=${MONGO_INITDB_ROOT_PASSWORD}
+    volumes:
+      - mongo-data:/data/db
+    networks:
+      - unicast-network
+
+  evolution-api-unicast:
+    container_name: evolution-api-unicast
+    image: atendai/evolution-api:v2.1.1
+    restart: always
     ports:
       - "8080:8080"
-    depends_on:
-      - postgres-todo-list-go
-    environment:
-      - DB_HOST=${DB_HOST}
-      - DB_USER=${DB_USER}
-      - DB_PASSWORD=${DB_PASSWORD}
-      - DB_NAME=${DB_NAME}
-      - DB_PORT=${DB_PORT}
-      - JWT_SECRET=${JWT_SECRET}
-      - API_PORT=${API_PORT}
+    env_file:
+      - .env
+    volumes:
+      - evolution_instances:/evolution/instances
     networks:
-      - todo-list-go
+      - unicast-network
+    depends_on:
+      - postgres-unicast
+      - redis-unicast
+
+  pgadmin-unicast:
+    container_name: pgadmin-unicast
+    image: dpage/pgadmin4:latest
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=${PGADMIN_DEFAULT_EMAIL}
+      - PGADMIN_DEFAULT_PASSWORD=${PGADMIN_DEFAULT_PASSWORD}
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    ports:
+      - "4000:80"
+    networks:
+      - unicast-network
+    depends_on:
+      - postgres-unicast
+
+  redis-unicast:
+    image: redis:latest
+    container_name: redis-unicast
+    command: >
+      redis-server --port ${REDIS_PORT} --appendonly yes --save ""
+    volumes:
+      - evolution_redis:/data
+    ports:
+      - "${REDIS_PORT}:${REDIS_PORT}"
+    networks:
+      - unicast-network
+
 volumes:
-  pgdata:
+  evolution_instances:
+  postgres_data:
+  pgadmin_data:
+  evolution_redis:
+  mongo-data:
+
 networks:
-  todo-list-go:
+  unicast-network:
+    name: unicast-network
     driver: bridge
