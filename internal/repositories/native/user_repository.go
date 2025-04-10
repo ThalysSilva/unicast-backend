@@ -28,10 +28,10 @@ func (r *userInstanceRepository) Create(user *entities.User) (userId string, err
 	if err != nil {
 		if pqErr, ok := err.(*pq.Error); ok {
 			if pqErr.Code == "23505" {
-				return "", Trace("CreateUser", ErrUserAlreadyExists)
+				return "", trace("CreateUser", ErrUserAlreadyExists)
 			}
 		}
-		return "", Trace("CreateUser", err)
+		return "", trace("CreateUser", err)
 	}
 	return userId, nil
 }
@@ -82,7 +82,7 @@ func (r *userInstanceRepository) FindByEmail(email string) (*entities.User, erro
 		return nil, nil
 	}
 	if err != nil {
-		return nil, Trace("GetUserByEmail", err)
+		return nil, trace("GetUserByEmail", err)
 	}
 	return user, nil
 }
@@ -92,7 +92,7 @@ func (r *userInstanceRepository) SaveRefreshToken(userId string, refreshToken st
 	query := "UPDATE users SET refresh_token = $1 WHERE id = $2"
 
 	if _, err := r.db.Exec(query, refreshToken, userId); err != nil {
-		return Trace("SaveRefreshToken", err)
+		return trace("SaveRefreshToken", err)
 
 	}
 	return nil
@@ -103,7 +103,7 @@ func (r *userInstanceRepository) Logout(userId string) error {
 	query := "UPDATE users SET refresh_token = NULL WHERE id = $1"
 
 	if _, err := r.db.Exec(query, userId); err != nil {
-		return Trace("Logout", err)
+		return trace("Logout", err)
 	}
 	return nil
 }

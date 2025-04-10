@@ -4,4 +4,4 @@ import "github.com/ThalysSilva/unicast-backend/pkg/utils"
 
 var customError = &utils.CustomError{}
 var MakeError = customError.MakeError
-var Trace = utils.TraceError
+var trace = utils.TraceError

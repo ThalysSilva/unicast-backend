@@ -25,7 +25,7 @@ func (r *courseInstanceRepository) Create(course *entities.Course) error {
     `
 	_, err := r.db.Exec(query, course.ID, course.Name, course.Description, course.Year, course.Semester, course.ProgramID)
 	if err != nil {
-		return Trace("courseRepository: create", err)
+		return trace("courseRepository: create", err)
 	}
 	return nil
 }
@@ -45,7 +45,7 @@ func (r *courseInstanceRepository) FindByID(id string) (*entities.Course, error)
 		if err == sql.ErrNoRows {
 			return nil, nil
 		}
-		return nil, Trace("courseRepository: findByID", err)
+		return nil, trace("courseRepository: findByID", err)
 	}
 	return course, nil
 }
@@ -59,7 +59,7 @@ func (r *courseInstanceRepository) Update(course *entities.Course) error {
     `
 	_, err := r.db.Exec(query, course.ID, course.Name, course.Description, course.Year, course.Semester, course.ProgramID)
 	if err != nil {
-		return Trace("courseRepository: update", err)
+		return trace("courseRepository: update", err)
 	}
 	return err
 }
