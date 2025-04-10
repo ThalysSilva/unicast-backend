@@ -10,6 +10,7 @@ import (
 	"github.com/ThalysSilva/unicast-backend/internal/config"
 	"github.com/ThalysSilva/unicast-backend/internal/middleware"
 	"github.com/ThalysSilva/unicast-backend/internal/repository"
+	"github.com/ThalysSilva/unicast-backend/internal/whatsapp"
 	"github.com/ThalysSilva/unicast-backend/pkg/database"
 
 	"github.com/gin-gonic/gin"
@@ -45,9 +46,11 @@ func main() {
 
 	// Serviços
 	authService := auth.NewService(repos.User, secrets)
+	whatsappService := whatsapp.NewService(repos.WhatsAppInstance, repos.User)
 
 	// Handlers
 	authHandler := auth.NewHandler(authService)
+	whatsappHandler := whatsapp.NewHandler(whatsappService)
 
 	r := gin.Default()
 
@@ -62,6 +65,13 @@ func main() {
 		// Com autenticação
 		authGroup.Use(middleware.UseAuthentication(secrets.AccessToken))
 		authGroup.POST("/logout", authHandler.Logout())
+	}
+
+	// Rotas do WhatsApp
+	whatsappGroup := r.Group("/whatsapp")
+	{
+		whatsappGroup.Use(middleware.UseAuthentication(secrets.AccessToken))
+		whatsappGroup.POST("/instance", whatsappHandler.CreateInstance())
 	}
 
 	// Swagger

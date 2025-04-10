@@ -1,46 +1,66 @@
 package whatsapp
 
 import (
+	"errors"
+	"fmt"
 	"net/http"
 
+	"github.com/ThalysSilva/unicast-backend/internal/user"
 	"github.com/ThalysSilva/unicast-backend/pkg/customerror"
 )
 
 type Service interface {
-	CreateInstance(userId, Phone, instanceName string) (instance *Instance, qrCode string, err error)
+	CreateInstance(userId, Phone string) (instance *Instance, qrCode string, err error)
 }
 
 type service struct {
-	repository Repository
+	whatsAppRepository Repository
+	userRepository     user.Repository
 }
 
-func NewService(repository Repository) Service {
+func NewService(whatsappRepository Repository, userRepository user.Repository) Service {
 	return &service{
-		repository: repository,
+		whatsAppRepository: whatsappRepository,
+		userRepository:     userRepository,
 	}
 }
 
-func (s *service) CreateInstance(userId, phone, instanceName string) (instance *Instance, qrCode string, err error) {
-	hasInstance, err := s.repository.FindByPhoneAndUserId(phone, instanceName)
+var (
+	HasAlreadyInstance = customerror.Make("Instância já existe", http.StatusConflict, errors.New("HasAlreadyInstance"))
+	UserNotFound       = customerror.Make("Usuário não encontrado", http.StatusNotFound, errors.New("userNotFound"))
+)
+
+func (s *service) CreateInstance(userId, phone string) (instance *Instance, qrCode string, err error) {
+	hasInstance, err := s.whatsAppRepository.FindByPhoneAndUserId(phone, userId)
 	if err != nil {
 		return nil, "", err
 	}
 	if hasInstance != nil {
-		return nil, "", customerror.Make("Instância já existe", http.StatusConflict)
+		return nil, "", customerror.Trace("CreateInstance", HasAlreadyInstance)
 	}
+	user, err := s.userRepository.FindByID(userId)
+	if err != nil {
+		return nil, "", err
+	}
+	if user == nil {
+
+		return nil, "", customerror.Trace("CreateInstance", UserNotFound)
+	}
+
+	instanceName := user.Email + ":" + phone
 
 	instanceId, newQrCode, err := createEvolutionInstance(phone, instanceName, true)
 	if err != nil {
-		err := customerror.Make("Falha ao criar instância", http.StatusInternalServerError)
 		return nil, "", customerror.Trace("CreateInstance", err)
 	}
+	fmt.Println("instanceId", instanceId)
 
-	err = s.repository.Create(phone, instanceName, userId, instanceId)
+	err = s.whatsAppRepository.Create(phone, userId, instanceId)
 	if err != nil {
 		return nil, "", err
 	}
 
-	instance, err = s.repository.FindByPhoneAndUserId(phone, userId)
+	instance, err = s.whatsAppRepository.FindByPhoneAndUserId(phone, userId)
 	if err != nil {
 		return nil, "", err
 	}

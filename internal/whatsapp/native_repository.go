@@ -2,6 +2,7 @@ package whatsapp
 
 import (
 	"database/sql"
+	"fmt"
 )
 
 // nativeRepository gerencia operações de banco para WhatsAppInstance
@@ -13,12 +14,12 @@ func newNativeRepository(db *sql.DB) Repository {
 }
 
 // Insere uma nova instância de WhatsApp
-func (r *nativeRepository) Create(phone, instanceName, userID, instanceID string) error {
+func (r *nativeRepository) Create(phone, userID, instanceID string) error {
 	query := `
-        INSERT INTO whatsapp_instances (phone, user_id, instance_id, instance_name)
-        VALUES ($1, $2, $3, $4)
+        INSERT INTO whatsapp_instances (phone, user_id, instance_id)
+        VALUES ($1, $2, $3)
     `
-	_, err := r.db.Exec(query, phone, userID, instanceID, instanceName)
+	_, err := r.db.Exec(query, phone, userID, instanceID)
 	return err
 }
 
@@ -49,6 +50,7 @@ func (r *nativeRepository) FindByPhoneAndUserId(phone, userId string) (*Instance
 				WHERE phone = $1 AND user_id = $2
 		`
 	row := r.db.QueryRow(query, phone, userId)
+	fmt.Println("!!! passando aqui")
 
 	instance := &Instance{}
 	err := row.Scan(&instance.ID, &instance.Phone, &instance.CreatedAt, &instance.UpdatedAt, &instance.UserID, &instance.InstanceID)

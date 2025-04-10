@@ -15,7 +15,7 @@ type Instance struct {
 }
 
 type Repository interface {
-	Create(phone, instanceName, userID, instanceID string) error
+	Create(phone, userID, instanceID string) error
 	FindByID(id string) (*Instance, error)
 	FindByPhoneAndUserId(phone, userId string) (*Instance, error)
 	Update(instance *Instance) error
