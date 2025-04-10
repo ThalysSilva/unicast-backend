@@ -35,7 +35,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/internal_handlers.LoginInput"
+                            "$ref": "#/definitions/internal_auth.LoginInput"
                         }
                     }
                 ],
@@ -43,13 +43,13 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ThalysSilva_unicast-backend_internal_models.DefaultResponse-github_com_ThalysSilva_unicast-backend_internal_services_LoginResponse"
+                            "$ref": "#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.DefaultResponse-internal_auth_LoginResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ThalysSilva_unicast-backend_internal_models.ErrorResponse"
+                            "$ref": "#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.ErrorResponse"
                         }
                     }
                 }
@@ -104,7 +104,7 @@ const docTemplate = `{
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ThalysSilva_unicast-backend_internal_models.ErrorResponse"
+                            "$ref": "#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.ErrorResponse"
                         }
                     }
                 }
@@ -130,7 +130,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/internal_handlers.RefreshInput"
+                            "$ref": "#/definitions/internal_auth.RefreshInput"
                         }
                     }
                 ],
@@ -138,13 +138,13 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ThalysSilva_unicast-backend_internal_services.RefreshResponse"
+                            "$ref": "#/definitions/internal_auth.RefreshResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ThalysSilva_unicast-backend_internal_models.ErrorResponse"
+                            "$ref": "#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.ErrorResponse"
                         }
                     }
                 }
@@ -170,7 +170,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/internal_handlers.RegisterInput"
+                            "$ref": "#/definitions/internal_auth.RegisterInput"
                         }
                     }
                 ],
@@ -181,7 +181,7 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ThalysSilva_unicast-backend_internal_models.ErrorResponse"
+                            "$ref": "#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.ErrorResponse"
                         }
                     }
                 }
@@ -207,7 +207,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/internal_handlers.MessageInput"
+                            "$ref": "#/definitions/message.MessageInput"
                         }
                     }
                 ],
@@ -215,13 +215,53 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ThalysSilva_unicast-backend_internal_models.DefaultResponse-internal_handlers_MessageDataResponse"
+                            "$ref": "#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.DefaultResponse-message_MessageDataResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ThalysSilva_unicast-backend_internal_models.ErrorResponse"
+                            "$ref": "#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/whatsapp/instance": {
+            "post": {
+                "description": "Cria uma nova instância do WhatsApp para o usuário",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "whatsapp"
+                ],
+                "summary": "Cria uma nova instância do WhatsApp",
+                "parameters": [
+                    {
+                        "description": "User data",
+                        "name": "user",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/internal_whatsapp.createInstanceInput"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.DefaultResponse-internal_whatsapp_createInstanceResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.ErrorResponse"
                         }
                     }
                 }
@@ -229,51 +269,7 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "github_com_ThalysSilva_unicast-backend_internal_models.Attachment": {
-            "type": "object",
-            "properties": {
-                "data": {
-                    "type": "array",
-                    "items": {
-                        "type": "integer"
-                    }
-                },
-                "fileName": {
-                    "type": "string"
-                }
-            }
-        },
-        "github_com_ThalysSilva_unicast-backend_internal_models.DefaultResponse-github_com_ThalysSilva_unicast-backend_internal_services_LoginResponse": {
-            "type": "object",
-            "properties": {
-                "data": {
-                    "$ref": "#/definitions/github_com_ThalysSilva_unicast-backend_internal_services.LoginResponse"
-                },
-                "message": {
-                    "type": "string"
-                }
-            }
-        },
-        "github_com_ThalysSilva_unicast-backend_internal_models.DefaultResponse-internal_handlers_MessageDataResponse": {
-            "type": "object",
-            "properties": {
-                "data": {
-                    "$ref": "#/definitions/internal_handlers.MessageDataResponse"
-                },
-                "message": {
-                    "type": "string"
-                }
-            }
-        },
-        "github_com_ThalysSilva_unicast-backend_internal_models.ErrorResponse": {
-            "type": "object",
-            "properties": {
-                "error": {
-                    "type": "string"
-                }
-            }
-        },
-        "github_com_ThalysSilva_unicast-backend_internal_models_entities.Student": {
+        "github_com_ThalysSilva_unicast-backend_internal_student.Student": {
             "type": "object",
             "properties": {
                 "annotation": {
@@ -292,14 +288,14 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "status": {
-                    "$ref": "#/definitions/github_com_ThalysSilva_unicast-backend_internal_models_entities.StudentStatus"
+                    "$ref": "#/definitions/github_com_ThalysSilva_unicast-backend_internal_student.StudentStatus"
                 },
                 "studentId": {
                     "type": "string"
                 }
             }
         },
-        "github_com_ThalysSilva_unicast-backend_internal_models_entities.StudentStatus": {
+        "github_com_ThalysSilva_unicast-backend_internal_student.StudentStatus": {
             "type": "string",
             "enum": [
                 "ACTIVE",
@@ -314,7 +310,7 @@ const docTemplate = `{
                 "StudentStatusLocked"
             ]
         },
-        "github_com_ThalysSilva_unicast-backend_internal_models_entities.User": {
+        "github_com_ThalysSilva_unicast-backend_internal_user.User": {
             "type": "object",
             "required": [
                 "email",
@@ -332,38 +328,48 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_ThalysSilva_unicast-backend_internal_services.LoginResponse": {
+        "github_com_ThalysSilva_unicast-backend_pkg_api.DefaultResponse-internal_auth_LoginResponse": {
             "type": "object",
             "properties": {
-                "accessToken": {
-                    "type": "string"
+                "data": {
+                    "$ref": "#/definitions/internal_auth.LoginResponse"
                 },
-                "jwe": {
+                "message": {
                     "type": "string"
-                },
-                "refreshToken": {
-                    "type": "string"
-                },
-                "user": {
-                    "$ref": "#/definitions/github_com_ThalysSilva_unicast-backend_internal_models_entities.User"
                 }
             }
         },
-        "github_com_ThalysSilva_unicast-backend_internal_services.RefreshResponse": {
+        "github_com_ThalysSilva_unicast-backend_pkg_api.DefaultResponse-internal_whatsapp_createInstanceResponse": {
             "type": "object",
             "properties": {
-                "accessToken": {
-                    "type": "string"
+                "data": {
+                    "$ref": "#/definitions/internal_whatsapp.createInstanceResponse"
                 },
-                "refreshToken": {
+                "message": {
                     "type": "string"
-                },
-                "user": {
-                    "$ref": "#/definitions/github_com_ThalysSilva_unicast-backend_internal_models_entities.User"
                 }
             }
         },
-        "internal_handlers.LoginInput": {
+        "github_com_ThalysSilva_unicast-backend_pkg_api.DefaultResponse-message_MessageDataResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/message.MessageDataResponse"
+                },
+                "message": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_ThalysSilva_unicast-backend_pkg_api.ErrorResponse": {
+            "type": "object",
+            "properties": {
+                "error": {
+                    "type": "string"
+                }
+            }
+        },
+        "internal_auth.LoginInput": {
             "type": "object",
             "required": [
                 "email",
@@ -378,24 +384,125 @@ const docTemplate = `{
                 }
             }
         },
-        "internal_handlers.MessageDataResponse": {
+        "internal_auth.LoginResponse": {
+            "type": "object",
+            "properties": {
+                "accessToken": {
+                    "type": "string"
+                },
+                "jwe": {
+                    "type": "string"
+                },
+                "refreshToken": {
+                    "type": "string"
+                },
+                "user": {
+                    "$ref": "#/definitions/github_com_ThalysSilva_unicast-backend_internal_user.User"
+                }
+            }
+        },
+        "internal_auth.RefreshInput": {
+            "type": "object",
+            "required": [
+                "refreshToken"
+            ],
+            "properties": {
+                "refreshToken": {
+                    "type": "string"
+                }
+            }
+        },
+        "internal_auth.RefreshResponse": {
+            "type": "object",
+            "properties": {
+                "accessToken": {
+                    "type": "string"
+                },
+                "refreshToken": {
+                    "type": "string"
+                },
+                "user": {
+                    "$ref": "#/definitions/github_com_ThalysSilva_unicast-backend_internal_user.User"
+                }
+            }
+        },
+        "internal_auth.RegisterInput": {
+            "type": "object",
+            "required": [
+                "email",
+                "name",
+                "password"
+            ],
+            "properties": {
+                "email": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "password": {
+                    "type": "string"
+                }
+            }
+        },
+        "internal_whatsapp.createInstanceInput": {
+            "type": "object",
+            "required": [
+                "phone",
+                "userId"
+            ],
+            "properties": {
+                "phone": {
+                    "type": "string"
+                },
+                "userId": {
+                    "type": "string"
+                }
+            }
+        },
+        "internal_whatsapp.createInstanceResponse": {
+            "type": "object",
+            "properties": {
+                "instanceId": {
+                    "type": "string"
+                },
+                "qrCode": {
+                    "type": "string"
+                }
+            }
+        },
+        "message.Attachment": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                },
+                "fileName": {
+                    "type": "string"
+                }
+            }
+        },
+        "message.MessageDataResponse": {
             "type": "object",
             "properties": {
                 "emailsFailed": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/github_com_ThalysSilva_unicast-backend_internal_models_entities.Student"
+                        "$ref": "#/definitions/github_com_ThalysSilva_unicast-backend_internal_student.Student"
                     }
                 },
                 "whatsappFailed": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/github_com_ThalysSilva_unicast-backend_internal_models_entities.Student"
+                        "$ref": "#/definitions/github_com_ThalysSilva_unicast-backend_internal_student.Student"
                     }
                 }
             }
         },
-        "internal_handlers.MessageInput": {
+        "message.MessageInput": {
             "type": "object",
             "required": [
                 "body",
@@ -410,7 +517,7 @@ const docTemplate = `{
                 "attachment": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/github_com_ThalysSilva_unicast-backend_internal_models.Attachment"
+                        "$ref": "#/definitions/message.Attachment"
                     }
                 },
                 "body": {
@@ -435,36 +542,6 @@ const docTemplate = `{
                     }
                 },
                 "whatsapp_id": {
-                    "type": "string"
-                }
-            }
-        },
-        "internal_handlers.RefreshInput": {
-            "type": "object",
-            "required": [
-                "refreshToken"
-            ],
-            "properties": {
-                "refreshToken": {
-                    "type": "string"
-                }
-            }
-        },
-        "internal_handlers.RegisterInput": {
-            "type": "object",
-            "required": [
-                "email",
-                "name",
-                "password"
-            ],
-            "properties": {
-                "email": {
-                    "type": "string"
-                },
-                "name": {
-                    "type": "string"
-                },
-                "password": {
                     "type": "string"
                 }
             }
