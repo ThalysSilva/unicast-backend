@@ -13,17 +13,17 @@ func newNativeRepository(db *sql.DB) Repository {
 }
 
 // Insere uma nova instância de WhatsApp
-func (r *nativeRepository) Create(instance *WhatsAppInstance) error {
+func (r *nativeRepository) Create(phone, instanceName, userID, instanceID string) error {
 	query := `
-        INSERT INTO whatsapp_instances (id, phone, user_id, instance_id)
+        INSERT INTO whatsapp_instances (phone, user_id, instance_id, instance_name)
         VALUES ($1, $2, $3, $4)
     `
-	_, err := r.db.Exec(query, instance.ID, instance.Phone, instance.UserID, instance.InstanceID)
+	_, err := r.db.Exec(query, phone, userID, instanceID, instanceName)
 	return err
 }
 
 // Busca uma instância de WhatsApp pelo ID
-func (r *nativeRepository) FindByID(id string) (*WhatsAppInstance, error) {
+func (r *nativeRepository) FindByID(id string) (*Instance, error) {
 	query := `
         SELECT id, phone, created_at, updated_at, user_id, instance_id
         FROM whatsapp_instances
@@ -31,7 +31,26 @@ func (r *nativeRepository) FindByID(id string) (*WhatsAppInstance, error) {
     `
 	row := r.db.QueryRow(query, id)
 
-	instance := &WhatsAppInstance{}
+	instance := &Instance{}
+	err := row.Scan(&instance.ID, &instance.Phone, &instance.CreatedAt, &instance.UpdatedAt, &instance.UserID, &instance.InstanceID)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return instance, nil
+}
+
+func (r *nativeRepository) FindByPhoneAndUserId(phone, userId string) (*Instance, error) {
+	query := `
+				SELECT id, phone, created_at, updated_at, user_id, instance_id
+				FROM whatsapp_instances
+				WHERE phone = $1 AND user_id = $2
+		`
+	row := r.db.QueryRow(query, phone, userId)
+
+	instance := &Instance{}
 	err := row.Scan(&instance.ID, &instance.Phone, &instance.CreatedAt, &instance.UpdatedAt, &instance.UserID, &instance.InstanceID)
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -43,7 +62,7 @@ func (r *nativeRepository) FindByID(id string) (*WhatsAppInstance, error) {
 }
 
 // Atualiza uma instância de WhatsApp
-func (r *nativeRepository) Update(instance *WhatsAppInstance) error {
+func (r *nativeRepository) Update(instance *Instance) error {
 	query := `
         UPDATE whatsapp_instances
         SET phone = $2, user_id = $3, instance_id = $4

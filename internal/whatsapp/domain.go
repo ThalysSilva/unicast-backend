@@ -5,7 +5,7 @@ import (
 	"time"
 )
 
-type WhatsAppInstance struct {
+type Instance struct {
 	ID         string    `json:"id"`
 	Phone      string    `json:"phone" validate:"required"`
 	CreatedAt  time.Time `json:"-"`
@@ -15,9 +15,10 @@ type WhatsAppInstance struct {
 }
 
 type Repository interface {
-	Create(instance *WhatsAppInstance) error
-	FindByID(id string) (*WhatsAppInstance, error)
-	Update(instance *WhatsAppInstance) error
+	Create(phone, instanceName, userID, instanceID string) error
+	FindByID(id string) (*Instance, error)
+	FindByPhoneAndUserId(phone, userId string) (*Instance, error)
+	Update(instance *Instance) error
 	Delete(id string) error
 }
 
