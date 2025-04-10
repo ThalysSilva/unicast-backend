@@ -11,5 +11,5 @@ Get-Content .env | ForEach-Object {
         [System.Environment]::SetEnvironmentVariable($name, $value)
     }
 }
-swag init -g cmd/main.go --parseDependency --parseInternal
-go run cmd/main.go
+swag init -g cmd/main/main.go --parseDependency --parseInternal
+go run cmd/main/main.go
