@@ -3,6 +3,7 @@ package auth
 import (
 	"crypto/rand"
 	"encoding/json"
+	"errors"
 	"time"
 
 	"github.com/ThalysSilva/unicast-backend/pkg/customerror"
@@ -15,9 +16,9 @@ import (
 
 
 var (
-	ErrTokenNotValid        = customerror.Make("Token inválido", 401)
-	ErrRefreshTokenNotValid = customerror.Make("Refresh token inválido", 401)
-	ErrInvalidJweSecret     = customerror.Make("JWE secret inválido", 401)
+	ErrTokenNotValid        = customerror.Make("Token inválido", 401,  errors.New("ErrTokenNotValid"))
+	ErrRefreshTokenNotValid = customerror.Make("Refresh token inválido", 401, errors.New("ErrRefreshTokenNotValid"))
+	ErrInvalidJweSecret     = customerror.Make("JWE secret inválido", 401, errors.New("ErrInvalidJweSecret"))
 )
 
 func GenerateAccessToken(userID string, userEmail string, secret []byte) (string, error) {

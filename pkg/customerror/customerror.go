@@ -14,17 +14,21 @@ func Trace(context string, err error) error {
 
 type CustomError struct {
 	HttpCode int
+	message  string
 	Err      error
 }
 
 func (e *CustomError) Error() string {
-	return e.Err.Error()
+	fmt.Println("Preparando para mostrar o erro")
+	fmt.Println("CustomError", e.message)
+	return fmt.Sprintf("%s: %s", e.message, e.Err.Error())
 }
 
-func Make(message string, httpCode int) *CustomError {
+func Make(message string, httpCode int, err error) *CustomError {
 	return &CustomError{
 		HttpCode: httpCode,
-		Err:      errors.New(message),
+		Err:      err,
+		message:  message,
 	}
 }
 

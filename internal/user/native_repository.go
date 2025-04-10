@@ -2,6 +2,7 @@ package user
 
 import (
 	"database/sql"
+	"errors"
 
 	"github.com/ThalysSilva/unicast-backend/pkg/customerror"
 	"github.com/lib/pq"
@@ -10,7 +11,7 @@ import (
 type nativeRepository = repository
 
 var (
-	ErrUserAlreadyExists = customerror.Make("Usuário já existe", 409)
+	ErrUserAlreadyExists = customerror.Make("Usuário já existe", 409, errors.New("ErrUserAlreadyExists"))
 )
 
 func newNativeRepository(db *sql.DB) Repository {
@@ -54,11 +55,12 @@ func (r *nativeRepository) FindByID(id string) (*User, error) {
 
 	user := &User{}
 	var refreshToken sql.NullString
-	err := row.Scan(&user.ID, &user.Email, &user.Name, &user.CreatedAt, &user.Password, &refreshToken, &user.Salt)
+	err := row.Scan(&user.ID, &user.Email, &user.Name, &user.CreatedAt, &user.UpdatedAt, &user.Password, &refreshToken, &user.Salt)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
 		}
+		err = customerror.Trace("GetUserByID: ", err)
 		return nil, err
 	}
 

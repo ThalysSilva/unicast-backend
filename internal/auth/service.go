@@ -1,6 +1,8 @@
 package auth
 
 import (
+	"errors"
+
 	"github.com/ThalysSilva/unicast-backend/internal/config"
 	"github.com/ThalysSilva/unicast-backend/internal/encryption"
 	"github.com/ThalysSilva/unicast-backend/internal/user"
@@ -22,17 +24,17 @@ type service struct {
 }
 
 var (
-	ErrUserNotFound         = customerror.Make("User not found", 404)
-	ErrUserAlreadyExists    = customerror.Make("User already exists", 409)
-	ErrInvalidCredentials   = customerror.Make("Invalid credentials", 401)
-	ErrUnauthorized         = customerror.Make("Unauthorized", 401)
-	ErrInternalServer       = customerror.Make("Internal server error", 500)
-	ErrGenerateHash         = customerror.Make("Error generating hash", 500)
-	ErrGenerateSalt         = customerror.Make("Error generating salt", 500)
-	ErrGenerateAccessToken  = customerror.Make("Error generating access token", 500)
-	ErrGenerateRefreshToken = customerror.Make("Error generating refresh token", 500)
-	ErrGenerateJWE          = customerror.Make("Error generating JWE", 500)
-	ErrSaveRefreshToken     = customerror.Make("Error saving refresh token", 500)
+	ErrUserNotFound         = customerror.Make("User not found", 404, errors.New("ErrUserNotFound"))
+	ErrUserAlreadyExists    = customerror.Make("User already exists", 409, errors.New("ErrUserAlreadyExists"))
+	ErrInvalidCredentials   = customerror.Make("Invalid credentials", 401, errors.New("ErrInvalidCredentials"))
+	ErrUnauthorized         = customerror.Make("Unauthorized", 401, errors.New("ErrUnauthorized"))
+	ErrInternalServer       = customerror.Make("Internal server error", 500, errors.New("ErrInternalServer"))
+	ErrGenerateHash         = customerror.Make("Error generating hash", 500, errors.New("ErrGenerateHash"))
+	ErrGenerateSalt         = customerror.Make("Error generating salt", 500, errors.New("ErrGenerateSalt"))
+	ErrGenerateAccessToken  = customerror.Make("Error generating access token", 500, errors.New("ErrGenerateAccessToken"))
+	ErrGenerateRefreshToken = customerror.Make("Error generating refresh token", 500, errors.New("ErrGenerateRefreshToken"))
+	ErrGenerateJWE          = customerror.Make("Error generating JWE", 500, errors.New("ErrGenerateJWE"))
+	ErrSaveRefreshToken     = customerror.Make("Error saving refresh token", 500, errors.New("ErrSaveRefreshToken"))
 )
 
 func NewService(userRepo user.Repository, secrets *config.Secrets) Service {

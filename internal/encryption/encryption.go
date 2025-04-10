@@ -6,12 +6,14 @@ import (
 	"crypto/pbkdf2"
 	"crypto/rand"
 	"crypto/sha256"
+	"errors"
 	"io"
+
 	"github.com/ThalysSilva/unicast-backend/pkg/customerror"
 )
 
 var (
-	ErrSaltSize = customerror.Make("Salt deve ter pelo menos 8 bytes.", 500)
+	ErrSaltSize = customerror.Make("Salt deve ter pelo menos 8 bytes.", 500, errors.New("ErrSaltSize"))
 )
 
 func GenerateSmtpKey(password string, salt []byte) ([]byte, error) {

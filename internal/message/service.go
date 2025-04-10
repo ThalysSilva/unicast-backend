@@ -32,9 +32,9 @@ type service struct {
 }
 
 var (
-	ErrSmtpNotFound     = customerror.Make("smtp não encontrado.", 404)
-	ErrWhatsAppNotFound = customerror.Make("whatsapp não encontrado.", 404)
-	ErrStudentsNotFound = customerror.Make("estudantes não encontrado.", 404)
+	ErrSmtpNotFound     = customerror.Make("smtp não encontrado.", 404, errors.New("ErrSmtpNotFound"))
+	ErrWhatsAppNotFound = customerror.Make("whatsapp não encontrado.", 404, errors.New("ErrWhatsAppNotFound"))
+	ErrStudentsNotFound = customerror.Make("estudantes não encontrado.", 404, errors.New("ErrStudentsNotFound"))
 )
 
 func NewMessageService(whatsAppRepository whatsapp.Repository, smtpRepository smtp.Repository, userRepository user.Repository, studentRepository student.Repository, jweSecret []byte) Service {
