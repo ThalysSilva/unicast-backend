@@ -1,7 +1,15 @@
 Get-Content .env | ForEach-Object {
-    if ($_ -match "^\s*([^#]\S*)=(\S*)$") {
-        [System.Environment]::SetEnvironmentVariable($matches[1], $matches[2])
+    # Ignorar linhas vazias ou que começam com #
+    if ($_ -match "^\s*([^#]\S*?)\s*=\s*(.*?)\s*$") {
+        $name = $matches[1].Trim()
+        $value = $matches[2].Trim()
+
+        # Remover aspas simples ou duplas do valor, se existirem
+        $value = $value -replace '^"(.*)"$', '$1'  
+        $value = $value -replace "^'(.*)'$", '$1'  
+
+        [System.Environment]::SetEnvironmentVariable($name, $value)
     }
 }
-swag init -g cmd/main.go
+swag init -g cmd/main.go --parseDependency --parseInternal
 go run cmd/main.go
