@@ -52,7 +52,7 @@ services:
     image: atendai/evolution-api:v2.1.1
     restart: always
     ports:
-      - "8080:8080"
+      - "${EVOLUTION_PORT}:${EVOLUTION_PORT}"
     env_file:
       - .env
     volumes:
