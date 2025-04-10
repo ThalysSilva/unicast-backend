@@ -1,0 +1,144 @@
+package auth
+
+import (
+	"github.com/ThalysSilva/unicast-backend/internal/config"
+	"github.com/ThalysSilva/unicast-backend/internal/encryption"
+	"github.com/ThalysSilva/unicast-backend/internal/user"
+	"github.com/ThalysSilva/unicast-backend/pkg/customerror"
+
+	"golang.org/x/crypto/bcrypt"
+)
+
+type Service interface {
+	Register(email, password, name string) (userId string, err error)
+	Login(email, password string) (*LoginResponse, error)
+	Logout(userId string) error
+	RefreshToken(refreshToken string) (*RefreshResponse, error)
+}
+
+type service struct {
+	userRepo user.Repository
+	secrets  *config.Secrets
+}
+
+var (
+	ErrUserNotFound         = customerror.Make("User not found", 404)
+	ErrUserAlreadyExists    = customerror.Make("User already exists", 409)
+	ErrInvalidCredentials   = customerror.Make("Invalid credentials", 401)
+	ErrUnauthorized         = customerror.Make("Unauthorized", 401)
+	ErrInternalServer       = customerror.Make("Internal server error", 500)
+	ErrGenerateHash         = customerror.Make("Error generating hash", 500)
+	ErrGenerateSalt         = customerror.Make("Error generating salt", 500)
+	ErrGenerateAccessToken  = customerror.Make("Error generating access token", 500)
+	ErrGenerateRefreshToken = customerror.Make("Error generating refresh token", 500)
+	ErrGenerateJWE          = customerror.Make("Error generating JWE", 500)
+	ErrSaveRefreshToken     = customerror.Make("Error saving refresh token", 500)
+)
+
+func NewService(userRepo user.Repository, secrets *config.Secrets) Service {
+	return &service{userRepo: userRepo, secrets: secrets}
+}
+
+func (s *service) Register(email, password, name string) (userId string, err error) {
+	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		return "", customerror.Trace("Register", ErrGenerateHash)
+	}
+
+	salt, err := GenerateSalt(16)
+	if err != nil {
+		return "", customerror.Trace("Register", ErrGenerateSalt)
+	}
+
+	user := &user.User{
+		Email:    email,
+		Password: string(hash),
+		Name:     name,
+		Salt:     salt,
+	}
+
+	userId, err = s.userRepo.Create(user)
+	if err != nil {
+		return "", customerror.Trace("Register", err)
+	}
+	return userId, err
+}
+
+func (s *service) Login(email, password string) (*LoginResponse, error) {
+	user, err := s.userRepo.FindByEmail(email)
+	if err != nil {
+		return nil, customerror.Trace("Login", err)
+	}
+	if user == nil {
+		return nil, customerror.Trace("Login", ErrUserNotFound)
+	}
+	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password)); err != nil {
+		return nil, customerror.Trace("Login", ErrInvalidCredentials)
+	}
+
+	accessToken, err := GenerateAccessToken(user.ID, user.Email, s.secrets.AccessToken)
+	if err != nil {
+		return nil, customerror.Trace("Login", err)
+	}
+
+	refreshToken, err := GenerateRefreshToken(user.ID, user.Email, s.secrets.RefreshToken)
+	if err != nil {
+		return nil, customerror.Trace("Login", err)
+	}
+
+	smtpKey, err := encryption.GenerateSmtpKey(password, user.Salt)
+	if err != nil {
+		return nil, customerror.Trace("Login", err)
+	}
+
+	jwe, err := GenerateJWE(JwePayload{SmtpKey: string(smtpKey)}, s.secrets.Jwe)
+	if err != nil {
+		return nil, customerror.Trace("Login", err)
+	}
+
+	if err := s.userRepo.SaveRefreshToken(user.ID, refreshToken); err != nil {
+		return nil, customerror.Trace("Login", err)
+	}
+
+	return &LoginResponse{
+		User:         user,
+		AccessToken:  accessToken,
+		RefreshToken: refreshToken,
+		JWE:          jwe,
+	}, nil
+}
+
+func (s *service) RefreshToken(refreshToken string) (*RefreshResponse, error) {
+	claims, err := ValidateToken(refreshToken, s.secrets.RefreshToken)
+	if err != nil {
+		return nil, customerror.Trace("RefreshToken", err)
+	}
+	user, err := s.userRepo.FindByEmail(claims.Email)
+	if err != nil {
+		return nil, customerror.Trace("RefreshToken", err)
+	}
+	if user == nil || *user.RefreshToken != refreshToken {
+		return nil, customerror.Trace("RefreshToken", ErrRefreshTokenNotValid)
+	}
+	newAccessToken, err := GenerateAccessToken(user.ID, user.Email, s.secrets.AccessToken)
+	if err != nil {
+		return nil, customerror.Trace("RefreshToken", err)
+	}
+	newRefreshToken, err := GenerateRefreshToken(user.ID, user.Email, s.secrets.RefreshToken)
+	if err != nil {
+		return nil, customerror.Trace("RefreshToken", err)
+	}
+	if err := s.userRepo.SaveRefreshToken(user.ID, newRefreshToken); err != nil {
+		return nil, customerror.Trace("RefreshToken", err)
+	}
+	return &RefreshResponse{
+		User:         user,
+		AccessToken:  newAccessToken,
+		RefreshToken: newRefreshToken,
+		JWE:          "",
+	}, nil
+}
+
+func (s *service) Logout(userId string) error {
+	return s.userRepo.Logout(userId)
+}
