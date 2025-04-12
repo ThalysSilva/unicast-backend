@@ -1,4 +1,4 @@
-package whatsapp
+package whatsappinstance
 
 import (
 	"database/sql"
@@ -61,6 +61,31 @@ func (r *nativeRepository) FindByPhoneAndUserId(phone, userId string) (*Instance
 		return nil, err
 	}
 	return instance, nil
+}
+
+func (r *nativeRepository) FindAllByUserId(userID string) ([]*Instance, error) {
+	query := `
+				SELECT id, phone, created_at, updated_at, user_id, instance_id
+				FROM whatsapp_instances
+				WHERE user_id = $1
+		`
+	rows, err := r.db.Query(query, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var instances []*Instance
+	for rows.Next() {
+		instance := &Instance{}
+		err := rows.Scan(&instance.ID, &instance.Phone, &instance.CreatedAt, &instance.UpdatedAt, &instance.UserID, &instance.InstanceID)
+		if err != nil {
+			return nil, err
+		}
+		instances = append(instances, instance)
+	}
+
+	return instances, nil
 }
 
 // Atualiza uma instância de WhatsApp

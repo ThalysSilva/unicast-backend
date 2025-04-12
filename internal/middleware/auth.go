@@ -27,7 +27,7 @@ func UseAuthentication(accessTokenSecret []byte) gin.HandlerFunc {
 			c.Abort()
 			return
 		}
-		c.Set("user_id", claims.UserID)
+		c.Set("userID", claims.UserID)
 		c.Next()
 	}
 }

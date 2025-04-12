@@ -1,4 +1,4 @@
-package whatsapp
+package whatsappinstance
 
 import (
 	"errors"
@@ -11,6 +11,7 @@ import (
 
 type Service interface {
 	CreateInstance(userId, Phone string) (instance *Instance, qrCode string, err error)
+	GetInstances(userID string) ([]*Instance, error)
 }
 
 type service struct {
@@ -65,4 +66,15 @@ func (s *service) CreateInstance(userId, phone string) (instance *Instance, qrCo
 		return nil, "", err
 	}
 	return instance, newQrCode, nil
+}
+
+func (s *service) GetInstances(userID string) ([]*Instance, error) {
+	instances, err := s.whatsAppRepository.FindAllByUserId(userID)
+	if err != nil {
+		return nil, err
+	}
+	if len(instances) == 0 {
+		return []*Instance{}, nil
+	}
+	return instances, nil
 }

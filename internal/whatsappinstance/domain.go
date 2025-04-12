@@ -1,4 +1,4 @@
-package whatsapp
+package whatsappinstance
 
 import (
 	"database/sql"
@@ -18,6 +18,7 @@ type Repository interface {
 	Create(phone, userID, instanceID string) error
 	FindByID(id string) (*Instance, error)
 	FindByPhoneAndUserId(phone, userId string) (*Instance, error)
+	FindAllByUserId(userId string) ([]*Instance, error)
 	Update(instance *Instance) error
 	Delete(id string) error
 }
