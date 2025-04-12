@@ -1,4 +1,4 @@
-package smtpinstance
+package smtp
 
 import (
 	"database/sql"

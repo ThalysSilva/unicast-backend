@@ -1,4 +1,4 @@
-package whatsappinstance
+package whatsapp
 
 import (
 	"net/http"

@@ -1,4 +1,4 @@
-package whatsappinstance
+package whatsapp
 
 import (
 	"errors"
@@ -15,14 +15,14 @@ type Service interface {
 }
 
 type service struct {
-	whatsAppRepository Repository
-	userRepository     user.Repository
+	whatsAppInstanceRepository Repository
+	userRepository             user.Repository
 }
 
-func NewService(whatsappRepository Repository, userRepository user.Repository) Service {
+func NewService(whatsappInstanceRepository Repository, userRepository user.Repository) Service {
 	return &service{
-		whatsAppRepository: whatsappRepository,
-		userRepository:     userRepository,
+		whatsAppInstanceRepository: whatsappInstanceRepository,
+		userRepository:             userRepository,
 	}
 }
 
@@ -32,7 +32,7 @@ var (
 )
 
 func (s *service) CreateInstance(userId, phone string) (instance *Instance, qrCode string, err error) {
-	hasInstance, err := s.whatsAppRepository.FindByPhoneAndUserId(phone, userId)
+	hasInstance, err := s.whatsAppInstanceRepository.FindByPhoneAndUserId(phone, userId)
 	if err != nil {
 		return nil, "", err
 	}
@@ -56,12 +56,12 @@ func (s *service) CreateInstance(userId, phone string) (instance *Instance, qrCo
 	}
 	fmt.Println("instanceId", instanceId)
 
-	err = s.whatsAppRepository.Create(phone, userId, instanceId)
+	err = s.whatsAppInstanceRepository.Create(phone, userId, instanceId)
 	if err != nil {
 		return nil, "", err
 	}
 
-	instance, err = s.whatsAppRepository.FindByPhoneAndUserId(phone, userId)
+	instance, err = s.whatsAppInstanceRepository.FindByPhoneAndUserId(phone, userId)
 	if err != nil {
 		return nil, "", err
 	}
@@ -69,7 +69,7 @@ func (s *service) CreateInstance(userId, phone string) (instance *Instance, qrCo
 }
 
 func (s *service) GetInstances(userID string) ([]*Instance, error) {
-	instances, err := s.whatsAppRepository.FindAllByUserId(userID)
+	instances, err := s.whatsAppInstanceRepository.FindAllByUserId(userID)
 	if err != nil {
 		return nil, err
 	}

@@ -10,7 +10,7 @@ import (
 	"github.com/ThalysSilva/unicast-backend/internal/config"
 	"github.com/ThalysSilva/unicast-backend/internal/middleware"
 	"github.com/ThalysSilva/unicast-backend/internal/repository"
-	"github.com/ThalysSilva/unicast-backend/internal/whatsappinstance"
+	"github.com/ThalysSilva/unicast-backend/internal/whatsapp"
 	"github.com/ThalysSilva/unicast-backend/pkg/database"
 
 	"github.com/gin-gonic/gin"
@@ -46,11 +46,11 @@ func main() {
 
 	// Serviços
 	authService := auth.NewService(repos.User, secrets)
-	whatsappService := whatsappinstance.NewService(repos.WhatsAppInstance, repos.User)
+	whatsappService := whatsapp.NewService(repos.WhatsAppInstance, repos.User)
 
 	// Handlers
 	authHandler := auth.NewHandler(authService)
-	whatsappHandler := whatsappinstance.NewHandler(whatsappService)
+	whatsappHandler := whatsapp.NewHandler(whatsappService)
 
 	r := gin.Default()
 

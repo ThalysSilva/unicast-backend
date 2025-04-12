@@ -6,10 +6,10 @@ import (
 
 	"github.com/ThalysSilva/unicast-backend/internal/auth"
 	"github.com/ThalysSilva/unicast-backend/internal/encryption"
-	"github.com/ThalysSilva/unicast-backend/internal/smtpinstance"
+	"github.com/ThalysSilva/unicast-backend/internal/smtp"
 	"github.com/ThalysSilva/unicast-backend/internal/student"
 	"github.com/ThalysSilva/unicast-backend/internal/user"
-	"github.com/ThalysSilva/unicast-backend/internal/whatsappinstance"
+	"github.com/ThalysSilva/unicast-backend/internal/whatsapp"
 	"github.com/ThalysSilva/unicast-backend/pkg/customerror"
 	"github.com/ThalysSilva/unicast-backend/pkg/mailer"
 )
@@ -24,8 +24,8 @@ type Service interface {
 }
 
 type service struct {
-	whatsAppRepository whatsappinstance.Repository
-	smtpRepository     smtpinstance.Repository
+	whatsAppRepository whatsapp.Repository
+	smtpRepository     smtp.Repository
 	userRepository     user.Repository
 	studentRepository  student.Repository
 	jweSecret          []byte
@@ -37,7 +37,7 @@ var (
 	ErrStudentsNotFound = customerror.Make("estudantes não encontrado.", 404, errors.New("ErrStudentsNotFound"))
 )
 
-func NewMessageService(whatsAppRepository whatsappinstance.Repository, smtpRepository smtpinstance.Repository, userRepository user.Repository, studentRepository student.Repository, jweSecret []byte) Service {
+func NewMessageService(whatsAppRepository whatsapp.Repository, smtpRepository smtp.Repository, userRepository user.Repository, studentRepository student.Repository, jweSecret []byte) Service {
 	return &service{
 		whatsAppRepository: whatsAppRepository,
 		smtpRepository:     smtpRepository,
