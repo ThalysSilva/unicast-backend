@@ -24,15 +24,15 @@ type Repositories struct {
 	Student          student.Repository
 }
 
-func NewRepositories(db *sql.DB) *Repositories {
+func NewRepositories(dbSQL *sql.DB) *Repositories {
 	return &Repositories{
-		User:             user.NewRepository(db),
-		Course:           course.NewRepository(db),
-		Enrollment:       enrollment.NewRepository(db),
-		SmtpInstance:     smtp.NewRepository(db),
-		WhatsAppInstance: whatsapp.NewRepository(db),
-		Campus:           campus.NewRepository(db),
-		Program:          program.NewRepository(db),
-		Student:          student.NewRepository(db),
+		User:             user.NewRepository(dbSQL),
+		Course:           course.NewRepository(dbSQL),
+		Enrollment:       enrollment.NewRepository(dbSQL),
+		SmtpInstance:     smtp.NewRepository(dbSQL),
+		WhatsAppInstance: whatsapp.NewRepository(dbSQL),
+		Campus:           campus.NewRepository(dbSQL),
+		Program:          program.NewRepository(dbSQL),
+		Student:          student.NewRepository(dbSQL),
 	}
 }
