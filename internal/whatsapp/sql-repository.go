@@ -4,8 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"strings"
-
 	"github.com/ThalysSilva/unicast-backend/pkg/database"
 )
 
@@ -105,25 +103,14 @@ func (r *sqlRepository) FindAllByUserId(ctx context.Context, userId string) ([]*
 	return instances, nil
 }
 
-func (r *sqlRepository) Update(ctx context.Context, id string, fields map[string]interface{}) error {
-	if len(fields) == 0 {
-		return fmt.Errorf("nenhum campo fornecido para atualização")
+// Atualiza os campos de uma instância no banco de dados. Campos não fornecidos não serão atualizados.
+// Campos: phone, user_id, instance_id
+func (r *sqlRepository) Update(ctx context.Context, id string, fields map[string]any) error {
+	err := database.Update(ctx, r.db, "whatsapp_instances", id, fields)
+	if err != nil {
+		return err
 	}
-
-	setters := make([]string, 0, len(fields))
-	args := make([]interface{}, 0, len(fields)+1)
-	args = append(args, id)
-
-	i := 2
-	for field, value := range fields {
-		setters = append(setters, fmt.Sprintf("%s = $%d", field, i))
-		args = append(args, value)
-		i++
-	}
-
-	query := fmt.Sprintf("UPDATE whatsapp_instances SET %s WHERE id = $1", strings.Join(setters, ", "))
-	_, err := r.db.ExecContext(ctx, query, args...)
-	return err
+	return nil
 }
 
 func (r *sqlRepository) Delete(ctx context.Context, id string) error {

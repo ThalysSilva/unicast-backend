@@ -24,7 +24,7 @@ type Repository interface {
 	FindByID(ctx context.Context, id string) (*Instance, error)
 	FindByPhoneAndUserId(ctx context.Context, phone, userId string) (*Instance, error)
 	FindAllByUserId(ctx context.Context, userId string) ([]*Instance, error)
-	Update(ctx context.Context, id string, fields map[string]interface{}) error
+	Update(ctx context.Context, id string, fields map[string]any) error
 	Delete(ctx context.Context, id string) error
 }
 
