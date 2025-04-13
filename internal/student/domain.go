@@ -1,8 +1,11 @@
 package student
 
 import (
+	"context"
 	"database/sql"
 	"time"
+
+	"github.com/ThalysSilva/unicast-backend/pkg/database"
 )
 
 type StudentStatus string
@@ -28,17 +31,14 @@ type Student struct {
 }
 
 type Repository interface {
-	Create(student *Student) error
-	FindByID(id string) (*Student, error)
-	Update(student *Student) error
-	Delete(id string) error
-	FindByIDs(ids []string) ([]*Student, error)
-}
-
-type repository struct {
-	db *sql.DB
+	database.Transactional
+	Create(ctx context.Context, studentID string, name, phone, email, annotation *string, status StudentStatus) error
+	FindByID(ctx context.Context, id string) (*Student, error)
+	Update(ctx context.Context, id string, fields map[string]any) error
+	Delete(ctx context.Context, id string) error
+	FindByIDs(ctx context.Context, ids []string) ([]*Student, error)
 }
 
 func NewRepository(db *sql.DB) Repository {
-	return newNativeRepository(db)
+	return newSQLRepository(db)
 }

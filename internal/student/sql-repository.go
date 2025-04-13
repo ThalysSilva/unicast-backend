@@ -1,37 +1,56 @@
 package student
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"strings"
+
+	"github.com/ThalysSilva/unicast-backend/pkg/database"
 )
 
 // Gerencia operações de banco para Student
-type nativeRepository = repository
+type sqlRepository struct {
+	db    database.DB
+	sqlDB *sql.DB
+}
 
 // Cia uma nova instância do repositório
-func newNativeRepository(db *sql.DB) Repository {
-	return &nativeRepository{db: db}
+func newSQLRepository(db *sql.DB) Repository {
+	newDb := database.NewSQLTx(db)
+	return &sqlRepository{
+		db: newDb.DB,
+	}
+}
+func (r *sqlRepository) WithTransaction(tx any) any {
+	return &sqlRepository{
+		db:    database.NewSQLTx(nil).WithSQLTransaction(tx).DB,
+		sqlDB: r.sqlDB,
+	}
+}
+
+func (r *sqlRepository) TransactionBackend() any {
+	return r.sqlDB
 }
 
 // Insere um novo estudante
-func (r *nativeRepository) Create(student *Student) error {
+func (r *sqlRepository) Create(ctx context.Context, studentID string, name, phone, email, annotation *string, status StudentStatus) error {
 	query := `
-        INSERT INTO students (id, student_id, name, phone, email, annotation, status)
-        VALUES ($1, $2, $3, $4, $5, $6, $9)
+        INSERT INTO students (student_id, name, phone, email, annotation, status)
+        VALUES ($1, $2, $3, $4, $5, $6)
     `
-	_, err := r.db.Exec(query, student.ID, student.StudentID, student.Name, student.Phone, student.Email, student.Annotation, student.Status)
+	_, err := r.db.ExecContext(ctx, query, studentID, name, phone, email, annotation, status)
 	return err
 }
 
 // Busca um estudante pelo ID
-func (r *nativeRepository) FindByID(id string) (*Student, error) {
+func (r *sqlRepository) FindByID(ctx context.Context, id string) (*Student, error) {
 	query := `
         SELECT id, student_id, name, phone, email, annotation, created_at, updated_at, status
         FROM students
         WHERE id = $1
     `
-	row := r.db.QueryRow(query, id)
+	row := r.db.QueryRowContext(ctx, query, id)
 
 	student := &Student{}
 	var name, phone, email, annotation sql.NullString
@@ -60,7 +79,7 @@ func (r *nativeRepository) FindByID(id string) (*Student, error) {
 
 // Busca estudantes por IDs
 // Se a lista estiver vazia, retorna nil
-func (r *nativeRepository) FindByIDs(studentIds []string) ([]*Student, error) {
+func (r *sqlRepository) FindByIDs(ctx context.Context, studentIds []string) ([]*Student, error) {
 	if len(studentIds) == 0 {
 		return nil, nil
 	}
@@ -78,7 +97,7 @@ func (r *nativeRepository) FindByIDs(studentIds []string) ([]*Student, error) {
 			WHERE id IN (%s)
 	`, strings.Join(placeholders, ","))
 
-	rows, err := r.db.Query(query, args...)
+	rows, err := r.db.QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -110,19 +129,14 @@ func (r *nativeRepository) FindByIDs(studentIds []string) ([]*Student, error) {
 }
 
 // Atualiza um estudante
-func (r *nativeRepository) Update(student *Student) error {
-	query := `
-        UPDATE students
-        SET student_id = $2, name = $3, phone = $4, email = $5, annotation = $6, status = $7
-        WHERE id = $1
-    `
-	_, err := r.db.Exec(query, student.ID, student.StudentID, student.Name, student.Phone, student.Email, student.Annotation, student.Status)
+func (r *sqlRepository) Update(ctx context.Context, id string, fields map[string]any) error {
+	err := database.Update(ctx, r.db, "students", id, fields)
 	return err
 }
 
 // Remove um estudante pelo ID
-func (r *nativeRepository) Delete(id string) error {
+func (r *sqlRepository) Delete(ctx context.Context, id string) error {
 	query := `DELETE FROM students WHERE id = $1`
-	_, err := r.db.Exec(query, id)
+	_, err := r.db.ExecContext(ctx, query, id)
 	return err
 }
