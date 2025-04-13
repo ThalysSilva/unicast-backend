@@ -1,8 +1,11 @@
 package whatsapp
 
 import (
+	"context"
 	"database/sql"
 	"time"
+
+	"github.com/ThalysSilva/unicast-backend/pkg/database"
 )
 
 type Instance struct {
@@ -14,19 +17,17 @@ type Instance struct {
 	InstanceID string    `json:"instanceId"`
 }
 
+// Repository define operações para instâncias WhatsApp.
 type Repository interface {
-	Create(phone, userID, instanceID string) error
-	FindByID(id string) (*Instance, error)
-	FindByPhoneAndUserId(phone, userId string) (*Instance, error)
-	FindAllByUserId(userId string) ([]*Instance, error)
-	Update(instance *Instance) error
-	Delete(id string) error
-}
-
-type repository struct {
-	db *sql.DB
+	database.Transactional
+	Create(ctx context.Context, phone, userID, instanceID string) error
+	FindByID(ctx context.Context, id string) (*Instance, error)
+	FindByPhoneAndUserId(ctx context.Context, phone, userId string) (*Instance, error)
+	FindAllByUserId(ctx context.Context, userId string) ([]*Instance, error)
+	Update(ctx context.Context, id string, fields map[string]interface{}) error
+	Delete(ctx context.Context, id string) error
 }
 
 func NewRepository(db *sql.DB) Repository {
-	return newNativeRepository(db)
+	return newSQLRepository(db)
 }

@@ -51,7 +51,7 @@ func (h *handler) CreateInstance() gin.HandlerFunc {
 			c.Error(err)
 			return
 		}
-		instance, qrCode, err := h.service.CreateInstance(input.UserID, input.Phone)
+		instance, qrCode, err := h.service.CreateInstance(c.Request.Context(), input.UserID, input.Phone)
 		if err != nil {
 			customerror.HandleResponse(c, err)
 			return
@@ -67,7 +67,6 @@ func (h *handler) CreateInstance() gin.HandlerFunc {
 	}
 }
 
-
 // @OperationId getInstances
 // @Summary Busca todas as instâncias do WhatsApp
 // @Description Busca todas as instâncias do WhatsApp para o usuário
@@ -81,7 +80,7 @@ func (h *handler) CreateInstance() gin.HandlerFunc {
 func (h *handler) GetInstances() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		userID := c.GetString("userId")
-		instance, err := h.service.GetInstances(userID)
+		instance, err := h.service.GetInstances(c.Request.Context(), userID)
 		if err != nil {
 			customerror.HandleResponse(c, err)
 			return

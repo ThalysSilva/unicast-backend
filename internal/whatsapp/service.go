@@ -1,28 +1,30 @@
 package whatsapp
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"net/http"
 
 	"github.com/ThalysSilva/unicast-backend/internal/user"
 	"github.com/ThalysSilva/unicast-backend/pkg/customerror"
+	"github.com/ThalysSilva/unicast-backend/pkg/database"
 )
 
 type Service interface {
-	CreateInstance(userId, Phone string) (instance *Instance, qrCode string, err error)
-	GetInstances(userID string) ([]*Instance, error)
+	CreateInstance(ctx context.Context, userId, phone string) (*Instance, string, error)
+	GetInstances(ctx context.Context, userID string) ([]*Instance, error)
 }
 
 type service struct {
-	whatsAppInstanceRepository Repository
+	whatsappInstanceRepository Repository
 	userRepository             user.Repository
 }
 
-func NewService(whatsappInstanceRepository Repository, userRepository user.Repository) Service {
+func NewService(whatsappRepo Repository, userRepo user.Repository) Service {
 	return &service{
-		whatsAppInstanceRepository: whatsappInstanceRepository,
-		userRepository:             userRepository,
+		whatsappInstanceRepository: whatsappRepo,
+		userRepository:             userRepo,
 	}
 }
 
@@ -31,45 +33,63 @@ var (
 	UserNotFound       = customerror.Make("Usuário não encontrado", http.StatusNotFound, errors.New("userNotFound"))
 )
 
-func (s *service) CreateInstance(userId, phone string) (instance *Instance, qrCode string, err error) {
-	hasInstance, err := s.whatsAppInstanceRepository.FindByPhoneAndUserId(phone, userId)
+func (s *service) CreateInstance(ctx context.Context, userId, phone string) (*Instance, string, error) {
+	var instance *Instance
+	var qrCode string
+
+	err := database.MakeTransaction(ctx, []database.Transactional{s.whatsappInstanceRepository, s.userRepository}, func() error {
+		hasInstance, err := s.whatsappInstanceRepository.FindByPhoneAndUserId(ctx, phone, userId)
+		if err != nil {
+			return fmt.Errorf("falha ao verificar instância existente: %w", err)
+		}
+		if hasInstance != nil {
+			return customerror.Trace("CreateInstance", HasAlreadyInstance)
+		}
+
+		user, err := s.userRepository.FindByID(ctx, userId)
+		if err != nil {
+			return fmt.Errorf("falha ao buscar usuário: %w", err)
+		}
+		if user == nil {
+			return customerror.Trace("CreateInstance", UserNotFound)
+		}
+
+		instanceName := user.Email + ":" + phone
+		instanceId, newQrCode, err := createEvolutionInstance(phone, instanceName, true)
+		if err != nil {
+			return customerror.Trace("CreateInstance", err)
+		}
+
+		err = s.whatsappInstanceRepository.Create(ctx, phone, userId, instanceId)
+		if err != nil {
+			// deleteEvolutionInstance(instanceId)
+			return fmt.Errorf("falha ao criar instância: %w", err)
+		}
+
+		instance, err = s.whatsappInstanceRepository.FindByPhoneAndUserId(ctx, phone, userId)
+		if err != nil {
+			return fmt.Errorf("falha ao buscar instância criada: %w", err)
+		}
+
+		qrCode = newQrCode
+		return nil
+	})
+
 	if err != nil {
 		return nil, "", err
 	}
-	if hasInstance != nil {
-		return nil, "", customerror.Trace("CreateInstance", HasAlreadyInstance)
-	}
-	user, err := s.userRepository.FindByID(userId)
+
+	// Verifica contexto normal (*sql.DB)
+	_, err = s.whatsappInstanceRepository.FindByID(ctx, "non-existent")
 	if err != nil {
-		return nil, "", err
-	}
-	if user == nil {
-
-		return nil, "", customerror.Trace("CreateInstance", UserNotFound)
+		fmt.Printf("Pós-transação usa *sql.DB: %v\n", err)
 	}
 
-	instanceName := user.Email + ":" + phone
-
-	instanceId, newQrCode, err := createEvolutionInstance(phone, instanceName, true)
-	if err != nil {
-		return nil, "", customerror.Trace("CreateInstance", err)
-	}
-	fmt.Println("instanceId", instanceId)
-
-	err = s.whatsAppInstanceRepository.Create(phone, userId, instanceId)
-	if err != nil {
-		return nil, "", err
-	}
-
-	instance, err = s.whatsAppInstanceRepository.FindByPhoneAndUserId(phone, userId)
-	if err != nil {
-		return nil, "", err
-	}
-	return instance, newQrCode, nil
+	return instance, qrCode, nil
 }
 
-func (s *service) GetInstances(userID string) ([]*Instance, error) {
-	instances, err := s.whatsAppInstanceRepository.FindAllByUserId(userID)
+func (s *service) GetInstances(ctx context.Context, userID string) ([]*Instance, error) {
+	instances, err := s.whatsappInstanceRepository.FindAllByUserId(ctx, userID)
 	if err != nil {
 		return nil, err
 	}
