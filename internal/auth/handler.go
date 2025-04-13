@@ -47,7 +47,7 @@ func (s *handler) Register() gin.HandlerFunc {
 			c.Error(err)
 			return
 		}
-		if _, err := s.service.Register(input.Email, input.Password, input.Name); err != nil {
+		if _, err := s.service.Register(c.Request.Context(), input.Email, input.Password, input.Name); err != nil {
 			customerror.HandleResponse(c, err)
 			return
 		}
@@ -78,7 +78,7 @@ func (s *handler) Login() gin.HandlerFunc {
 			c.Error(err)
 			return
 		}
-		loginResponse, err := s.service.Login(input.Email, input.Password)
+		loginResponse, err := s.service.Login(c.Request.Context(), input.Email, input.Password)
 		if err != nil {
 			customerror.HandleResponse(c, err)
 			return
@@ -105,7 +105,7 @@ func (s *handler) Login() gin.HandlerFunc {
 func (s *handler) Logout() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		userId, _ := c.Get("user_id")
-		if err := s.service.Logout(userId.(string)); err != nil {
+		if err := s.service.Logout(c.Request.Context(), userId.(string)); err != nil {
 			customerror.HandleResponse(c, err)
 		}
 		c.JSON(http.StatusOK, gin.H{"message": "Usuário deslogado com sucesso."})
@@ -134,7 +134,7 @@ func (s *handler) Refresh() gin.HandlerFunc {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
 		}
-		response, err := s.service.RefreshToken(input.RefreshToken)
+		response, err := s.service.RefreshToken(c.Request.Context(), input.RefreshToken)
 		if err != nil {
 			customerror.HandleResponse(c, err)
 		}

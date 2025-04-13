@@ -1,6 +1,7 @@
 package message
 
 import (
+	"context"
 	"errors"
 	"time"
 
@@ -20,7 +21,7 @@ type SendResponse struct {
 }
 
 type Service interface {
-	Send(message *Message) (emailsFails, whatsappFails *[]student.Student, err error)
+	Send(ctx context.Context, message *Message) (emailsFails, whatsappFails *[]student.Student, err error)
 }
 
 type service struct {
@@ -68,7 +69,7 @@ func extractEmailFailedStudents(err error, students []*student.Student) ([]stude
 	return nil, err
 }
 
-func (s *service) Send(message *Message) (emailsFails, whatsappFails *[]student.Student, err error) {
+func (s *service) Send(ctx context.Context, message *Message) (emailsFails, whatsappFails *[]student.Student, err error) {
 	students, err := s.studentRepository.FindByIDs(message.To)
 	if err != nil {
 		return nil, nil, customerror.Trace("Send", err)
@@ -77,7 +78,7 @@ func (s *service) Send(message *Message) (emailsFails, whatsappFails *[]student.
 		return nil, nil, customerror.Trace("Send", ErrStudentsNotFound)
 	}
 
-	smtp, err := s.smtpRepository.FindByID(message.SmtpId)
+	smtp, err := s.smtpRepository.FindByID(ctx, message.SmtpId)
 	if err != nil {
 		return nil, nil, customerror.Trace("Send", err)
 	}
@@ -85,7 +86,7 @@ func (s *service) Send(message *Message) (emailsFails, whatsappFails *[]student.
 		return nil, nil, customerror.Trace("Send", ErrSmtpNotFound)
 	}
 
-	whatsapp, err := s.whatsAppRepository.FindByID(message.WhatsappId)
+	whatsapp, err := s.whatsAppRepository.FindByID(ctx, message.WhatsappId)
 	if err != nil {
 		return nil, nil, customerror.Trace("Send", err)
 	}

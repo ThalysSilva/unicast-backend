@@ -40,7 +40,7 @@ func (h *handler) Send() gin.HandlerFunc {
 			return
 		}
 
-		emailsFailed, whatsappFailed, err := h.service.Send(&Message{
+		emailsFailed, whatsappFailed, err := h.service.Send(c.Request.Context(), &Message{
 			Jwe:         input.Jwe,
 			To:          input.To,
 			From:        input.From,

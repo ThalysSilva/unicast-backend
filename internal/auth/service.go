@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"context"
 	"errors"
 
 	"github.com/ThalysSilva/unicast-backend/internal/config"
@@ -12,10 +13,10 @@ import (
 )
 
 type Service interface {
-	Register(email, password, name string) (userId string, err error)
-	Login(email, password string) (*LoginResponse, error)
-	Logout(userId string) error
-	RefreshToken(refreshToken string) (*RefreshResponse, error)
+	Register(ctx context.Context, email, password, name string) (userId string, err error)
+	Login(ctx context.Context, email, password string) (*LoginResponse, error)
+	Logout(ctx context.Context, userId string) error
+	RefreshToken(ctx context.Context, refreshToken string) (*RefreshResponse, error)
 }
 
 type service struct {
@@ -41,7 +42,7 @@ func NewService(userRepo user.Repository, secrets *config.Secrets) Service {
 	return &service{userRepo: userRepo, secrets: secrets}
 }
 
-func (s *service) Register(email, password, name string) (userId string, err error) {
+func (s *service) Register(ctx context.Context, email, password, name string) (userId string, err error) {
 	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
 		return "", customerror.Trace("Register", ErrGenerateHash)
@@ -59,15 +60,15 @@ func (s *service) Register(email, password, name string) (userId string, err err
 		Salt:     salt,
 	}
 
-	userId, err = s.userRepo.Create(user)
+	userId, err = s.userRepo.Create(ctx, user)
 	if err != nil {
 		return "", customerror.Trace("Register", err)
 	}
 	return userId, err
 }
 
-func (s *service) Login(email, password string) (*LoginResponse, error) {
-	user, err := s.userRepo.FindByEmail(email)
+func (s *service) Login(ctx context.Context, email, password string) (*LoginResponse, error) {
+	user, err := s.userRepo.FindByEmail(ctx, email)
 	if err != nil {
 		return nil, customerror.Trace("Login", err)
 	}
@@ -98,7 +99,7 @@ func (s *service) Login(email, password string) (*LoginResponse, error) {
 		return nil, customerror.Trace("Login", err)
 	}
 
-	if err := s.userRepo.SaveRefreshToken(user.ID, refreshToken); err != nil {
+	if err := s.userRepo.SaveRefreshToken(ctx, user.ID, refreshToken); err != nil {
 		return nil, customerror.Trace("Login", err)
 	}
 
@@ -110,12 +111,12 @@ func (s *service) Login(email, password string) (*LoginResponse, error) {
 	}, nil
 }
 
-func (s *service) RefreshToken(refreshToken string) (*RefreshResponse, error) {
+func (s *service) RefreshToken(ctx context.Context, refreshToken string) (*RefreshResponse, error) {
 	claims, err := ValidateToken(refreshToken, s.secrets.RefreshToken)
 	if err != nil {
 		return nil, customerror.Trace("RefreshToken", err)
 	}
-	user, err := s.userRepo.FindByEmail(claims.Email)
+	user, err := s.userRepo.FindByEmail(ctx, claims.Email)
 	if err != nil {
 		return nil, customerror.Trace("RefreshToken", err)
 	}
@@ -130,7 +131,7 @@ func (s *service) RefreshToken(refreshToken string) (*RefreshResponse, error) {
 	if err != nil {
 		return nil, customerror.Trace("RefreshToken", err)
 	}
-	if err := s.userRepo.SaveRefreshToken(user.ID, newRefreshToken); err != nil {
+	if err := s.userRepo.SaveRefreshToken(ctx, user.ID, newRefreshToken); err != nil {
 		return nil, customerror.Trace("RefreshToken", err)
 	}
 	return &RefreshResponse{
@@ -141,6 +142,6 @@ func (s *service) RefreshToken(refreshToken string) (*RefreshResponse, error) {
 	}, nil
 }
 
-func (s *service) Logout(userId string) error {
-	return s.userRepo.Logout(userId)
+func (s *service) Logout(ctx context.Context, userId string) error {
+	return s.userRepo.Logout(ctx,userId)
 }
