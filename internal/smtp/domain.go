@@ -1,11 +1,14 @@
 package smtp
 
 import (
+	"context"
 	"database/sql"
 	"time"
+
+	"github.com/ThalysSilva/unicast-backend/pkg/database"
 )
 
-type SmtpInstance struct {
+type Instance struct {
 	ID        string    `json:"id"`
 	Host      string    `json:"host" validate:"required"`
 	Port      int       `json:"port" validate:"required"`
@@ -18,10 +21,12 @@ type SmtpInstance struct {
 }
 
 type Repository interface {
-	Create(instance *SmtpInstance) error
-	FindByID(id string) (*SmtpInstance, error)
-	Update(instance *SmtpInstance) error
-	Delete(id string) error
+	database.Transactional
+	Create(ctx context.Context, userID, email, password, host string, port int, iv []byte) error
+	FindByID(ctx context.Context, id string) (*Instance, error)
+	Update(ctx context.Context, id int, fields map[string]interface{}) error
+	Delete(ctx context.Context, id string) error
+	GetInstances(ctx context.Context, userID string) ([]*Instance, error)
 }
 
 type repository struct {
@@ -29,5 +34,5 @@ type repository struct {
 }
 
 func NewRepository(db *sql.DB) Repository {
-	return newNativeRepository(db)
+	return newSQLRepository(db)
 }
