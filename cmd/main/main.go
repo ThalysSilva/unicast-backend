@@ -1,6 +1,7 @@
 package main
 
 import (
+	"database/sql"
 	"encoding/hex"
 	"log"
 	"os"
@@ -17,9 +18,10 @@ import (
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
 )
-
+var db *sql.DB
 func main() {
-	if err := database.InitDB(); err != nil {
+	db, err := database.InitDB()
+	if err != nil {
 		log.Fatal(err)
 	}
 
@@ -42,7 +44,7 @@ func main() {
 	port := os.Getenv("API_PORT")
 
 	// Repositórios
-	repos := repository.NewRepositories(database.DB)
+	repos := repository.NewRepositories(db)
 
 	// Serviços
 	authService := auth.NewService(repos.User, secrets)
