@@ -19,10 +19,7 @@ type Program struct {
 }
 
 type Repository interface {
-<<<<<<< HEAD
 	database.Transactional
-=======
->>>>>>> 53083d87c3d641b1d816d3b613aa59212381947a
 	Create(ctx context.Context, name, description, campusID string, active bool) error
 	FindByID(ctx context.Context, id string) (*Program, error)
 	Update(ctx context.Context, id string, fields map[string]any) error
