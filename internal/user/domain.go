@@ -1,8 +1,11 @@
 package user
 
 import (
+	"context"
 	"database/sql"
 	"time"
+
+	"github.com/ThalysSilva/unicast-backend/pkg/database"
 )
 
 type User struct {
@@ -17,17 +20,15 @@ type User struct {
 }
 
 type Repository interface {
-	Create(user *User) (userId string, err error)
-	FindByEmail(email string) (*User, error)
-	SaveRefreshToken(userId string, refreshToken string) error
-	Logout(userId string) error
-	FindByID(id string) (*User, error)
+	database.Transactional
+	Create(ctx context.Context, user *User) (userId string, err error)
+	FindByEmail(ctx context.Context, email string) (*User, error)
+	SaveRefreshToken(ctx context.Context, userId string, refreshToken string) error
+	Logout(ctx context.Context, userId string) error
+	FindByID(ctx context.Context, id string) (*User, error)
 }
 
-type repository struct {
-	db *sql.DB
-}
 
 func NewRepository(db *sql.DB) Repository {
-	return newNativeRepository(db)
+	return newSQLRepository(db)
 }
