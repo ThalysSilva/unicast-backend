@@ -1,6 +1,7 @@
 package program
 
 import (
+	"context"
 	"database/sql"
 	"time"
 )
@@ -16,10 +17,10 @@ type Program struct {
 }
 
 type Repository interface {
-	Create(program *Program) error
-	FindByID(id string) (*Program, error)
-	Update(program *Program) error
-	Delete(id string) error
+	Create(ctx context.Context, name, description, campusID string, active bool) error
+	FindByID(ctx context.Context, id string) (*Program, error)
+	Update(ctx context.Context, id string, fields map[string]any) error
+	Delete(ctx context.Context, id string) error
 }
 
 type repository struct {
@@ -27,5 +28,5 @@ type repository struct {
 }
 
 func NewRepository(db *sql.DB) Repository {
-	return newNativeRepository(db)
+	return newSQLRepository(db)
 }
