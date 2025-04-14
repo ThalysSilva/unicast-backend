@@ -70,7 +70,7 @@ func extractEmailFailedStudents(err error, students []*student.Student) ([]stude
 }
 
 func (s *service) Send(ctx context.Context, message *Message) (emailsFails, whatsappFails *[]student.Student, err error) {
-	students, err := s.studentRepository.FindByIDs(message.To)
+	students, err := s.studentRepository.FindByIDs(ctx, message.To)
 	if err != nil {
 		return nil, nil, customerror.Trace("Send", err)
 	}
