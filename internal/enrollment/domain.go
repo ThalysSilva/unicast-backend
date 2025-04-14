@@ -1,8 +1,11 @@
 package enrollment
 
 import (
+	"context"
 	"database/sql"
 	"time"
+
+	"github.com/ThalysSilva/unicast-backend/pkg/database"
 )
 
 type Enrollment struct {
@@ -14,10 +17,11 @@ type Enrollment struct {
 }
 
 type Repository interface {
-	Create(enrollment *Enrollment) error
-	FindByID(id string) (*Enrollment, error)
-	Update(enrollment *Enrollment) error
-	Delete(id string) error
+	database.Transactional
+	Create(ctx context.Context, courseID, studentID string) error
+	FindByID(ctx context.Context, cid string) (*Enrollment, error)
+	Update(ctx context.Context, id string, fields map[string]any) error
+	Delete(ctx context.Context, cid string) error
 }
 
 type repository struct {
@@ -25,5 +29,5 @@ type repository struct {
 }
 
 func NewRepository(db *sql.DB) Repository {
-	return newNativeRepository(db)
+	return newSQLRepository(db)
 }
