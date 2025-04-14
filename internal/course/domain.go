@@ -1,8 +1,11 @@
 package course
 
 import (
+	"context"
 	"database/sql"
 	"time"
+
+	"github.com/ThalysSilva/unicast-backend/pkg/database"
 )
 
 type Course struct {
@@ -17,16 +20,13 @@ type Course struct {
 }
 
 type Repository interface {
-	Create(course *Course) error
-	FindByID(id string) (*Course, error)
-	Update(course *Course) error
-	Delete(id string) error
-}
-
-type repository struct {
-	db *sql.DB
+	database.Transactional
+	Create(ctx context.Context, name, description, programID string, year, semester int) error
+	FindByID(ctx context.Context, id string) (*Course, error)
+	Update(ctx context.Context, id string, fields map[string]any) error
+	Delete(ctx context.Context, id string) error
 }
 
 func NewRepository(db *sql.DB) Repository {
-	return newNativeRepository(db)
+	return newSQLRepository(db)
 }
