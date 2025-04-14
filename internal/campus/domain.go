@@ -1,8 +1,11 @@
 package campus
 
 import (
+	"context"
 	"database/sql"
 	"time"
+
+	"github.com/ThalysSilva/unicast-backend/pkg/database"
 )
 
 type Campus struct {
@@ -14,17 +17,14 @@ type Campus struct {
 	UserOwnerID string    `json:"-"`
 }
 
-type repository struct {
-	db *sql.DB
-}
-
 type Repository interface {
-	Create(program *Campus) error
-	FindByID(id string) (*Campus, error)
-	Update(program *Campus) error
-	Delete(id string) error
+	database.Transactional
+	Create(ctx context.Context, name, description, userOwnerID string) error
+	FindByID(ctx context.Context, id string) (*Campus, error)
+	Update(ctx context.Context, id string, fields map[string]any) error
+	Delete(ctx context.Context, id string) error
 }
 
 func NewRepository(db *sql.DB) Repository {
-	return newNativeRepository(db)
+	return newSQLRepository(db)
 }
