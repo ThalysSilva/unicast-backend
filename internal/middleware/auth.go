@@ -1,10 +1,10 @@
 package middleware
 
 import (
-	"net/http"
-	"strings"
 	"github.com/ThalysSilva/unicast-backend/internal/auth"
 	"github.com/gin-gonic/gin"
+	"net/http"
+	"strings"
 )
 
 func UseAuthentication(accessTokenSecret []byte) gin.HandlerFunc {
@@ -28,6 +28,7 @@ func UseAuthentication(accessTokenSecret []byte) gin.HandlerFunc {
 			return
 		}
 		c.Set("userID", claims.UserID)
+		c.Set("email", claims.Email)
 		c.Next()
 	}
 }
