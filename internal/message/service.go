@@ -99,7 +99,7 @@ func (s *service) Send(ctx context.Context, message *Message) (emailsFails, what
 		return nil, nil, customerror.Trace("Send", err)
 	}
 
-	decryptedSmtpPassword, err := encryption.DecryptSmtpPassword([]byte(smtp.Password), []byte(decryptedJwe.SmtpKey), []byte(smtp.IV))
+	decryptedSmtpPassword, err := encryption.DecryptSmtpPassword([]byte(smtp.Password), []byte(decryptedJwe.SmtpKeyEncoded), []byte(smtp.IV))
 	sender := mailer.NewEmailSender(mailer.SmtpAuthentication{
 		Host:     smtp.Host,
 		Port:     smtp.Port,

@@ -19,7 +19,7 @@ type RefreshResponse struct {
 	JWE          string     `json:"-"`
 }
 type JwePayload struct {
-	SmtpKey string `json:"smtpKey"`
+	SmtpKeyEncoded string `json:"smtpKey"`
 }
 
 type Claims struct {
