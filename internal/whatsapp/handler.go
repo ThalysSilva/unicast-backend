@@ -1,6 +1,7 @@
 package whatsapp
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/ThalysSilva/unicast-backend/pkg/api"
@@ -16,6 +17,11 @@ type createInstanceInput struct {
 type createInstanceResponse struct {
 	InstanceID string `json:"instanceId"`
 	QrCode     string `json:"qrCode"`
+}
+
+type getInstancesResponse struct {
+	Instances []*Instance `json:"instances"`
+	UserEmail string      `json:"userEmail"`
 }
 
 type handler struct {
@@ -73,27 +79,30 @@ func (h *handler) CreateInstance() gin.HandlerFunc {
 // @Tags whatsapp
 // @Accept json
 // @Produce json
-// @Success 200 {object} api.DefaultResponse[[]*Instance]
+// @Success 200 {object} api.DefaultResponse[getInstancesResponse
 // @Failure 400 {object} api.ErrorResponse
 // @Router /whatsapp/instances [get]
 // @Security Bearer
 func (h *handler) GetInstances() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		userID := c.GetString("userId")
-		instance, err := h.service.GetInstances(c.Request.Context(), userID)
+		userID := c.GetString("userID")
+		fmt.Println("userID", userID)
+		instances, err := h.service.GetInstances(c.Request.Context(), userID)
 		if err != nil {
 			customerror.HandleResponse(c, err)
 			return
 		}
-		if instance == nil {
-			c.JSON(http.StatusOK, api.DefaultResponse[[]*Instance]{
+		if instances == nil {
+			response := getInstancesResponse{Instances: []*Instance{}, UserEmail: c.GetString("email")}
+			c.JSON(http.StatusOK, api.DefaultResponse[getInstancesResponse]{
 				Message: "Instância encontrada com sucesso.",
-				Data:    []*Instance{},
+				Data:    response,
 			})
 		}
-		c.JSON(http.StatusOK, api.DefaultResponse[[]*Instance]{
+		response := getInstancesResponse{Instances: instances, UserEmail: c.GetString("email")}
+		c.JSON(http.StatusOK, api.DefaultResponse[getInstancesResponse]{
 			Message: "Instância encontrada com sucesso.",
-			Data:    instance,
+			Data:    response,
 		})
 	}
 }
