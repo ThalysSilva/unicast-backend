@@ -2,6 +2,7 @@ package auth
 
 import (
 	"context"
+	"encoding/base64"
 	"errors"
 
 	"github.com/ThalysSilva/unicast-backend/internal/config"
@@ -13,9 +14,9 @@ import (
 )
 
 type Service interface {
-	Register(ctx context.Context, email, password, name string) (userId string, err error)
+	Register(ctx context.Context, email, password, name string) (userID string, err error)
 	Login(ctx context.Context, email, password string) (*LoginResponse, error)
-	Logout(ctx context.Context, userId string) error
+	Logout(ctx context.Context, userID string) error
 	RefreshToken(ctx context.Context, refreshToken string) (*RefreshResponse, error)
 }
 
@@ -42,7 +43,7 @@ func NewService(userRepo user.Repository, secrets *config.Secrets) Service {
 	return &service{userRepo: userRepo, secrets: secrets}
 }
 
-func (s *service) Register(ctx context.Context, email, password, name string) (userId string, err error) {
+func (s *service) Register(ctx context.Context, email, password, name string) (userID string, err error) {
 	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
 		return "", customerror.Trace("Register", ErrGenerateHash)
@@ -60,11 +61,11 @@ func (s *service) Register(ctx context.Context, email, password, name string) (u
 		Salt:     salt,
 	}
 
-	userId, err = s.userRepo.Create(ctx, user)
+	userID, err = s.userRepo.Create(ctx, user)
 	if err != nil {
 		return "", customerror.Trace("Register", err)
 	}
-	return userId, err
+	return userID, err
 }
 
 func (s *service) Login(ctx context.Context, email, password string) (*LoginResponse, error) {
@@ -94,7 +95,9 @@ func (s *service) Login(ctx context.Context, email, password string) (*LoginResp
 		return nil, customerror.Trace("Login", err)
 	}
 
-	jwe, err := GenerateJWE(JwePayload{SmtpKey: string(smtpKey)}, s.secrets.Jwe)
+	smtpKeyEncoded := base64.StdEncoding.EncodeToString(smtpKey)
+
+	jwe, err := GenerateJWE(JwePayload{SmtpKeyEncoded: smtpKeyEncoded}, s.secrets.Jwe)
 	if err != nil {
 		return nil, customerror.Trace("Login", err)
 	}
@@ -142,6 +145,6 @@ func (s *service) RefreshToken(ctx context.Context, refreshToken string) (*Refre
 	}, nil
 }
 
-func (s *service) Logout(ctx context.Context, userId string) error {
-	return s.userRepo.Logout(ctx,userId)
+func (s *service) Logout(ctx context.Context, userID string) error {
+	return s.userRepo.Logout(ctx, userID)
 }
