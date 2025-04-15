@@ -11,6 +11,7 @@ import (
 	"github.com/ThalysSilva/unicast-backend/internal/config"
 	"github.com/ThalysSilva/unicast-backend/internal/middleware"
 	"github.com/ThalysSilva/unicast-backend/internal/repository"
+	"github.com/ThalysSilva/unicast-backend/internal/smtp"
 	"github.com/ThalysSilva/unicast-backend/internal/whatsapp"
 	"github.com/ThalysSilva/unicast-backend/pkg/database"
 
@@ -49,10 +50,12 @@ func main() {
 	// Serviços
 	authService := auth.NewService(repos.User, secrets)
 	whatsappService := whatsapp.NewService(repos.WhatsAppInstance, repos.User)
+	smtpService := smtp.NewService(repos.SmtpInstance)
 
 	// Handlers
 	authHandler := auth.NewHandler(authService)
 	whatsappHandler := whatsapp.NewHandler(whatsappService)
+	smtpHandler := smtp.NewHandler(smtpService)
 
 	r := gin.Default()
 
@@ -75,6 +78,13 @@ func main() {
 		whatsappGroup.Use(middleware.UseAuthentication(secrets.AccessToken))
 		whatsappGroup.POST("/instance", whatsappHandler.CreateInstance())
 		whatsappGroup.GET("/instance", whatsappHandler.GetInstances())
+	}
+
+	smtpGroup := r.Group("/smtp")
+	{
+		smtpGroup.Use(middleware.UseAuthentication(secrets.AccessToken))
+		smtpGroup.POST("/instance", smtpHandler.Create(secrets.Jwe))
+		smtpGroup.GET("/instance", whatsappHandler.GetInstances())
 	}
 
 	// Swagger

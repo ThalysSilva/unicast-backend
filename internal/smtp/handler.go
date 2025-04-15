@@ -6,8 +6,16 @@ type handler struct {
 	service Service
 }
 
+type createInstanceInput struct {
+	Email    string `json:"email" binding:"required,email"`
+	Password string `json:"password" binding:"required"`
+	Host     string `json:"host" binding:"required"`
+	Port     int    `json:"port" binding:"required"`
+	Jwe      string `json:"jwe" binding:"required"`
+}
+
 type Handler interface {
-	Create() gin.HandlerFunc
+	Create(jweSecret []byte) gin.HandlerFunc
 	GetInstances() gin.HandlerFunc
 }
 
@@ -17,9 +25,21 @@ func NewHandler(service Service) Handler {
 	}
 }
 
-func (h *handler) Create() gin.HandlerFunc {
+func (h *handler) Create(jweSecret []byte) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		// Implementation for creating an SMTP instance
+		var input createInstanceInput
+		if err := c.ShouldBindJSON(&input); err != nil {
+			c.Error(err)
+			return
+		}
+		userID := c.GetString("userID")
+		err := h.service.Create(c.Request.Context(), jweSecret, userID, input.Jwe, input.Email, input.Password, input.Host, input.Port)
+		if err != nil {
+			c.Error(err)
+			return
+		}
+		c.JSON(200, gin.H{"message": "SMTP instance created successfully"})
+
 	}
 }
 

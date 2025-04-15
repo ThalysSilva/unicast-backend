@@ -22,15 +22,11 @@ type Instance struct {
 
 type Repository interface {
 	database.Transactional
-	Create(ctx context.Context, userID, email, password, host string, port int, iv []byte) error
+	Create(ctx context.Context, userID, email, host string, port int, password, iv []byte) error
 	FindByID(ctx context.Context, id string) (*Instance, error)
-	Update(ctx context.Context, id int, fields map[string]interface{}) error
+	Update(ctx context.Context, id int, fields map[string]any) error
 	Delete(ctx context.Context, id string) error
 	GetInstances(ctx context.Context, userID string) ([]*Instance, error)
-}
-
-type repository struct {
-	db *sql.DB
 }
 
 func NewRepository(db *sql.DB) Repository {

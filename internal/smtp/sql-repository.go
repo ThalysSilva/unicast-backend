@@ -42,8 +42,7 @@ func (r *sqlRepository) TransactionBackend() any {
 }
 
 // Insere uma nova instância SMTP
-func (r *sqlRepository) Create(ctx context.Context, userID, email, password, host string, port int, iv []byte) error {
-
+func (r *sqlRepository) Create(ctx context.Context, userID, email, host string, port int, password, iv []byte) error {
 	query := `
         INSERT INTO smtp_instances (host, port, email, password, iv, user_id)
         VALUES ($1, $2, $3, $4, $5, $6)
@@ -97,7 +96,6 @@ func (r *sqlRepository) GetInstances(ctx context.Context, userID string) ([]*Ins
 	}
 	return instances, nil
 }
-
 
 // Atualiza uma instância SMTP
 func (r *sqlRepository) Update(ctx context.Context, id int, fields map[string]interface{}) error {
