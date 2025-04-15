@@ -1,0 +1,3 @@
+ALTER TABLE smtp_instances
+    ALTER COLUMN password TYPE BYTEA USING password::BYTEA,
+    ALTER COLUMN iv TYPE BYTEA USING iv::BYTEA;
