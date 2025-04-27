@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-
 )
 
 // DB abstrai métodos de *sql.DB e *sql.Tx.
@@ -78,36 +77,46 @@ func (t *SQLTx) WithSQLTransaction(tx any) *SQLTx {
 }
 
 // MakeTransaction executa uma transação inspirada no GORM.
-func MakeTransaction(ctx context.Context, repos []Transactional, fn func() error) error {
+func MakeTransaction[T any](ctx context.Context, repos []Transactional, fn func() (T, error)) (T, error) {
+	var zero T
+
 	if len(repos) == 0 {
-		return fmt.Errorf("nenhum repositório fornecido")
+		return zero, fmt.Errorf("nenhum repositório fornecido")
 	}
 
 	// Coleta o backend do primeiro repositório
 	var tx Tx
-	for _, repo := range repos {
+	for i, repo := range repos {
 		backend := repo.TransactionBackend()
 		switch db := backend.(type) {
 		case *sql.DB:
 			if tx == nil {
 				tx = NewSQLTx(db)
 			} else if _, ok := tx.(*SQLTx); !ok {
-				return fmt.Errorf("repositórios com backends mistos (SQL e GORM)")
+				return zero, fmt.Errorf("repositório %d usa backend incompatível (esperado *sql.DB)", i)
 			}
-		/* case *gorm.DB:
-		if tx == nil {
-			tx = NewGORMTx(db)
-		} else if _, ok := tx.(*GORMTx); !ok {
-			return fmt.Errorf("repositórios com backends mistos (SQL e GORM)")
-		} */
+		// Suporte a GORM (descomentar quando necessário)
+		/*
+			case *gorm.DB:
+				if tx == nil {
+					tx = NewGORMTx(db)
+				} else if _, ok := tx.(*GORMTx); !ok {
+					return zero, fmt.Errorf("repositório %d usa backend incompatível (esperado *gorm.DB)", i)
+				}
+		*/
 		default:
-			return fmt.Errorf("backend desconhecido: %T", backend)
+			return zero, fmt.Errorf("repositório %d usa backend desconhecido: %T", i, backend)
 		}
+	}
+
+	// Verifica se um backend válido foi encontrado
+	if tx == nil {
+		return zero, fmt.Errorf("nenhum backend válido fornecido")
 	}
 
 	txHandle, err := tx.Begin(ctx)
 	if err != nil {
-		return fmt.Errorf("falha ao iniciar transação: %w", err)
+		return zero, fmt.Errorf("falha ao iniciar transação: %w", err)
 	}
 
 	// Configura repositórios com a transação
@@ -115,7 +124,7 @@ func MakeTransaction(ctx context.Context, repos []Transactional, fn func() error
 		newRepo := repo.WithTransaction(txHandle)
 		if newRepo == nil {
 			_ = tx.Rollback(txHandle)
-			return fmt.Errorf("WithTransaction retornou nil para repositório %d", i)
+			return zero, fmt.Errorf("WithTransaction retornou nil para repositório %d", i)
 		}
 		repos[i] = newRepo.(Transactional)
 	}
@@ -131,12 +140,17 @@ func MakeTransaction(ctx context.Context, repos []Transactional, fn func() error
 	}()
 
 	// Executa o callback
-	if err := fn(); err != nil {
+	data, err := fn()
+	if err != nil {
 		if rollbackErr := tx.Rollback(txHandle); rollbackErr != nil {
-			return fmt.Errorf("falha ao reverter transação: %v; erro original: %w", rollbackErr, err)
+			return zero, fmt.Errorf("falha ao reverter transação: %v; erro original: %w", rollbackErr, err)
 		}
-		return err
+		return zero, err
 	}
 
-	return tx.Commit(txHandle)
+	if err := tx.Commit(txHandle); err != nil {
+		return zero, fmt.Errorf("falha ao confirmar transação: %w", err)
+	}
+
+	return data, nil
 }

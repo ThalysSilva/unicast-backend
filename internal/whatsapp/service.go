@@ -37,42 +37,42 @@ func (s *service) CreateInstance(ctx context.Context, userId, phone string) (*In
 	var instance *Instance
 	var qrCode string
 
-	err := database.MakeTransaction(ctx, []database.Transactional{s.whatsappInstanceRepository, s.userRepository}, func() error {
+	_, err := database.MakeTransaction(ctx, []database.Transactional{s.whatsappInstanceRepository, s.userRepository}, func() (any, error) {
 		hasInstance, err := s.whatsappInstanceRepository.FindByPhoneAndUserId(ctx, phone, userId)
 		if err != nil {
-			return fmt.Errorf("falha ao verificar instância existente: %w", err)
+			return nil, fmt.Errorf("falha ao verificar instância existente: %w", err)
 		}
 		if hasInstance != nil {
-			return customerror.Trace("CreateInstance", HasAlreadyInstance)
+			return nil, customerror.Trace("CreateInstance", HasAlreadyInstance)
 		}
 
 		user, err := s.userRepository.FindByID(ctx, userId)
 		if err != nil {
-			return fmt.Errorf("falha ao buscar usuário: %w", err)
+			return nil, fmt.Errorf("falha ao buscar usuário: %w", err)
 		}
 		if user == nil {
-			return customerror.Trace("CreateInstance", UserNotFound)
+			return nil, customerror.Trace("CreateInstance", UserNotFound)
 		}
 
 		instanceName := user.Email + ":" + phone
 		instanceId, newQrCode, err := createEvolutionInstance(phone, instanceName, true)
 		if err != nil {
-			return customerror.Trace("CreateInstance", err)
+			return nil, customerror.Trace("CreateInstance", err)
 		}
 
 		err = s.whatsappInstanceRepository.Create(ctx, phone, userId, instanceId)
 		if err != nil {
 			// deleteEvolutionInstance(instanceId)
-			return fmt.Errorf("falha ao criar instância: %w", err)
+			return nil, fmt.Errorf("falha ao criar instância: %w", err)
 		}
 
 		instance, err = s.whatsappInstanceRepository.FindByPhoneAndUserId(ctx, phone, userId)
 		if err != nil {
-			return fmt.Errorf("falha ao buscar instância criada: %w", err)
+			return nil, fmt.Errorf("falha ao buscar instância criada: %w", err)
 		}
 
 		qrCode = newQrCode
-		return nil
+		return nil, nil
 	})
 
 	if err != nil {
