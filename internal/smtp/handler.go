@@ -45,6 +45,12 @@ func (h *handler) Create(jweSecret []byte) gin.HandlerFunc {
 
 func (h *handler) GetInstances() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		// Implementation for getting SMTP instances
+		userID := c.GetString("userID")
+		instances, err := h.service.GetInstances(c.Request.Context(), userID)
+		if err != nil {
+			c.Error(err)
+			return
+		}
+		c.JSON(200, instances)
 	}
 }

@@ -84,7 +84,7 @@ func main() {
 	{
 		smtpGroup.Use(middleware.UseAuthentication(secrets.AccessToken))
 		smtpGroup.POST("/instance", smtpHandler.Create(secrets.Jwe))
-		smtpGroup.GET("/instance", whatsappHandler.GetInstances())
+		smtpGroup.GET("/instance", smtpHandler.GetInstances())
 	}
 
 	// Swagger
