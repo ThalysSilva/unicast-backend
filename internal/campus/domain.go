@@ -22,6 +22,13 @@ type Repository interface {
 	Create(ctx context.Context, name, description, userOwnerID string) error
 	FindByID(ctx context.Context, id string) (*Campus, error)
 	FindByUserOwnerId(ctx context.Context, userOwnerID string) ([]*Campus, error)
+	// Campos disponíveis para atualização
+	//
+	// - name string 
+	//
+	// - description string
+	//
+	// - user_owner_id string
 	Update(ctx context.Context, id string, fields map[string]any) error
 	Delete(ctx context.Context, id string) error
 }

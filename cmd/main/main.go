@@ -82,6 +82,7 @@ func main() {
 		campusGroup.Use(middleware.UseAuthentication(secrets.AccessToken))
 		campusGroup.POST("/instance", campusHandler.Create())
 		campusGroup.GET("/instance", campusHandler.GetCampuses())
+		campusGroup.PUT("/instance/:id", campusHandler.Update())
 	}
 
 	// Rotas do WhatsApp

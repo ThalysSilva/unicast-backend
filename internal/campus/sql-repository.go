@@ -83,7 +83,6 @@ func (r *sqlRepository) FindByUserOwnerId(ctx context.Context, userOwnerID strin
 	return campuses, nil
 }
 
-// Atualiza um campus
 func (r *sqlRepository) Update(ctx context.Context, id string, fields map[string]any) error {
 	err := database.Update(ctx, r.db, "campuses", id, fields)
 	return err
