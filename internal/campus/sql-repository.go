@@ -59,6 +59,30 @@ func (r *sqlRepository) FindByID(ctx context.Context, id string) (*Campus, error
 	return campus, nil
 }
 
+func (r *sqlRepository) FindByUserOwnerId(ctx context.Context, userOwnerID string) ([]*Campus, error) {
+	query := `
+				SELECT id, name, description, created_at, updated_at, user_owner_id
+				FROM campuses
+				WHERE user_owner_id = $1
+		`
+	rows, err := r.db.QueryContext(ctx, query, userOwnerID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var campuses []*Campus
+	for rows.Next() {
+		campus := &Campus{}
+		err := rows.Scan(&campus.ID, &campus.Name, &campus.Description, &campus.CreatedAt, &campus.UpdatedAt, &campus.UserOwnerID)
+		if err != nil {
+			return nil, err
+		}
+		campuses = append(campuses, campus)
+	}
+	return campuses, nil
+}
+
 // Atualiza um campus
 func (r *sqlRepository) Update(ctx context.Context, id string, fields map[string]any) error {
 	err := database.Update(ctx, r.db, "campuses", id, fields)

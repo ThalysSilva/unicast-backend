@@ -21,6 +21,7 @@ type Repository interface {
 	database.Transactional
 	Create(ctx context.Context, name, description, userOwnerID string) error
 	FindByID(ctx context.Context, id string) (*Campus, error)
+	FindByUserOwnerId(ctx context.Context, userOwnerID string) ([]*Campus, error)
 	Update(ctx context.Context, id string, fields map[string]any) error
 	Delete(ctx context.Context, id string) error
 }

@@ -8,6 +8,7 @@ import (
 
 	_ "github.com/ThalysSilva/unicast-backend/docs"
 	"github.com/ThalysSilva/unicast-backend/internal/auth"
+	"github.com/ThalysSilva/unicast-backend/internal/campus"
 	"github.com/ThalysSilva/unicast-backend/internal/config"
 	"github.com/ThalysSilva/unicast-backend/internal/middleware"
 	"github.com/ThalysSilva/unicast-backend/internal/repository"
@@ -19,7 +20,9 @@ import (
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
 )
+
 var db *sql.DB
+
 func main() {
 	db, err := database.InitDB()
 	if err != nil {
@@ -51,11 +54,13 @@ func main() {
 	authService := auth.NewService(repos.User, secrets)
 	whatsappService := whatsapp.NewService(repos.WhatsAppInstance, repos.User)
 	smtpService := smtp.NewService(repos.SmtpInstance)
+	campusService := campus.NewService(repos.Campus)
 
 	// Handlers
 	authHandler := auth.NewHandler(authService)
 	whatsappHandler := whatsapp.NewHandler(whatsappService)
 	smtpHandler := smtp.NewHandler(smtpService)
+	campusHandler := campus.NewHandler(campusService)
 
 	r := gin.Default()
 
@@ -70,6 +75,13 @@ func main() {
 		// Com autenticação
 		authGroup.Use(middleware.UseAuthentication(secrets.AccessToken))
 		authGroup.POST("/logout", authHandler.Logout())
+	}
+	// Rotas de campus
+	campusGroup := r.Group("/campus")
+	{
+		campusGroup.Use(middleware.UseAuthentication(secrets.AccessToken))
+		campusGroup.POST("/instance", campusHandler.Create())
+		campusGroup.GET("/instance", campusHandler.GetCampuses())
 	}
 
 	// Rotas do WhatsApp
