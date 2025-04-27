@@ -10,7 +10,7 @@ import (
 
 type Campus struct {
 	ID          string    `json:"id"`
-	Name        string    `json:"name" validate:"required"`
+	Name        string    `json:"name" binding:"required"`
 	Description string    `json:"description"`
 	CreatedAt   time.Time `json:"-"`
 	UpdatedAt   time.Time `json:"-"`
@@ -21,10 +21,11 @@ type Repository interface {
 	database.Transactional
 	Create(ctx context.Context, name, description, userOwnerID string) error
 	FindByID(ctx context.Context, id string) (*Campus, error)
+	FindByNameAndUserOwnerID(ctx context.Context, name, userOwnerID string) (*Campus, error)
 	FindByUserOwnerId(ctx context.Context, userOwnerID string) ([]*Campus, error)
 	// Campos disponíveis para atualização
 	//
-	// - name string 
+	// - name string
 	//
 	// - description string
 	//

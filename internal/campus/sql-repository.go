@@ -59,6 +59,25 @@ func (r *sqlRepository) FindByID(ctx context.Context, id string) (*Campus, error
 	return campus, nil
 }
 
+func (r *sqlRepository) FindByNameAndUserOwnerID(ctx context.Context, name, userOwnerID string) (*Campus, error) {
+	query := `
+		SELECT id, name, description, created_at, updated_at, user_owner_id
+		FROM campuses
+		WHERE name = $1 AND user_owner_id = $2
+	`
+	row := r.db.QueryRowContext(ctx, query, name, userOwnerID)
+
+	campus := &Campus{}
+	err := row.Scan(&campus.ID, &campus.Name, &campus.Description, &campus.CreatedAt, &campus.UpdatedAt, &campus.UserOwnerID)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return campus, nil
+}
+
 func (r *sqlRepository) FindByUserOwnerId(ctx context.Context, userOwnerID string) ([]*Campus, error) {
 	query := `
 				SELECT id, name, description, created_at, updated_at, user_owner_id
