@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/ThalysSilva/unicast-backend/pkg/customerror"
+	"github.com/ThalysSilva/unicast-backend/pkg/database"
 )
 
 type campusService struct {
@@ -22,6 +23,7 @@ type Service interface {
 	GetCampus(id string) (*Campus, error)
 	GetCampuses(ctx context.Context, userID string) ([]*Campus, error)
 	Update(ctx context.Context, id string, fields map[string]any) error
+	Delete(ctx context.Context, id string) error
 }
 
 func NewService(campusRepository Repository) Service {
@@ -76,4 +78,27 @@ func (s *campusService) Update(ctx context.Context, id string, fields map[string
 	return s.campusRepository.Update(ctx, id, fields)
 }
 
+func (s *campusService) Delete(ctx context.Context, id string) error {
+	campus, err := s.campusRepository.FindByID(ctx, id)
+	if err != nil {
+		return err
+	}
+	if campus == nil {
+		return ErrCampusNotFound
+	}
 
+	_, err = database.MakeTransaction(ctx, []database.Transactional{s.campusRepository}, func() (any, error) {
+		err := s.campusRepository.Delete(ctx, id)
+		// TODO: Implementar a exclusão de campus e todas as suas dependências
+		if err != nil {
+			return nil, err
+		}
+		return nil, nil
+	},
+	)
+	if err != nil {
+		return err
+	}
+	return nil
+
+}
