@@ -28,6 +28,7 @@ type Handler interface {
 	Create() gin.HandlerFunc
 	GetCourses() gin.HandlerFunc
 	Update() gin.HandlerFunc
+	Delete() gin.HandlerFunc
 }
 
 func NewHandler(service Service) Handler {
@@ -112,5 +113,29 @@ func (h *handler) Update() gin.HandlerFunc {
 			return
 		}
 		c.JSON(200, gin.H{"message": "Campus Atualizado com sucesso"})
+	}
+}
+
+func (h *handler) Delete() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		userID := c.GetString("userID")
+		courseID := c.Param("id")
+
+		isOwner, err := h.service.isOwner(c.Request.Context(), courseID, userID)
+		if err != nil {
+			c.Error(err)
+			return
+		}
+		if !isOwner {
+			c.Error(errors.New("você não tem permissão para deletar este curso"))
+			return
+		}
+
+		err = h.service.Delete(c.Request.Context(), courseID)
+		if err != nil {
+			c.Error(err)
+			return
+		}
+		c.JSON(200, gin.H{"message": "Campus Deletado com sucesso"})
 	}
 }
