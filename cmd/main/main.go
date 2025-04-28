@@ -1,7 +1,6 @@
 package main
 
 import (
-	"database/sql"
 	"encoding/hex"
 	"log"
 	"os"
@@ -10,6 +9,7 @@ import (
 	"github.com/ThalysSilva/unicast-backend/internal/auth"
 	"github.com/ThalysSilva/unicast-backend/internal/campus"
 	"github.com/ThalysSilva/unicast-backend/internal/config"
+	"github.com/ThalysSilva/unicast-backend/internal/course"
 	"github.com/ThalysSilva/unicast-backend/internal/middleware"
 	"github.com/ThalysSilva/unicast-backend/internal/repository"
 	"github.com/ThalysSilva/unicast-backend/internal/smtp"
@@ -20,8 +20,6 @@ import (
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
 )
-
-var db *sql.DB
 
 func main() {
 	db, err := database.InitDB()
@@ -55,12 +53,14 @@ func main() {
 	whatsappService := whatsapp.NewService(repos.WhatsAppInstance, repos.User)
 	smtpService := smtp.NewService(repos.SmtpInstance)
 	campusService := campus.NewService(repos.Campus)
+	courseService := course.NewService(repos.Course)
 
 	// Handlers
 	authHandler := auth.NewHandler(authService)
 	whatsappHandler := whatsapp.NewHandler(whatsappService)
 	smtpHandler := smtp.NewHandler(smtpService)
 	campusHandler := campus.NewHandler(campusService)
+	courseHandler := course.NewHandler(courseService)
 
 	r := gin.Default()
 
@@ -83,6 +83,16 @@ func main() {
 		campusGroup.POST("/instance", campusHandler.Create())
 		campusGroup.GET("/instance", campusHandler.GetCampuses())
 		campusGroup.PUT("/instance/:id", campusHandler.Update())
+	}
+
+	// Rotas de cursos
+	courseGroup := r.Group("/course")
+	{
+		courseGroup.Use(middleware.UseAuthentication(secrets.AccessToken))
+		courseGroup.POST("/instance", courseHandler.Create())
+		courseGroup.GET("/instance", courseHandler.GetCourses())
+		courseGroup.PUT("/instance/:id", courseHandler.Update())
+		courseGroup.DELETE("/instance/:id", courseHandler.Delete())
 	}
 
 	// Rotas do WhatsApp
