@@ -11,6 +11,7 @@ import (
 	"github.com/ThalysSilva/unicast-backend/internal/config"
 	"github.com/ThalysSilva/unicast-backend/internal/course"
 	"github.com/ThalysSilva/unicast-backend/internal/middleware"
+	"github.com/ThalysSilva/unicast-backend/internal/program"
 	"github.com/ThalysSilva/unicast-backend/internal/repository"
 	"github.com/ThalysSilva/unicast-backend/internal/smtp"
 	"github.com/ThalysSilva/unicast-backend/internal/whatsapp"
@@ -54,6 +55,7 @@ func main() {
 	smtpService := smtp.NewService(repos.SmtpInstance)
 	campusService := campus.NewService(repos.Campus)
 	courseService := course.NewService(repos.Course)
+	programService := program.NewService(repos.Program)
 
 	// Handlers
 	authHandler := auth.NewHandler(authService)
@@ -61,6 +63,7 @@ func main() {
 	smtpHandler := smtp.NewHandler(smtpService)
 	campusHandler := campus.NewHandler(campusService)
 	courseHandler := course.NewHandler(courseService)
+	programHandler := program.NewHandler(programService)
 
 	r := gin.Default()
 
@@ -80,19 +83,29 @@ func main() {
 	campusGroup := r.Group("/campus")
 	{
 		campusGroup.Use(middleware.UseAuthentication(secrets.AccessToken))
-		campusGroup.POST("/instance", campusHandler.Create())
-		campusGroup.GET("/instance", campusHandler.GetCampuses())
-		campusGroup.PUT("/instance/:id", campusHandler.Update())
+		campusGroup.POST("", campusHandler.Create())
+		campusGroup.GET("", campusHandler.GetCampuses())
+		campusGroup.PUT(":id", campusHandler.Update())
 	}
 
-	// Rotas de cursos
+	// Rotas de disciplinas
 	courseGroup := r.Group("/course")
 	{
 		courseGroup.Use(middleware.UseAuthentication(secrets.AccessToken))
-		courseGroup.POST("/instance", courseHandler.Create())
-		courseGroup.GET("/instance", courseHandler.GetCourses())
-		courseGroup.PUT("/instance/:id", courseHandler.Update())
-		courseGroup.DELETE("/instance/:id", courseHandler.Delete())
+		courseGroup.POST("", courseHandler.Create())
+		courseGroup.GET("/:programId", courseHandler.GetCoursesByProgramID())
+		courseGroup.PUT("/:id", courseHandler.Update())
+		courseGroup.DELETE("/:id", courseHandler.Delete())
+	}
+
+	// Rotas de cursos
+	programGroup := r.Group("/program")
+	{
+		programGroup.Use(middleware.UseAuthentication(secrets.AccessToken))
+		programGroup.POST("", programHandler.Create())
+		programGroup.GET("/:campusID", programHandler.GetProgramsByCampusID())
+		programGroup.PUT("/:id", programHandler.Update())
+		programGroup.DELETE("/:id", programHandler.Delete())
 	}
 
 	// Rotas do WhatsApp
