@@ -60,8 +60,72 @@ func (r *sqlRepository) FindByID(ctx context.Context, id string) (*Program, erro
 	return program, nil
 }
 
-// Atualiza os campos de uma instância no banco de dados. Campos não fornecidos não serão atualizados.
-// Campos: name, description, campus_id, active
+func (r *sqlRepository) FindByIDWithUserOwnerID(ctx context.Context, id string) (*ProgramWithUserOwnerID, error) {
+	query := `
+				SELECT p.id, p.name, p.description, p.created_at, p.updated_at, p.campus_id, p.active, u.id
+				FROM programs p
+				JOIN campus ca ON p.campus_id = c.id
+				JOIN users u ON ca.user_owner_id = u.id
+				WHERE p.id = $1
+		`
+
+	row := r.db.QueryRowContext(ctx, query, id)
+
+	program := &ProgramWithUserOwnerID{}
+	err := row.Scan(&program.ID, &program.Name, &program.Description, &program.CreatedAt, &program.UpdatedAt, &program.CampusID, &program.Active, &program.UserOwnerID)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return program, nil
+}
+
+func (r *sqlRepository) FindByCampusID(ctx context.Context, campusID string) ([]*Program, error) {
+	query := `
+				SELECT id, name, description, created_at, updated_at, campus_id, active
+				FROM programs
+				WHERE campus_id = $1
+		`
+
+	rows, err := r.db.QueryContext(ctx, query, campusID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var programs []*Program
+	for rows.Next() {
+		program := &Program{}
+		err := rows.Scan(&program.ID, &program.Name, &program.Description, &program.CreatedAt, &program.UpdatedAt, &program.CampusID, &program.Active)
+		if err != nil {
+			return nil, err
+		}
+		programs = append(programs, program)
+	}
+	return programs, nil
+}
+
+func (r *sqlRepository) FindByNameAndCampusID(ctx context.Context, name, campusID string) (*Program, error) {
+	query := `
+				SELECT id, name, description, created_at, updated_at, campus_id, active
+				FROM programs
+				WHERE name = $1 AND campus_id = $2
+		`
+	row := r.db.QueryRowContext(ctx, query, name, campusID)
+
+	program := &Program{}
+	err := row.Scan(&program.ID, &program.Name, &program.Description, &program.CreatedAt, &program.UpdatedAt, &program.CampusID, &program.Active)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return program, nil
+}
+
 func (r *sqlRepository) Update(ctx context.Context, id string, fields map[string]any) error {
 	err := database.Update(ctx, r.db, "programs", id, fields)
 	if err != nil {

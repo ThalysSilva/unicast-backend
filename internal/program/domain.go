@@ -18,16 +18,27 @@ type Program struct {
 	Active      bool      `json:"active"`
 }
 
+type ProgramWithUserOwnerID struct {
+	Program
+	UserOwnerID string `json:"owner_id"`
+}
+
 type Repository interface {
 	database.Transactional
 	Create(ctx context.Context, name, description, campusID string, active bool) error
 	FindByID(ctx context.Context, id string) (*Program, error)
+	// Campos disponíveis para atualização
+	//
+	// - name string
+	//
+	// - description string
+	//
+	// - active bool
 	Update(ctx context.Context, id string, fields map[string]any) error
 	Delete(ctx context.Context, id string) error
-}
-
-type repository struct {
-	db *sql.DB
+	FindByNameAndCampusID(ctx context.Context, name, campusID string) (*Program, error)
+	FindByIDWithUserOwnerID(ctx context.Context, id string) (*ProgramWithUserOwnerID, error)
+	FindByCampusID(ctx context.Context, campusID string) ([]*Program, error)
 }
 
 func NewRepository(db *sql.DB) Repository {
