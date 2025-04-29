@@ -19,9 +19,9 @@ var (
 )
 
 type Service interface {
-	Create(ctx context.Context, userID, name, description string, year, semester int) error
+	Create(ctx context.Context, programID, name, description string, year, semester int) error
 	GetCourse(id string) (*Course, error)
-	GetCourses(ctx context.Context, userID string) ([]*Course, error)
+	GetCoursesByProgramID(ctx context.Context, programID string) ([]*Course, error)
 	isOwner(ctx context.Context, courseID, userID string) (bool, error)
 	Update(ctx context.Context, id string, fields map[string]any) error
 	Delete(ctx context.Context, id string) error
@@ -31,8 +31,8 @@ func NewService(courseRepository Repository) Service {
 	return &courseService{courseRepository: courseRepository}
 }
 
-func (s *courseService) Create(ctx context.Context, ProgramID, name, description string, year, semester int) error {
-	campus, err := s.courseRepository.FindByNameAndProgramID(ctx, name, ProgramID)
+func (s *courseService) Create(ctx context.Context, programID, name, description string, year, semester int) error {
+	campus, err := s.courseRepository.FindByNameAndProgramID(ctx, name, programID)
 	if err != nil {
 		return err
 	}
@@ -40,7 +40,7 @@ func (s *courseService) Create(ctx context.Context, ProgramID, name, description
 		return ErrCampusAlreadyExists
 	}
 
-	return s.courseRepository.Create(ctx, name, description, ProgramID, year, semester)
+	return s.courseRepository.Create(ctx, name, description, programID, year, semester)
 }
 
 func (s *courseService) GetCourse(id string) (*Course, error) {
@@ -54,8 +54,8 @@ func (s *courseService) GetCourse(id string) (*Course, error) {
 	return campus, nil
 }
 
-func (s *courseService) GetCourses(ctx context.Context, ProgramID string) ([]*Course, error) {
-	return s.courseRepository.FindByProgramID(ctx, ProgramID)
+func (s *courseService) GetCoursesByProgramID(ctx context.Context, programID string) ([]*Course, error) {
+	return s.courseRepository.FindByProgramID(ctx, programID)
 }
 
 func (s *courseService) isOwner(ctx context.Context, courseID, userID string) (bool, error) {

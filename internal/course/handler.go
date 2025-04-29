@@ -26,7 +26,7 @@ type updateCourseInput struct {
 
 type Handler interface {
 	Create() gin.HandlerFunc
-	GetCourses() gin.HandlerFunc
+	GetCoursesByProgramID() gin.HandlerFunc
 	Update() gin.HandlerFunc
 	Delete() gin.HandlerFunc
 }
@@ -55,10 +55,10 @@ func (h *handler) Create() gin.HandlerFunc {
 	}
 }
 
-func (h *handler) GetCourses() gin.HandlerFunc {
+func (h *handler) GetCoursesByProgramID() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		userID := c.GetString("userID")
-		instances, err := h.service.GetCourses(c.Request.Context(), userID)
+		instances, err := h.service.GetCoursesByProgramID(c.Request.Context(), userID)
 		if err != nil {
 			c.Error(err)
 			return
