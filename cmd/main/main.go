@@ -14,6 +14,8 @@ import (
 	"github.com/ThalysSilva/unicast-backend/internal/program"
 	"github.com/ThalysSilva/unicast-backend/internal/repository"
 	"github.com/ThalysSilva/unicast-backend/internal/smtp"
+	"github.com/ThalysSilva/unicast-backend/internal/student"
+	"github.com/ThalysSilva/unicast-backend/internal/user"
 	"github.com/ThalysSilva/unicast-backend/internal/whatsapp"
 	"github.com/ThalysSilva/unicast-backend/pkg/database"
 
@@ -56,6 +58,8 @@ func main() {
 	campusService := campus.NewService(repos.Campus)
 	courseService := course.NewService(repos.Course)
 	programService := program.NewService(repos.Program)
+	studentService := student.NewService(repos.Student)
+	userService := user.NewService(repos.User)
 
 	// Handlers
 	authHandler := auth.NewHandler(authService)
@@ -64,6 +68,8 @@ func main() {
 	campusHandler := campus.NewHandler(campusService)
 	courseHandler := course.NewHandler(courseService)
 	programHandler := program.NewHandler(programService)
+	studentHandler := student.NewHandler(studentService)
+	userHandler := user.NewHandler(userService)
 
 	r := gin.Default()
 
@@ -116,11 +122,29 @@ func main() {
 		whatsappGroup.GET("/instance", whatsappHandler.GetInstances())
 	}
 
+	// Rotas do smtp
 	smtpGroup := r.Group("/smtp")
 	{
 		smtpGroup.Use(middleware.UseAuthentication(secrets.AccessToken))
 		smtpGroup.POST("/instance", smtpHandler.Create(secrets.Jwe))
 		smtpGroup.GET("/instance", smtpHandler.GetInstances())
+	}
+
+	// Rotas do usuario
+	userGroup := r.Group("/user")
+	{
+		userGroup.Use(middleware.UseAuthentication(secrets.AccessToken))
+		userGroup.POST("/create", userHandler.Create())
+	}
+
+	// Rotas do estudante
+	studentGroup := r.Group("/student")
+	{
+		studentGroup.Use(middleware.UseAuthentication(secrets.AccessToken))
+		studentGroup.POST("/create", studentHandler.Create())
+		studentGroup.GET("/:id", studentHandler.GetStudent())
+		studentGroup.PUT("/:id", studentHandler.Update())
+		studentGroup.DELETE("/:id", studentHandler.Delete())
 	}
 
 	// Swagger
