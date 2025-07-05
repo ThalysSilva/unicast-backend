@@ -77,6 +77,60 @@ func (r *sqlRepository) FindByID(ctx context.Context, id string) (*Student, erro
 	return student, nil
 }
 
+func (r *sqlRepository) FindByFilters(ctx context.Context, filters map[string]string) ([]*Student, error) {
+
+	query := `
+		SELECT id, student_id, name, phone, email, annotation, created_at, updated_at, status
+		FROM students
+	`
+
+	var args = []any{}
+	if len(filters) > 0 {
+		query += " WHERE"
+
+		i := 1
+		for key, value := range filters {
+			if i == 1 {
+				query += fmt.Sprintf(" %s = $%d", key, i)
+			} else {
+				query += fmt.Sprintf(" AND %s = $%d", key, i)
+			}
+			args = append(args, value)
+			i++
+		}
+	}
+
+	rows, err := r.db.QueryContext(ctx, query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	students := make([]*Student, 0)
+	for rows.Next() {
+		student := &Student{}
+		var name, phone, email, annotation sql.NullString
+		err := rows.Scan(&student.ID, &student.StudentID, &name, &phone, &email, &annotation, &student.CreatedAt, &student.UpdatedAt, &student.Status)
+		if err != nil {
+			return nil, err
+		}
+		if name.Valid {
+			student.Name = &name.String
+		}
+		if phone.Valid {
+			student.Phone = &phone.String
+		}
+		if email.Valid {
+			student.Email = &email.String
+		}
+		if annotation.Valid {
+			student.Annotation = &annotation.String
+		}
+		students = append(students, student)
+	}
+	return students, nil
+}
+
 // Busca estudantes por IDs
 // Se a lista estiver vazia, retorna nil
 func (r *sqlRepository) FindByIDs(ctx context.Context, studentIds []string) ([]*Student, error) {

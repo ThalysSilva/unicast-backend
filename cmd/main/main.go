@@ -143,6 +143,7 @@ func main() {
 		studentGroup.Use(middleware.UseAuthentication(secrets.AccessToken))
 		studentGroup.POST("/create", studentHandler.Create())
 		studentGroup.GET("/:id", studentHandler.GetStudent())
+		studentGroup.GET("", studentHandler.GetStudents())
 		studentGroup.PUT("/:id", studentHandler.Update())
 		studentGroup.DELETE("/:id", studentHandler.Delete())
 	}

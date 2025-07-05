@@ -11,6 +11,7 @@ import (
 type Service interface {
 	Create(ctx context.Context, studentID string, name, phone, email, annotation *string, status StudentStatus) error
 	GetStudent(ctx context.Context, id string) (*Student, error)
+	GetStudents(ctx context.Context, filters map[string]string) ([]*Student, error)
 	Update(ctx context.Context, id string, fields map[string]any) error
 	Delete(ctx context.Context, id string) error
 }
@@ -40,7 +41,7 @@ func (s *studentService) Create(ctx context.Context, studentID string, name, pho
 }
 
 func (s *studentService) GetStudent(ctx context.Context, id string) (*Student, error) {
-	student, err := s.studentRepository.FindByID(context.Background(), id)
+	student, err := s.studentRepository.FindByID(ctx, id)
 	if err != nil {
 		return nil, err
 	}
@@ -48,6 +49,20 @@ func (s *studentService) GetStudent(ctx context.Context, id string) (*Student, e
 		return nil, nil
 	}
 	return student, nil
+}
+
+func (s *studentService) GetStudents(ctx context.Context, filters map[string]string) ([]*Student, error) {
+	if filters == nil {
+		filters = make(map[string]string)
+	}
+	students, err := s.studentRepository.FindByFilters(ctx, filters)
+	if err != nil {
+		return nil, err
+	}
+	if students == nil {
+		return nil, nil
+	}
+	return students, nil
 }
 
 func (s *studentService) Update(ctx context.Context, id string, fields map[string]any) error {

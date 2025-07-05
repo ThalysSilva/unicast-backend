@@ -34,6 +34,7 @@ type Repository interface {
 	database.Transactional
 	Create(ctx context.Context, studentID string, name, phone, email, annotation *string, status StudentStatus) error
 	FindByID(ctx context.Context, id string) (*Student, error)
+	FindByFilters(ctx context.Context, filters map[string]string) ([]*Student, error)
 	Update(ctx context.Context, id string, fields map[string]any) error
 	Delete(ctx context.Context, id string) error
 	FindByIDs(ctx context.Context, ids []string) ([]*Student, error)

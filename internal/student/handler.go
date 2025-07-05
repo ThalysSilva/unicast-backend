@@ -18,6 +18,7 @@ type createStudentInput struct {
 type Handler interface {
 	Create() gin.HandlerFunc
 	GetStudent() gin.HandlerFunc
+	GetStudents() gin.HandlerFunc
 	Update() gin.HandlerFunc
 	Delete() gin.HandlerFunc
 }
@@ -47,6 +48,7 @@ func (h *handler) Create() gin.HandlerFunc {
 func (h *handler) GetStudent() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		studentID := c.Param("id")
+
 		student, err := h.service.GetStudent(c.Request.Context(), studentID)
 		if err != nil {
 			c.Error(err)
@@ -57,6 +59,36 @@ func (h *handler) GetStudent() gin.HandlerFunc {
 			return
 		}
 		c.JSON(200, student)
+	}
+}
+
+func (h *handler) GetStudents() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		program := c.Query("program")
+		campus := c.Query("campus")
+		course := c.Query("course")
+		user := c.Query("user")
+		// Filtro por disciplina, campus, cursos, usuário.
+		filters := make(map[string]string)
+		if program != "" {
+			filters["program"] = program
+		}
+		if campus != "" {
+			filters["campus"] = campus
+		}
+		if course != "" {
+			filters["course"] = course
+		}
+		if user != "" {
+			filters["user"] = user
+		}
+
+		students, err := h.service.GetStudents(c.Request.Context(), filters)
+		if err != nil {
+			c.Error(err)
+			return
+		}
+		c.JSON(200, students)
 	}
 }
 
