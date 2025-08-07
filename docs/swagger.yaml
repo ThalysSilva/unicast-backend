@@ -47,10 +47,17 @@ definitions:
       message:
         type: string
     type: object
-  github_com_ThalysSilva_unicast-backend_pkg_api.DefaultResponse-internal_whatsapp_createInstanceResponse:
+  github_com_ThalysSilva_unicast-backend_pkg_api.DefaultResponse-internal_whatsapp_CreateInstanceResponse:
     properties:
       data:
-        $ref: '#/definitions/internal_whatsapp.createInstanceResponse'
+        $ref: '#/definitions/internal_whatsapp.CreateInstanceResponse'
+      message:
+        type: string
+    type: object
+  github_com_ThalysSilva_unicast-backend_pkg_api.DefaultResponse-internal_whatsapp_GetInstancesResponse:
+    properties:
+      data:
+        $ref: '#/definitions/internal_whatsapp.GetInstancesResponse'
       message:
         type: string
     type: object
@@ -116,6 +123,33 @@ definitions:
     - name
     - password
     type: object
+  internal_whatsapp.CreateInstanceResponse:
+    properties:
+      instanceId:
+        type: string
+      qrCode:
+        type: string
+    type: object
+  internal_whatsapp.GetInstancesResponse:
+    properties:
+      instances:
+        items:
+          $ref: '#/definitions/internal_whatsapp.Instance'
+        type: array
+      userEmail:
+        type: string
+    type: object
+  internal_whatsapp.Instance:
+    properties:
+      id:
+        type: string
+      instanceId:
+        type: string
+      phone:
+        type: string
+    required:
+    - phone
+    type: object
   internal_whatsapp.createInstanceInput:
     properties:
       phone:
@@ -125,13 +159,6 @@ definitions:
     required:
     - phone
     - userId
-    type: object
-  internal_whatsapp.createInstanceResponse:
-    properties:
-      instanceId:
-        type: string
-      qrCode:
-        type: string
     type: object
   message.Attachment:
     properties:
@@ -342,12 +369,35 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.DefaultResponse-internal_whatsapp_createInstanceResponse'
+            $ref: '#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.DefaultResponse-internal_whatsapp_CreateInstanceResponse'
         "400":
           description: Bad Request
           schema:
             $ref: '#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.ErrorResponse'
+      security:
+      - Bearer: []
       summary: Cria uma nova instância do WhatsApp
+      tags:
+      - whatsapp
+  /whatsapp/instances:
+    get:
+      consumes:
+      - application/json
+      description: Busca todas as instâncias do WhatsApp para o usuário
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.DefaultResponse-internal_whatsapp_GetInstancesResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.ErrorResponse'
+      security:
+      - Bearer: []
+      summary: Busca todas as instâncias do WhatsApp
       tags:
       - whatsapp
 swagger: "2.0"

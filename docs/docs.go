@@ -229,6 +229,11 @@ const docTemplate = `{
         },
         "/whatsapp/instance": {
             "post": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
                 "description": "Cria uma nova instância do WhatsApp para o usuário",
                 "consumes": [
                     "application/json"
@@ -255,7 +260,41 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.DefaultResponse-internal_whatsapp_createInstanceResponse"
+                            "$ref": "#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.DefaultResponse-internal_whatsapp_CreateInstanceResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/whatsapp/instances": {
+            "get": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "description": "Busca todas as instâncias do WhatsApp para o usuário",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "whatsapp"
+                ],
+                "summary": "Busca todas as instâncias do WhatsApp",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.DefaultResponse-internal_whatsapp_GetInstancesResponse"
                         }
                     },
                     "400": {
@@ -339,11 +378,22 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_ThalysSilva_unicast-backend_pkg_api.DefaultResponse-internal_whatsapp_createInstanceResponse": {
+        "github_com_ThalysSilva_unicast-backend_pkg_api.DefaultResponse-internal_whatsapp_CreateInstanceResponse": {
             "type": "object",
             "properties": {
                 "data": {
-                    "$ref": "#/definitions/internal_whatsapp.createInstanceResponse"
+                    "$ref": "#/definitions/internal_whatsapp.CreateInstanceResponse"
+                },
+                "message": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_ThalysSilva_unicast-backend_pkg_api.DefaultResponse-internal_whatsapp_GetInstancesResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/internal_whatsapp.GetInstancesResponse"
                 },
                 "message": {
                     "type": "string"
@@ -445,6 +495,48 @@ const docTemplate = `{
                 }
             }
         },
+        "internal_whatsapp.CreateInstanceResponse": {
+            "type": "object",
+            "properties": {
+                "instanceId": {
+                    "type": "string"
+                },
+                "qrCode": {
+                    "type": "string"
+                }
+            }
+        },
+        "internal_whatsapp.GetInstancesResponse": {
+            "type": "object",
+            "properties": {
+                "instances": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/internal_whatsapp.Instance"
+                    }
+                },
+                "userEmail": {
+                    "type": "string"
+                }
+            }
+        },
+        "internal_whatsapp.Instance": {
+            "type": "object",
+            "required": [
+                "phone"
+            ],
+            "properties": {
+                "id": {
+                    "type": "string"
+                },
+                "instanceId": {
+                    "type": "string"
+                },
+                "phone": {
+                    "type": "string"
+                }
+            }
+        },
         "internal_whatsapp.createInstanceInput": {
             "type": "object",
             "required": [
@@ -456,17 +548,6 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "userId": {
-                    "type": "string"
-                }
-            }
-        },
-        "internal_whatsapp.createInstanceResponse": {
-            "type": "object",
-            "properties": {
-                "instanceId": {
-                    "type": "string"
-                },
-                "qrCode": {
                     "type": "string"
                 }
             }

@@ -16,5 +16,5 @@ while IFS='=' read -r key value; do
     export "$key=$value"
 done < <(grep -v '^\s*#' .env | grep -v '^\s*$')
 set +a
-swag init -g cmd/main/main.go
+swag init -g cmd/main/main.go --parseInternal --parseDependency --parseDepth 1
 go run cmd/main/main.go

@@ -14,12 +14,12 @@ type createInstanceInput struct {
 	UserID string `json:"userId" binding:"required"`
 }
 
-type createInstanceResponse struct {
+type CreateInstanceResponse struct {
 	InstanceID string `json:"instanceId"`
 	QrCode     string `json:"qrCode"`
 }
 
-type getInstancesResponse struct {
+type GetInstancesResponse struct {
 	Instances []*Instance `json:"instances"`
 	UserEmail string      `json:"userEmail"`
 }
@@ -46,7 +46,7 @@ func NewHandler(service Service) Handler {
 // @Accept json
 // @Produce json
 // @Param user body createInstanceInput true "User data"
-// @Success 200 {object} api.DefaultResponse[createInstanceResponse]
+// @Success 200 {object} api.DefaultResponse[CreateInstanceResponse]
 // @Failure 400 {object} api.ErrorResponse
 // @Router /whatsapp/instance [post]
 // @Security Bearer
@@ -63,9 +63,9 @@ func (h *handler) CreateInstance() gin.HandlerFunc {
 			return
 		}
 
-		c.JSON(http.StatusOK, api.DefaultResponse[createInstanceResponse]{
+		c.JSON(http.StatusOK, api.DefaultResponse[CreateInstanceResponse]{
 			Message: "Instância criada com sucesso !.",
-			Data: createInstanceResponse{
+			Data: CreateInstanceResponse{
 				InstanceID: instance.InstanceID,
 				QrCode:     qrCode,
 			},
@@ -79,7 +79,7 @@ func (h *handler) CreateInstance() gin.HandlerFunc {
 // @Tags whatsapp
 // @Accept json
 // @Produce json
-// @Success 200 {object} api.DefaultResponse[getInstancesResponse
+// @Success 200 {object} api.DefaultResponse[GetInstancesResponse]
 // @Failure 400 {object} api.ErrorResponse
 // @Router /whatsapp/instances [get]
 // @Security Bearer
@@ -93,14 +93,14 @@ func (h *handler) GetInstances() gin.HandlerFunc {
 			return
 		}
 		if instances == nil {
-			response := getInstancesResponse{Instances: []*Instance{}, UserEmail: c.GetString("email")}
-			c.JSON(http.StatusOK, api.DefaultResponse[getInstancesResponse]{
+			response := GetInstancesResponse{Instances: []*Instance{}, UserEmail: c.GetString("email")}
+			c.JSON(http.StatusOK, api.DefaultResponse[GetInstancesResponse]{
 				Message: "Instância encontrada com sucesso.",
 				Data:    response,
 			})
 		}
-		response := getInstancesResponse{Instances: instances, UserEmail: c.GetString("email")}
-		c.JSON(http.StatusOK, api.DefaultResponse[getInstancesResponse]{
+		response := GetInstancesResponse{Instances: instances, UserEmail: c.GetString("email")}
+		c.JSON(http.StatusOK, api.DefaultResponse[GetInstancesResponse]{
 			Message: "Instância encontrada com sucesso.",
 			Data:    response,
 		})
