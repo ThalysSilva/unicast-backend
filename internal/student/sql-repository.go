@@ -84,21 +84,8 @@ func (r *sqlRepository) FindByFilters(ctx context.Context, filters map[string]st
 		FROM students
 	`
 
-	var args = []any{}
-	if len(filters) > 0 {
-		query += " WHERE"
-
-		i := 1
-		for key, value := range filters {
-			if i == 1 {
-				query += fmt.Sprintf(" %s = $%d", key, i)
-			} else {
-				query += fmt.Sprintf(" AND %s = $%d", key, i)
-			}
-			args = append(args, value)
-			i++
-		}
-	}
+	whereClause, args := buildWhereClause(filters)
+	query += whereClause
 
 	rows, err := r.db.QueryContext(ctx, query, args...)
 	if err != nil {
@@ -108,23 +95,9 @@ func (r *sqlRepository) FindByFilters(ctx context.Context, filters map[string]st
 
 	students := make([]*Student, 0)
 	for rows.Next() {
-		student := &Student{}
-		var name, phone, email, annotation sql.NullString
-		err := rows.Scan(&student.ID, &student.StudentID, &name, &phone, &email, &annotation, &student.CreatedAt, &student.UpdatedAt, &student.Status)
+		student, err := scanStudent(rows)
 		if err != nil {
 			return nil, err
-		}
-		if name.Valid {
-			student.Name = &name.String
-		}
-		if phone.Valid {
-			student.Phone = &phone.String
-		}
-		if email.Valid {
-			student.Email = &email.String
-		}
-		if annotation.Valid {
-			student.Annotation = &annotation.String
 		}
 		students = append(students, student)
 	}
@@ -159,23 +132,9 @@ func (r *sqlRepository) FindByIDs(ctx context.Context, studentIds []string) ([]*
 
 	students := make([]*Student, 0, len(studentIds))
 	for rows.Next() {
-		student := &Student{}
-		var name, phone, email, annotation sql.NullString
-		err := rows.Scan(&student.ID, &student.StudentID, &name, &phone, &email, &annotation, &student.CreatedAt, &student.UpdatedAt, &student.Status)
+		student, err := scanStudent(rows)
 		if err != nil {
 			return nil, err
-		}
-		if name.Valid {
-			student.Name = &name.String
-		}
-		if phone.Valid {
-			student.Phone = &phone.String
-		}
-		if email.Valid {
-			student.Email = &email.String
-		}
-		if annotation.Valid {
-			student.Annotation = &annotation.String
 		}
 		students = append(students, student)
 	}
@@ -193,4 +152,61 @@ func (r *sqlRepository) Delete(ctx context.Context, id string) error {
 	query := `DELETE FROM students WHERE id = $1`
 	_, err := r.db.ExecContext(ctx, query, id)
 	return err
+}
+
+func buildWhereClause(filters map[string]string) (string, []any) {
+	if len(filters) == 0 {
+		return "", nil
+	}
+
+	parts := make([]string, 0, len(filters))
+	args := make([]any, 0, len(filters))
+
+	i := 1
+	for key, value := range filters {
+		parts = append(parts, fmt.Sprintf("%s = $%d", key, i))
+		args = append(args, value)
+		i++
+	}
+
+	return " WHERE " + strings.Join(parts, " AND "), args
+}
+
+type rowScanner interface {
+	Scan(dest ...any) error
+}
+
+func scanStudent(scanner rowScanner) (*Student, error) {
+	student := &Student{}
+	var name, phone, email, annotation sql.NullString
+
+	err := scanner.Scan(
+		&student.ID,
+		&student.StudentID,
+		&name,
+		&phone,
+		&email,
+		&annotation,
+		&student.CreatedAt,
+		&student.UpdatedAt,
+		&student.Status,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	if name.Valid {
+		student.Name = &name.String
+	}
+	if phone.Valid {
+		student.Phone = &phone.String
+	}
+	if email.Valid {
+		student.Email = &email.String
+	}
+	if annotation.Valid {
+		student.Annotation = &annotation.String
+	}
+
+	return student, nil
 }
