@@ -163,7 +163,7 @@ func main() {
 		inviteGroup.Use(middleware.UseAuthentication(secrets.AccessToken))
 		inviteGroup.POST("/:courseId", inviteHandler.Create())
 	}
-	r.POST("/invite/:code/self-register", inviteHandler.SelfRegister())
+	r.POST("/invite/self-register/:code", inviteHandler.SelfRegister())
 
 	// Swagger
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))

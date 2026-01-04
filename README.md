@@ -50,7 +50,7 @@ Swagger disponível em `http://localhost:${API_PORT}/swagger/index.html`.
 - **Campus/Program/Course**: CRUD protegido; ownership validado por usuário.
 - **Students**: pré-cadastro com status (PENDING, ACTIVE, etc.).
 - **Enrollments**: vínculo aluno ↔ disciplina.
-- **Invites**: professor cria código curto para a disciplina (`POST /invite/:courseId`); aluno usa `POST /invite/:code/self-register` com `studentId`, `name`, `phone`, `email`. Backend valida vínculo (enrollment) e status `PENDING` antes de ativar.
+- **Invites**: professor cria código curto para a disciplina (`POST /invite/:courseId`); aluno usa `POST /invite/self-register/:code` com `studentId`, `name`, `phone`, `email`. Backend valida vínculo (enrollment) e status `PENDING` antes de ativar.
 - **SMTP/WhatsApp**: criação/listagem de instâncias de envio.
 
 ### Segurança e credenciais
