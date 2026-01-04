@@ -55,6 +55,7 @@ type newEvolutionPayload struct {
 }
 
 var jsonFunc = json.Marshal
+var evolutionBaseURL = ""
 
 func httpClientEvolution[responseType any](method, uri string, payload *bytes.Buffer) (*responseType, error) {
 	client := &http.Client{
@@ -74,7 +75,7 @@ func httpClientEvolution[responseType any](method, uri string, payload *bytes.Bu
 	req.Header.Add("apikey", evolutionApiKey)
 	resp, err := client.Do(req)
 	if err != nil {
-		err := customerror.Make("Falha ao fazer a requisição", resp.StatusCode, err)
+		err := customerror.Make("Falha ao fazer a requisição", http.StatusBadGateway, err)
 		return nil, customerror.Trace("HTTPClientEvolution: ", err)
 	}
 	defer resp.Body.Close()
@@ -113,4 +114,39 @@ func createEvolutionInstance(phone, instanceName string, qrCode bool) (instanceI
 	}
 
 	return resp.Instance.InstanceID, resp.Qrcode.Code, nil
+}
+
+type sendTextPayload struct {
+	InstanceID string `json:"instanceId"`
+	Number     string `json:"number"`
+	Text       string `json:"text"`
+}
+
+type sendTextResponse struct {
+	Status  string `json:"status"`
+	Message string `json:"message"`
+}
+
+// sendEvolutionText envia uma mensagem de texto simples usando a Evolution API.
+func sendEvolutionText(instanceID, number, text string) error {
+	body, err := jsonFunc(sendTextPayload{
+		InstanceID: instanceID,
+		Number:     number,
+		Text:       text,
+	})
+	if err != nil {
+		return customerror.Trace("sendEvolutionText: marshal", err)
+	}
+
+	payload := bytes.NewBuffer(body)
+	resp, err := httpClientEvolution[sendTextResponse]("POST", "/message/sendText", payload)
+	if err != nil {
+		return err
+	}
+
+	if resp == nil {
+		return customerror.Make("resposta vazia da Evolution API", http.StatusBadGateway, fmt.Errorf("empty response"))
+	}
+
+	return nil
 }

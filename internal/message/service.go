@@ -3,6 +3,7 @@ package message
 import (
 	"context"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/ThalysSilva/unicast-backend/internal/auth"
@@ -36,6 +37,7 @@ var (
 	ErrSmtpNotFound     = customerror.Make("smtp não encontrado.", 404, errors.New("ErrSmtpNotFound"))
 	ErrWhatsAppNotFound = customerror.Make("whatsapp não encontrado.", 404, errors.New("ErrWhatsAppNotFound"))
 	ErrStudentsNotFound = customerror.Make("estudantes não encontrado.", 404, errors.New("ErrStudentsNotFound"))
+	ErrPhoneMissing     = customerror.Make("estudante sem telefone configurado", 400, errors.New("ErrPhoneMissing"))
 )
 
 func NewMessageService(whatsAppRepository whatsapp.Repository, smtpRepository smtp.Repository, userRepository user.Repository, studentRepository student.Repository, jweSecret []byte) Service {
@@ -86,12 +88,12 @@ func (s *service) Send(ctx context.Context, message *Message) (emailsFails, what
 		return nil, nil, customerror.Trace("Send", ErrSmtpNotFound)
 	}
 
-	whatsapp, err := s.whatsAppRepository.FindByID(ctx, message.WhatsappId)
+	waInstance, err := s.whatsAppRepository.FindByID(ctx, message.WhatsappId)
 	if err != nil {
 		return nil, nil, customerror.Trace("Send", err)
 	}
-	if whatsapp == nil {
-		return nil, nil, customerror.Trace("Send", ErrSmtpNotFound)
+	if waInstance == nil {
+		return nil, nil, customerror.Trace("Send", ErrWhatsAppNotFound)
 	}
 
 	decryptedJwe, err := auth.DecryptJWE[auth.JwePayload](message.Jwe, s.jweSecret)
@@ -144,7 +146,25 @@ func (s *service) Send(ctx context.Context, message *Message) (emailsFails, what
 	}
 	whatsappFailedStudents := &[]student.Student{}
 
-	// Ainda falta implementar a parte do whatsapp
+	// Envio por WhatsApp via Evolution API
+	var failedWhats []student.Student
+	for _, stud := range students {
+		if stud.Phone == nil || *stud.Phone == "" {
+			failedWhats = append(failedWhats, *stud)
+			continue
+		}
+
+		// Ajuste simples: garante que o número tenha apenas dígitos/sinais aceitos pela Evolution (esperado E.164 ou local compatível).
+		if err := whatsapp.SendText(waInstance.InstanceID, *stud.Phone, message.Body); err != nil {
+			fmt.Printf("falha ao enviar whatsapp para %s: %v\n", *stud.Phone, err)
+			failedWhats = append(failedWhats, *stud)
+			continue
+		}
+	}
+
+	if len(failedWhats) > 0 {
+		whatsappFailedStudents = &failedWhats
+	}
 
 	return emailFailedStudents, whatsappFailedStudents, nil
 }

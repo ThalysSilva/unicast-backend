@@ -17,6 +17,11 @@ type Instance struct {
 	InstanceID string    `json:"instanceId"`
 }
 
+// SendText envia uma mensagem de texto via Evolution API usando a instância informada.
+func SendText(instanceID, number, text string) error {
+	return sendEvolutionText(instanceID, number, text)
+}
+
 // Repository define operações para instâncias WhatsApp.
 type Repository interface {
 	database.Transactional
