@@ -1,7 +1,22 @@
 root = "."
 tmp_dir = "tmp"
+
 [build]
-cmd = "go build -o ./tmp/main.exe ./cmd/main/main.go"
-bin = "./tmp/main.exe"
+# Gera um wrapper que carrega o .env/.env.development e roda o binário.
+cmd = """
+sh -c '
+set -e
+go build -o ./tmp/main ./cmd/main/main.go
+cat > ./tmp/run_with_env.sh <<\"EOF\"
+#!/bin/sh
+set -a
+[ -f ./.env ] && . ./.env
+[ -f ./.env.development ] && . ./.env.development
+set +a
+./tmp/main
+EOF
+chmod +x ./tmp/run_with_env.sh
+'"""
+entrypoint = "./tmp/run_with_env.sh"
 include_ext = ["go"]
 delay = 1000 # ms
