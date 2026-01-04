@@ -9,6 +9,7 @@ import (
 	"github.com/ThalysSilva/unicast-backend/internal/auth"
 	"github.com/ThalysSilva/unicast-backend/internal/campus"
 	"github.com/ThalysSilva/unicast-backend/internal/config"
+	configenv "github.com/ThalysSilva/unicast-backend/internal/config/env"
 	"github.com/ThalysSilva/unicast-backend/internal/course"
 	"github.com/ThalysSilva/unicast-backend/internal/invite"
 	"github.com/ThalysSilva/unicast-backend/internal/middleware"
@@ -26,6 +27,11 @@ import (
 )
 
 func main() {
+	envCfg, err := configenv.Load()
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	db, err := database.InitDB()
 	if err != nil {
 		log.Fatal(err)
@@ -42,8 +48,8 @@ func main() {
 	}
 
 	secrets := &config.Secrets{
-		AccessToken:  []byte(os.Getenv("ACCESS_TOKEN_SECRET")),
-		RefreshToken: []byte(os.Getenv("REFRESH_TOKEN_SECRET")),
+		AccessToken:  []byte(envCfg.Auth.AccessTokenSecret),
+		RefreshToken: []byte(envCfg.Auth.RefreshTokenSecret),
 		Jwe:          jweSecret,
 	}
 

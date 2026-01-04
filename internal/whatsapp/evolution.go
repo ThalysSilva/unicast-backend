@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"os"
 	"time"
 
+	"github.com/ThalysSilva/unicast-backend/internal/config/env"
 	"github.com/ThalysSilva/unicast-backend/pkg/customerror"
 )
 
@@ -56,16 +56,22 @@ type newEvolutionPayload struct {
 
 var jsonFunc = json.Marshal
 var evolutionBaseURL = ""
+var cachedConfig *env.Config
 
 func httpClientEvolution[responseType any](method, uri string, payload *bytes.Buffer) (*responseType, error) {
 	client := &http.Client{
 		Timeout: 30 * time.Second,
 	}
-	evolutionPort := os.Getenv("EVOLUTION_PORT")
-	evolutionHost := os.Getenv("EVOLUTION_HOST")
-	evolutionUrl := fmt.Sprintf("http://%s:%s", evolutionHost, evolutionPort) + uri
+	if cachedConfig == nil {
+		cfg, err := env.Load()
+		if err != nil {
+			return nil, customerror.Trace("HTTPClientEvolution", err)
+		}
+		cachedConfig = cfg
+	}
+	evolutionUrl := fmt.Sprintf("http://%s:%s", cachedConfig.Evolution.Host, cachedConfig.Evolution.Port) + uri
 
-	evolutionApiKey := os.Getenv("AUTHENTICATION_API_KEY")
+	evolutionApiKey := cachedConfig.Evolution.APIKey
 	req, err := http.NewRequest(method, evolutionUrl, payload)
 	if err != nil {
 		err := customerror.Make("Falha ao criar a requisição", http.StatusInternalServerError, err)

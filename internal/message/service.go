@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/ThalysSilva/unicast-backend/internal/auth"
+	"github.com/ThalysSilva/unicast-backend/internal/config/env"
 	"github.com/ThalysSilva/unicast-backend/internal/encryption"
 	"github.com/ThalysSilva/unicast-backend/internal/smtp"
 	"github.com/ThalysSilva/unicast-backend/internal/student"
@@ -32,6 +33,7 @@ type service struct {
 	userRepository     user.Repository
 	studentRepository  student.Repository
 	jweSecret          []byte
+	defaultCountryCode string
 }
 
 var (
@@ -43,12 +45,19 @@ var (
 )
 
 func NewMessageService(whatsAppRepository whatsapp.Repository, smtpRepository smtp.Repository, userRepository user.Repository, studentRepository student.Repository, jweSecret []byte) Service {
+	cfg, _ := env.Load()
+	defaultCountry := "55"
+	if cfg != nil && cfg.Defaults.CountryCode != "" {
+		defaultCountry = cfg.Defaults.CountryCode
+	}
+
 	return &service{
 		whatsAppRepository: whatsAppRepository,
 		smtpRepository:     smtpRepository,
 		userRepository:     userRepository,
 		studentRepository:  studentRepository,
 		jweSecret:          jweSecret,
+		defaultCountryCode: defaultCountry,
 	}
 }
 
@@ -153,18 +162,13 @@ func (s *service) Send(ctx context.Context, message *Message) (emailsFails, what
 
 	// Envio por WhatsApp via Evolution API
 	var failedWhats []student.Student
-	defaultCountry := os.Getenv("DEFAULT_COUNTRY_CODE")
-	if defaultCountry == "" {
-		defaultCountry = "55" // fallback BR
-	}
-
 	for _, stud := range students {
 		if stud.Phone == nil || *stud.Phone == "" {
 			failedWhats = append(failedWhats, *stud)
 			continue
 		}
 
-		normalized, err := whatsapp.NormalizeNumber(*stud.Phone, defaultCountry)
+		normalized, err := whatsapp.NormalizeNumber(*stud.Phone, s.defaultCountryCode)
 		if err != nil {
 			failedWhats = append(failedWhats, *stud)
 			continue
