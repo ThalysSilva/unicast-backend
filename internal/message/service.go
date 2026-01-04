@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
 	"time"
 
 	"github.com/ThalysSilva/unicast-backend/internal/auth"
@@ -38,6 +39,7 @@ var (
 	ErrWhatsAppNotFound = customerror.Make("whatsapp não encontrado.", 404, errors.New("ErrWhatsAppNotFound"))
 	ErrStudentsNotFound = customerror.Make("estudantes não encontrado.", 404, errors.New("ErrStudentsNotFound"))
 	ErrPhoneMissing     = customerror.Make("estudante sem telefone configurado", 400, errors.New("ErrPhoneMissing"))
+	ErrPhoneInvalid     = customerror.Make("telefone inválido para WhatsApp", 400, errors.New("ErrPhoneInvalid"))
 )
 
 func NewMessageService(whatsAppRepository whatsapp.Repository, smtpRepository smtp.Repository, userRepository user.Repository, studentRepository student.Repository, jweSecret []byte) Service {
@@ -101,16 +103,19 @@ func (s *service) Send(ctx context.Context, message *Message) (emailsFails, what
 		return nil, nil, customerror.Trace("Send", err)
 	}
 
+	if err != nil {
+		return nil, nil, customerror.Trace("Send", err)
+	}
 	decryptedSmtpPassword, err := encryption.DecryptSmtpPassword([]byte(smtp.Password), []byte(decryptedJwe.SmtpKeyEncoded), []byte(smtp.IV))
+	if err != nil {
+		return nil, nil, customerror.Trace("Send", err)
+	}
 	sender := mailer.NewEmailSender(mailer.SmtpAuthentication{
 		Host:     smtp.Host,
 		Port:     smtp.Port,
 		Username: smtp.Email,
 		Password: decryptedSmtpPassword,
 	})
-	if err != nil {
-		return nil, nil, customerror.Trace("Send", err)
-	}
 
 	attachments := []mailer.Attachment{}
 	if message.Attachments != nil {
@@ -148,14 +153,24 @@ func (s *service) Send(ctx context.Context, message *Message) (emailsFails, what
 
 	// Envio por WhatsApp via Evolution API
 	var failedWhats []student.Student
+	defaultCountry := os.Getenv("DEFAULT_COUNTRY_CODE")
+	if defaultCountry == "" {
+		defaultCountry = "55" // fallback BR
+	}
+
 	for _, stud := range students {
 		if stud.Phone == nil || *stud.Phone == "" {
 			failedWhats = append(failedWhats, *stud)
 			continue
 		}
 
-		// Ajuste simples: garante que o número tenha apenas dígitos/sinais aceitos pela Evolution (esperado E.164 ou local compatível).
-		if err := whatsapp.SendText(waInstance.InstanceID, *stud.Phone, message.Body); err != nil {
+		normalized, err := whatsapp.NormalizeNumber(*stud.Phone, defaultCountry)
+		if err != nil {
+			failedWhats = append(failedWhats, *stud)
+			continue
+		}
+
+		if err := sendWhatsAppWithRetry(waInstance.InstanceID, normalized, message.Body, 3, 1*time.Second); err != nil {
 			fmt.Printf("falha ao enviar whatsapp para %s: %v\n", *stud.Phone, err)
 			failedWhats = append(failedWhats, *stud)
 			continue
@@ -167,4 +182,19 @@ func (s *service) Send(ctx context.Context, message *Message) (emailsFails, what
 	}
 
 	return emailFailedStudents, whatsappFailedStudents, nil
+}
+
+// sendWhatsAppWithRetry encapsula retentativa simples para envio de WhatsApp.
+func sendWhatsAppWithRetry(instanceID, number, body string, attempts int, delay time.Duration) error {
+	var lastErr error
+	for i := 0; i < attempts; i++ {
+		lastErr = whatsapp.SendText(instanceID, number, body)
+		if lastErr == nil {
+			return nil
+		}
+		if i < attempts-1 {
+			time.Sleep(delay)
+		}
+	}
+	return lastErr
 }

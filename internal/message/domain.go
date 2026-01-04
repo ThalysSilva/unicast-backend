@@ -26,7 +26,7 @@ type MessageInput struct {
 	Body        string        `json:"body" binding:"required"`
 	To          []string      `json:"to" binding:"required"`
 	From        string        `json:"from" binding:"required"`
-	Attachments *[]Attachment `json:"attachment"`
+	Attachments *[]Attachment `json:"attachments"`
 }
 
 type MessageDataResponse struct {

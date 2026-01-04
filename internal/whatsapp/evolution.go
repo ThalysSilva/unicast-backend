@@ -86,6 +86,10 @@ func httpClientEvolution[responseType any](method, uri string, payload *bytes.Bu
 		err := customerror.Make("Falha ao ler o corpo da resposta", http.StatusInternalServerError, err)
 		return nil, customerror.Trace("HTTPClientEvolution: ", err)
 	}
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		err := customerror.Make(fmt.Sprintf("Evolution API retornou status %d", resp.StatusCode), resp.StatusCode, fmt.Errorf("status %d", resp.StatusCode))
+		return nil, customerror.Trace("HTTPClientEvolution: ", err)
+	}
 	var responseData responseType
 	err = json.Unmarshal(body, &responseData)
 	if err != nil {
