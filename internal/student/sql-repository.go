@@ -77,6 +77,25 @@ func (r *sqlRepository) FindByID(ctx context.Context, id string) (*Student, erro
 	return student, nil
 }
 
+func (r *sqlRepository) FindByStudentID(ctx context.Context, studentID string) (*Student, error) {
+	query := `
+        SELECT id, student_id, name, phone, email, annotation, created_at, updated_at, status
+        FROM students
+        WHERE student_id = $1
+    `
+	row := r.db.QueryRowContext(ctx, query, studentID)
+
+	student, err := scanStudent(row)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil
+		}
+		return nil, err
+	}
+
+	return student, nil
+}
+
 func (r *sqlRepository) FindByFilters(ctx context.Context, filters map[string]string) ([]*Student, error) {
 
 	query := `

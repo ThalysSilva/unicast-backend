@@ -10,6 +10,7 @@ import (
 	"github.com/ThalysSilva/unicast-backend/internal/campus"
 	"github.com/ThalysSilva/unicast-backend/internal/config"
 	"github.com/ThalysSilva/unicast-backend/internal/course"
+	"github.com/ThalysSilva/unicast-backend/internal/invite"
 	"github.com/ThalysSilva/unicast-backend/internal/middleware"
 	"github.com/ThalysSilva/unicast-backend/internal/program"
 	"github.com/ThalysSilva/unicast-backend/internal/repository"
@@ -60,6 +61,7 @@ func main() {
 	programService := program.NewService(repos.Program)
 	studentService := student.NewService(repos.Student)
 	userService := user.NewService(repos.User)
+	inviteService := invite.NewService(repos.Invite, repos.Course, repos.Enrollment, repos.Student)
 
 	// Handlers
 	authHandler := auth.NewHandler(authService)
@@ -70,6 +72,7 @@ func main() {
 	programHandler := program.NewHandler(programService)
 	studentHandler := student.NewHandler(studentService)
 	userHandler := user.NewHandler(userService)
+	inviteHandler := invite.NewHandler(inviteService)
 
 	r := gin.Default()
 
@@ -147,6 +150,14 @@ func main() {
 		studentGroup.PUT("/:id", studentHandler.Update())
 		studentGroup.DELETE("/:id", studentHandler.Delete())
 	}
+
+	// Rotas de convites
+	inviteGroup := r.Group("/invite")
+	{
+		inviteGroup.Use(middleware.UseAuthentication(secrets.AccessToken))
+		inviteGroup.POST("/:courseId", inviteHandler.Create())
+	}
+	r.POST("/invite/:code/self-register", inviteHandler.SelfRegister())
 
 	// Swagger
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))

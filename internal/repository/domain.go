@@ -6,6 +6,7 @@ import (
 	"github.com/ThalysSilva/unicast-backend/internal/campus"
 	"github.com/ThalysSilva/unicast-backend/internal/course"
 	"github.com/ThalysSilva/unicast-backend/internal/enrollment"
+	"github.com/ThalysSilva/unicast-backend/internal/invite"
 	"github.com/ThalysSilva/unicast-backend/internal/program"
 	"github.com/ThalysSilva/unicast-backend/internal/smtp"
 	"github.com/ThalysSilva/unicast-backend/internal/student"
@@ -17,6 +18,7 @@ type Repositories struct {
 	User             user.Repository
 	Course           course.Repository
 	Enrollment       enrollment.Repository
+	Invite           invite.Repository
 	SmtpInstance     smtp.Repository
 	WhatsAppInstance whatsapp.Repository
 	Campus           campus.Repository
@@ -29,6 +31,7 @@ func NewRepositories(dbSQL *sql.DB) *Repositories {
 		User:             user.NewRepository(dbSQL),
 		Course:           course.NewRepository(dbSQL),
 		Enrollment:       enrollment.NewRepository(dbSQL),
+		Invite:           invite.NewRepository(dbSQL),
 		SmtpInstance:     smtp.NewRepository(dbSQL),
 		WhatsAppInstance: whatsapp.NewRepository(dbSQL),
 		Campus:           campus.NewRepository(dbSQL),

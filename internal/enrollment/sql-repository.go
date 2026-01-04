@@ -60,6 +60,25 @@ func (r *sqlRepository) FindByID(ctx context.Context, id string) (*Enrollment, e
 	return enrollment, nil
 }
 
+func (r *sqlRepository) FindByCourseAndStudent(ctx context.Context, courseID, studentID string) (*Enrollment, error) {
+	query := `
+        SELECT id, course_id, student_id, created_at, updated_at
+        FROM enrollments
+        WHERE course_id = $1 AND student_id = $2
+    `
+	row := r.db.QueryRowContext(ctx, query, courseID, studentID)
+
+	enrollment := &Enrollment{}
+	err := row.Scan(&enrollment.ID, &enrollment.CourseID, &enrollment.StudentID, &enrollment.CreatedAt, &enrollment.UpdatedAt)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return enrollment, nil
+}
+
 // Atualiza uma matrícula
 func (r *sqlRepository) Update(ctx context.Context, id string, fields map[string]any) error {
 	err := database.Update(ctx, r.db, "enrollments", id, fields)

@@ -16,6 +16,7 @@ const (
 	StudentStatusCanceled  StudentStatus = "CANCELED"
 	StudentStatusGraduated StudentStatus = "GRADUATED"
 	StudentStatusLocked    StudentStatus = "LOCKED"
+	StudentStatusPending   StudentStatus = "PENDING"
 )
 
 type Student struct {
@@ -34,6 +35,7 @@ type Repository interface {
 	database.Transactional
 	Create(ctx context.Context, studentID string, name, phone, email, annotation *string, status StudentStatus) error
 	FindByID(ctx context.Context, id string) (*Student, error)
+	FindByStudentID(ctx context.Context, studentID string) (*Student, error)
 	FindByFilters(ctx context.Context, filters map[string]string) ([]*Student, error)
 	Update(ctx context.Context, id string, fields map[string]any) error
 	Delete(ctx context.Context, id string) error
