@@ -1,7 +1,7 @@
 
 ## Unicast
 
-Backend em Go para auxiliar docentes na gestão e comunicação de disciplinas. Inclui autenticação, cadastro de campus/cursos/disciplinas, alunos pré-cadastrados por disciplina (enrollments), convites públicos com código curto para auto-cadastro do aluno, integrações de SMTP e WhatsApp, e documentação Swagger.
+Backend em Go para fortalecer a comunicação docente–discente. Permite ao professor cadastrar disciplinas e alunos (pré-cadastrados por matrícula) e enviar mensagens que chegam por múltiplos canais (WhatsApp e e-mail), reduzindo o risco de a informação passar despercebida. Inclui autenticação, gestão de campus/curso/disciplina, convites públicos com código curto para o auto-cadastro do aluno, e integrações de SMTP e WhatsApp.
 
 ### Stack
 - Go 1.24.x (Gin, Swagger, JWT/JWE, PQ)
@@ -52,6 +52,13 @@ Swagger disponível em `http://localhost:${API_PORT}/swagger/index.html`.
 - **Enrollments**: vínculo aluno ↔ disciplina.
 - **Invites**: professor cria código curto para a disciplina (`POST /invite/:courseId`); aluno usa `POST /invite/:code/self-register` com `studentId`, `name`, `phone`, `email`. Backend valida vínculo (enrollment) e status `PENDING` antes de ativar.
 - **SMTP/WhatsApp**: criação/listagem de instâncias de envio.
+
+### Segurança e credenciais
+- **Tokens**: JWT para acesso/refresh; JWE com chave de 32 bytes hex para proteger tokens sensíveis.
+- **SMTP**: credenciais armazenadas com criptografia (ver `internal/encryption` / `smtp`), usando `JWE_SECRET` para cifrar dados sensíveis antes de persistir.
+- **Env vars**: segredos ficam no `.env`/`.env.development`. Não commitá-los; use `example.env` como base.
+- **Ownership**: operações sensíveis (campus/program/course/invite) conferem o `userID` do token ao dono do recurso.
+- **Invite codes**: códigos curtos únicos por disciplina; validados como ativos/não expirados e vinculados ao enrollment, garantindo que apenas alunos pré-cadastrados possam ativar seus dados.
 
 ### Migrations
 Arquivo SQL em `migrations/`. Exemplo com golang-migrate:
