@@ -84,50 +84,21 @@ func MakeTransaction[T any](ctx context.Context, repos []Transactional, fn func(
 		return zero, fmt.Errorf("nenhum repositório fornecido")
 	}
 
-	// Coleta o backend do primeiro repositório
-	var tx Tx
-	for i, repo := range repos {
-		backend := repo.TransactionBackend()
-		switch db := backend.(type) {
-		case *sql.DB:
-			if tx == nil {
-				tx = NewSQLTx(db)
-			} else if _, ok := tx.(*SQLTx); !ok {
-				return zero, fmt.Errorf("repositório %d usa backend incompatível (esperado *sql.DB)", i)
-			}
-		// Suporte a GORM (descomentar quando necessário)
-		/*
-			case *gorm.DB:
-				if tx == nil {
-					tx = NewGORMTx(db)
-				} else if _, ok := tx.(*GORMTx); !ok {
-					return zero, fmt.Errorf("repositório %d usa backend incompatível (esperado *gorm.DB)", i)
-				}
-		*/
-		default:
-			return zero, fmt.Errorf("repositório %d usa backend desconhecido: %T", i, backend)
-		}
+	tx, err := resolveTransactionBackend(repos)
+	if err != nil {
+		return zero, err
 	}
-
-	// Verifica se um backend válido foi encontrado
-	if tx == nil {
-		return zero, fmt.Errorf("nenhum backend válido fornecido")
-	}
-
 	txHandle, err := tx.Begin(ctx)
 	if err != nil {
 		return zero, fmt.Errorf("falha ao iniciar transação: %w", err)
 	}
 
-	// Configura repositórios com a transação
-	for i, repo := range repos {
-		newRepo := repo.WithTransaction(txHandle)
-		if newRepo == nil {
-			_ = tx.Rollback(txHandle)
-			return zero, fmt.Errorf("WithTransaction retornou nil para repositório %d", i)
-		}
-		repos[i] = newRepo.(Transactional)
+	reposWithTx, err := withTransaction(repos, txHandle)
+	if err != nil {
+		_ = tx.Rollback(txHandle)
+		return zero, err
 	}
+	repos = reposWithTx
 
 	// Garante rollback em caso de pânico
 	defer func() {
@@ -153,4 +124,48 @@ func MakeTransaction[T any](ctx context.Context, repos []Transactional, fn func(
 	}
 
 	return data, nil
+}
+
+func resolveTransactionBackend(repos []Transactional) (Tx, error) {
+	var tx Tx
+
+	for i, repo := range repos {
+		backend := repo.TransactionBackend()
+		switch db := backend.(type) {
+		case *sql.DB:
+			if tx == nil {
+				tx = NewSQLTx(db)
+			} else if _, ok := tx.(*SQLTx); !ok {
+				return nil, fmt.Errorf("repositório %d usa backend incompatível (esperado *sql.DB)", i)
+			}
+		default:
+			return nil, fmt.Errorf("repositório %d usa backend desconhecido: %T", i, backend)
+		}
+	}
+
+	if tx == nil {
+		return nil, fmt.Errorf("nenhum backend válido fornecido")
+	}
+
+	return tx, nil
+}
+
+func withTransaction(repos []Transactional, txHandle any) ([]Transactional, error) {
+	updated := make([]Transactional, len(repos))
+
+	for i, repo := range repos {
+		newRepo := repo.WithTransaction(txHandle)
+		if newRepo == nil {
+			return nil, fmt.Errorf("WithTransaction retornou nil para repositório %d", i)
+		}
+
+		castedRepo, ok := newRepo.(Transactional)
+		if !ok {
+			return nil, fmt.Errorf("repositório %d não implementa Transactional após WithTransaction", i)
+		}
+
+		updated[i] = castedRepo
+	}
+
+	return updated, nil
 }
