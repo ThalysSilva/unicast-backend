@@ -217,20 +217,20 @@ func (h *handler) ImportForCourse() gin.HandlerFunc {
 		modeParam := strings.ToLower(c.DefaultQuery("mode", string(ImportModeUpsert)))
 		mode := ImportMode(modeParam)
 		if mode != ImportModeClean && mode != ImportModeUpsert {
-			c.JSON(http.StatusBadRequest, gin.H{"message": "mode inválido, use clean ou upsert"})
+			c.JSON(http.StatusBadRequest, api.ErrorResponse{Error: "mode inválido, use clean ou upsert"})
 			return
 		}
 
 		file, _, err := c.Request.FormFile("file")
 		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"message": "arquivo 'file' é obrigatório"})
+			c.JSON(http.StatusBadRequest, api.ErrorResponse{Error: "arquivo 'file' é obrigatório"})
 			return
 		}
 		defer file.Close()
 
 		records, err := parseImportCSV(file)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+			c.JSON(http.StatusBadRequest, api.ErrorResponse{Error: err.Error()})
 			return
 		}
 

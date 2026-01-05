@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/ThalysSilva/unicast-backend/pkg/api"
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
 )
@@ -21,7 +22,8 @@ func ValidationErrorHandler() gin.HandlerFunc {
 		}
 
 		if len(errMessages) > 0 {
-			c.JSON(http.StatusBadRequest, gin.H{"errors": errMessages})
+			payload, _ := json.Marshal(errMessages)
+			c.JSON(http.StatusBadRequest, api.ErrorResponse{Error: string(payload)})
 			c.Abort()
 			return
 		}

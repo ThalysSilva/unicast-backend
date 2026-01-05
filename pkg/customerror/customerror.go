@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/ThalysSilva/unicast-backend/pkg/api"
 	"github.com/gin-gonic/gin"
 )
 
@@ -19,8 +20,6 @@ type CustomError struct {
 }
 
 func (e *CustomError) Error() string {
-	fmt.Println("Preparando para mostrar o erro")
-	fmt.Println("CustomError", e.message)
 	return fmt.Sprintf("%s: %s", e.message, e.Err.Error())
 }
 
@@ -36,10 +35,10 @@ func HandleResponse(g *gin.Context, err error) {
 	defer g.Abort()
 	customErr := &CustomError{}
 	if errors.As(err, &customErr) {
-		g.JSON(customErr.HttpCode, gin.H{"error": customErr.Error()})
+		g.JSON(customErr.HttpCode, api.ErrorResponse{Error: customErr.Error()})
 		return
 	}
 	errString := fmt.Sprintf("Erro interno inesperado: %s", err.Error())
-	g.JSON(http.StatusInternalServerError, gin.H{"error": errString})
+	g.JSON(http.StatusInternalServerError, api.ErrorResponse{Error: errString})
 
 }

@@ -99,7 +99,7 @@ func (s *handler) Login() gin.HandlerFunc {
 // @Param Authorization header string true "Bearer token"
 // @Security BearerAuth
 // @Param user_id path string true "User ID"
-// @Success 200 {object} object{message=string}
+// @Success 200 {object} api.MessageResponse
 // @Failure 401 {object} api.ErrorResponse
 // @Router /auth/logout [post]
 func (s *handler) Logout() gin.HandlerFunc {
@@ -107,8 +107,9 @@ func (s *handler) Logout() gin.HandlerFunc {
 		userId, _ := c.Get("user_id")
 		if err := s.service.Logout(c.Request.Context(), userId.(string)); err != nil {
 			customerror.HandleResponse(c, err)
+			return
 		}
-		c.JSON(http.StatusOK, gin.H{"message": "Usuário deslogado com sucesso."})
+		c.JSON(http.StatusOK, api.MessageResponse{Message: "Usuário deslogado com sucesso."})
 	}
 }
 
@@ -131,7 +132,7 @@ func (s *handler) Refresh() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var input RefreshInput
 		if err := c.ShouldBindJSON(&input); err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			c.JSON(http.StatusBadRequest, api.ErrorResponse{Error: err.Error()})
 			return
 		}
 		response, err := s.service.RefreshToken(c.Request.Context(), input.RefreshToken)

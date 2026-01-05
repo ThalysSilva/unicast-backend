@@ -93,12 +93,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "object",
-                            "properties": {
-                                "message": {
-                                    "type": "string"
-                                }
-                            }
+                            "$ref": "#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.MessageResponse"
                         }
                     },
                     "401": {

@@ -641,10 +641,7 @@ paths:
         "200":
           description: OK
           schema:
-            properties:
-              message:
-                type: string
-            type: object
+            $ref: '#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.MessageResponse'
         "401":
           description: Unauthorized
           schema:
