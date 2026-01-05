@@ -95,6 +95,10 @@ type connectResponse struct {
 	PairingCode string `json:"pairingCode"`
 	Code        string `json:"code"`
 	Count       int    `json:"count"`
+	Qrcode      struct {
+		Code   string `json:"code"`
+		Base64 string `json:"base64"`
+	} `json:"qrcode"`
 }
 
 type statusResponse struct {

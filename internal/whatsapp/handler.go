@@ -13,8 +13,9 @@ type createInstanceInput struct {
 }
 
 type CreateInstanceResponse struct {
-	InstanceID string `json:"instanceId"`
-	QrCode     string `json:"qrCode"`
+	InstanceID  string `json:"instanceId"`
+	QrCode      string `json:"qrCode"`
+	PairingCode string `json:"pairingCode,omitempty"`
 }
 
 type GetInstancesResponse struct {
@@ -61,7 +62,7 @@ func (h *handler) CreateInstance() gin.HandlerFunc {
 			return
 		}
 		userID := c.GetString("userID")
-		instance, qrCode, err := h.service.CreateInstance(c.Request.Context(), userID, input.Phone)
+		instance, connectResp, err := h.service.CreateInstance(c.Request.Context(), userID, input.Phone)
 		if err != nil {
 			customerror.HandleResponse(c, err)
 			return
@@ -70,8 +71,9 @@ func (h *handler) CreateInstance() gin.HandlerFunc {
 		c.JSON(http.StatusOK, api.DefaultResponse[CreateInstanceResponse]{
 			Message: "Instância criada com sucesso !.",
 			Data: CreateInstanceResponse{
-				InstanceID: instance.InstanceName,
-				QrCode:     qrCode,
+				InstanceID:  instance.InstanceName,
+				QrCode:      connectResp.Qrcode.Code,
+				PairingCode: connectResp.PairingCode,
 			},
 		})
 	}

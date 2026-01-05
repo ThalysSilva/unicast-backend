@@ -12,7 +12,7 @@ import (
 )
 
 type Service interface {
-	CreateInstance(ctx context.Context, userId, phone string) (*Instance, string, error)
+	CreateInstance(ctx context.Context, userId, phone string) (*Instance, *connectResponse, error)
 	GetInstances(ctx context.Context, userID string) ([]*Instance, error)
 	DeleteInstance(ctx context.Context, userID, instanceID string) error
 	ConnectInstance(ctx context.Context, userID, instanceID string) (*connectResponse, error)
@@ -40,7 +40,7 @@ var (
 	InstanceForbidden  = customerror.Make("Você não tem permissão para esta instância", http.StatusForbidden, errors.New("instanceForbidden"))
 )
 
-func (s *service) CreateInstance(ctx context.Context, userId, phone string) (*Instance, string, error) {
+func (s *service) CreateInstance(ctx context.Context, userId, phone string) (*Instance, *connectResponse, error) {
 	var instance *Instance
 
 	// Fase 1: checa existência e usuário dentro da transação.
@@ -57,13 +57,13 @@ func (s *service) CreateInstance(ctx context.Context, userId, phone string) (*In
 		return nil
 	})
 	if err != nil {
-		return nil, "", err
+		return nil, nil, err
 	}
 
 	// Fase 2: cria instância na Evolution (fora da transação para evitar órfãos).
 	remoteInstanceId, qr, err := s.createRemoteInstance(phone, instanceName)
 	if err != nil {
-		return nil, "", err
+		return nil, nil, err
 	}
 
 	// Fase 3: persiste no banco.
@@ -84,10 +84,24 @@ func (s *service) CreateInstance(ctx context.Context, userId, phone string) (*In
 		return nil
 	})
 	if err != nil {
-		return nil, "", err
+		return nil, nil, err
 	}
 
-	return instance, qr, nil
+	// Fase 4: conecta/gera QR atualizado (pairing/code) na Evolution
+	connectResp, err := connectEvolutionInstance(instanceName, phone)
+	if err != nil {
+		// Se falhar, retornamos o QR da criação mesmo assim.
+		return instance, &connectResponse{
+			Code: qr,
+			Qrcode: struct {
+				Code   string `json:"code"`
+				Base64 string `json:"base64"`
+			}{Code: qr},
+		}, nil
+	}
+
+	// Prioriza o QR retornado pelo connect (parsing code/count).
+	return instance, connectResp, nil
 }
 
 func (s *service) GetInstances(ctx context.Context, userID string) ([]*Instance, error) {
