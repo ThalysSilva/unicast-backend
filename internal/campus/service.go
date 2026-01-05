@@ -87,8 +87,9 @@ func (s *campusService) Delete(ctx context.Context, id string) error {
 		return ErrCampusNotFound
 	}
 
-	_, err = database.MakeTransaction(ctx, []database.Transactional{s.campusRepository}, func() (any, error) {
-		err := s.campusRepository.Delete(ctx, id)
+	_, err = database.MakeTransaction(ctx, []database.Transactional{s.campusRepository}, func(txRepos []database.Transactional) (any, error) {
+		repo := txRepos[0].(Repository)
+		err := repo.Delete(ctx, id)
 		// TODO: Implementar a exclusão de campus e todas as suas dependências
 		if err != nil {
 			return nil, err

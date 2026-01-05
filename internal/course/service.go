@@ -69,7 +69,7 @@ func (s *courseService) isOwner(ctx context.Context, courseID, userID string) (b
 	if campus.UserOwnerID != userID {
 		return false, nil
 	}
-	
+
 	return true, nil
 }
 
@@ -103,8 +103,9 @@ func (s *courseService) Delete(ctx context.Context, id string) error {
 		return ErrCampusNotFound
 	}
 
-	_, err = database.MakeTransaction(ctx, []database.Transactional{s.courseRepository}, func() (any, error) {
-		err := s.courseRepository.Delete(ctx, id)
+	_, err = database.MakeTransaction(ctx, []database.Transactional{s.courseRepository}, func(txRepos []database.Transactional) (any, error) {
+		repo := txRepos[0].(Repository)
+		err := repo.Delete(ctx, id)
 		// TODO: Implementar a exclusão de campus e todas as suas dependências
 		if err != nil {
 			return nil, err

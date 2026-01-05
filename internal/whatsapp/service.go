@@ -40,12 +40,15 @@ func (s *service) CreateInstance(ctx context.Context, userId, phone string) (*In
 	var instance *Instance
 	var qrCode string
 
-	_, err := database.MakeTransaction(ctx, []database.Transactional{s.whatsappInstanceRepository, s.userRepository}, func() (any, error) {
-		if err := s.ensureNoExistingInstance(ctx, phone, userId); err != nil {
+	_, err := database.MakeTransaction(ctx, []database.Transactional{s.whatsappInstanceRepository, s.userRepository}, func(txRepos []database.Transactional) (any, error) {
+		waRepo := txRepos[0].(Repository)
+		userRepo := txRepos[1].(user.Repository)
+
+		if err := s.ensureNoExistingInstance(ctx, waRepo, phone, userId); err != nil {
 			return nil, err
 		}
 
-		user, err := s.fetchUser(ctx, userId)
+		user, err := s.fetchUser(ctx, userRepo, userId)
 		if err != nil {
 			return nil, err
 		}
@@ -55,11 +58,11 @@ func (s *service) CreateInstance(ctx context.Context, userId, phone string) (*In
 			return nil, err
 		}
 
-		if err := s.persistInstance(ctx, phone, userId, instanceId); err != nil {
+		if err := s.persistInstance(ctx, waRepo, phone, userId, instanceId); err != nil {
 			return nil, err
 		}
 
-		instance, err = s.whatsappInstanceRepository.FindByPhoneAndUserId(ctx, phone, userId)
+		instance, err = waRepo.FindByPhoneAndUserId(ctx, phone, userId)
 		if err != nil {
 			return nil, fmt.Errorf("falha ao buscar instância criada: %w", err)
 		}
@@ -107,8 +110,8 @@ func (s *service) DeleteInstance(ctx context.Context, userID, instanceID string)
 	return s.whatsappInstanceRepository.Delete(ctx, instanceID)
 }
 
-func (s *service) ensureNoExistingInstance(ctx context.Context, phone, userID string) error {
-	hasInstance, err := s.whatsappInstanceRepository.FindByPhoneAndUserId(ctx, phone, userID)
+func (s *service) ensureNoExistingInstance(ctx context.Context, repo Repository, phone, userID string) error {
+	hasInstance, err := repo.FindByPhoneAndUserId(ctx, phone, userID)
 	if err != nil {
 		return fmt.Errorf("falha ao verificar instância existente: %w", err)
 	}
@@ -118,8 +121,8 @@ func (s *service) ensureNoExistingInstance(ctx context.Context, phone, userID st
 	return nil
 }
 
-func (s *service) fetchUser(ctx context.Context, userID string) (*user.User, error) {
-	u, err := s.userRepository.FindByID(ctx, userID)
+func (s *service) fetchUser(ctx context.Context, repo user.Repository, userID string) (*user.User, error) {
+	u, err := repo.FindByID(ctx, userID)
 	if err != nil {
 		return nil, fmt.Errorf("falha ao buscar usuário: %w", err)
 	}
@@ -138,8 +141,8 @@ func (s *service) createRemoteInstance(phone, userEmail string) (string, string,
 	return instanceId, newQrCode, nil
 }
 
-func (s *service) persistInstance(ctx context.Context, phone, userID, instanceID string) error {
-	if err := s.whatsappInstanceRepository.Create(ctx, phone, userID, instanceID); err != nil {
+func (s *service) persistInstance(ctx context.Context, repo Repository, phone, userID, instanceID string) error {
+	if err := repo.Create(ctx, phone, userID, instanceID); err != nil {
 		return fmt.Errorf("falha ao criar instância: %w", err)
 	}
 	return nil

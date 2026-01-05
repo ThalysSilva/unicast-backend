@@ -77,7 +77,8 @@ func (t *SQLTx) WithSQLTransaction(tx any) *SQLTx {
 }
 
 // MakeTransaction executa uma transação inspirada no GORM.
-func MakeTransaction[T any](ctx context.Context, repos []Transactional, fn func() (T, error)) (T, error) {
+// O callback recebe os repositórios já envelopados na transação.
+func MakeTransaction[T any](ctx context.Context, repos []Transactional, fn func(txRepos []Transactional) (T, error)) (T, error) {
 	var zero T
 
 	if len(repos) == 0 {
@@ -98,7 +99,6 @@ func MakeTransaction[T any](ctx context.Context, repos []Transactional, fn func(
 		_ = tx.Rollback(txHandle)
 		return zero, err
 	}
-	repos = reposWithTx
 
 	// Garante rollback em caso de pânico
 	defer func() {
@@ -111,7 +111,7 @@ func MakeTransaction[T any](ctx context.Context, repos []Transactional, fn func(
 	}()
 
 	// Executa o callback
-	data, err := fn()
+	data, err := fn(reposWithTx)
 	if err != nil {
 		if rollbackErr := tx.Rollback(txHandle); rollbackErr != nil {
 			return zero, fmt.Errorf("falha ao reverter transação: %v; erro original: %w", rollbackErr, err)
