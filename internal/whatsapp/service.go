@@ -38,50 +38,52 @@ var (
 
 func (s *service) CreateInstance(ctx context.Context, userId, phone string) (*Instance, string, error) {
 	var instance *Instance
-	var qrCode string
 
-	_, err := database.MakeTransaction(ctx, []database.Transactional{s.whatsappInstanceRepository, s.userRepository}, func(txRepos []database.Transactional) (any, error) {
-		waRepo := txRepos[0].(Repository)
-		userRepo := txRepos[1].(user.Repository)
-
+	// Fase 1: checa existência e usuário dentro da transação.
+	var instanceId string
+	err := s.withTransaction(ctx, func(waRepo Repository, userRepo user.Repository) error {
 		if err := s.ensureNoExistingInstance(ctx, waRepo, phone, userId); err != nil {
-			return nil, err
+			return err
 		}
-
 		user, err := s.fetchUser(ctx, userRepo, userId)
 		if err != nil {
-			return nil, err
+			return err
 		}
-
-		instanceId, newQrCode, err := s.createRemoteInstance(phone, user.Email)
-		if err != nil {
-			return nil, err
-		}
-
-		if err := s.persistInstance(ctx, waRepo, phone, userId, instanceId); err != nil {
-			return nil, err
-		}
-
-		instance, err = waRepo.FindByPhoneAndUserId(ctx, phone, userId)
-		if err != nil {
-			return nil, fmt.Errorf("falha ao buscar instância criada: %w", err)
-		}
-
-		qrCode = newQrCode
-		return nil, nil
+		instanceId = s.buildInstanceName(user.Email, phone)
+		return nil
 	})
-
 	if err != nil {
 		return nil, "", err
 	}
 
-	// Verifica contexto normal (*sql.DB)
-	_, err = s.whatsappInstanceRepository.FindByID(ctx, "non-existent")
+	// Fase 2: cria instância na Evolution (fora da transação para evitar órfãos).
+	remoteInstanceId, qr, err := s.createRemoteInstance(phone, instanceId)
 	if err != nil {
-		fmt.Printf("Pós-transação usa *sql.DB: %v\n", err)
+		return nil, "", err
 	}
 
-	return instance, qrCode, nil
+	// Fase 3: persiste no banco.
+	err = s.withTransaction(ctx, func(waRepo Repository, userRepo user.Repository) error {
+		if err := s.ensureNoExistingInstance(ctx, waRepo, phone, userId); err != nil {
+			return err
+		}
+		if err := s.persistInstance(ctx, waRepo, phone, userId, remoteInstanceId); err != nil {
+			// Em caso de falha, idealmente deletar a instância remota.
+			_ = deleteEvolutionInstance(remoteInstanceId)
+			return err
+		}
+		var errFetch error
+		instance, errFetch = waRepo.FindByPhoneAndUserId(ctx, phone, userId)
+		if errFetch != nil {
+			return fmt.Errorf("falha ao buscar instância criada: %w", errFetch)
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, "", err
+	}
+
+	return instance, qr, nil
 }
 
 func (s *service) GetInstances(ctx context.Context, userID string) ([]*Instance, error) {
@@ -146,4 +148,17 @@ func (s *service) persistInstance(ctx context.Context, repo Repository, phone, u
 		return fmt.Errorf("falha ao criar instância: %w", err)
 	}
 	return nil
+}
+
+func (s *service) withTransaction(ctx context.Context, fn func(repo Repository, userRepo user.Repository) error) error {
+	_, err := database.MakeTransaction(ctx, []database.Transactional{s.whatsappInstanceRepository, s.userRepository}, func(txRepos []database.Transactional) (any, error) {
+		waRepo := txRepos[0].(Repository)
+		userRepo := txRepos[1].(user.Repository)
+		return nil, fn(waRepo, userRepo)
+	})
+	return err
+}
+
+func (s *service) buildInstanceName(userEmail, phone string) string {
+	return userEmail + ":" + phone
 }

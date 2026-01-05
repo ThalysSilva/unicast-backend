@@ -202,7 +202,7 @@ func (s *service) Send(ctx context.Context, message *Message) (emailsFails, what
 	}
 	for _, stud := range students {
 		errText, failed := emailFailedSet[stud.ID]
-		_ = s.logRepository.Save(ctx, &Log{
+		if err := s.logRepository.Save(ctx, &Log{
 			StudentID:       stud.ID,
 			Channel:         ChannelEmail,
 			Success:         !failed,
@@ -212,7 +212,9 @@ func (s *service) Send(ctx context.Context, message *Message) (emailsFails, what
 			SMTPID:          &message.SmtpId,
 			AttachmentNames: nullableString(attachmentNamesStr, len(attachmentNames) > 0),
 			AttachmentCount: len(attachmentNames),
-		})
+		}); err != nil {
+			fmt.Printf("falha ao salvar log email student %s: %v\n", stud.ID, err)
+		}
 	}
 
 	whatsFailedSet := make(map[string]string)
@@ -221,7 +223,7 @@ func (s *service) Send(ctx context.Context, message *Message) (emailsFails, what
 	}
 	for _, stud := range students {
 		errText, failed := whatsFailedSet[stud.ID]
-		_ = s.logRepository.Save(ctx, &Log{
+		if err := s.logRepository.Save(ctx, &Log{
 			StudentID:          stud.ID,
 			Channel:            ChannelWhatsApp,
 			Success:            !failed,
@@ -231,7 +233,9 @@ func (s *service) Send(ctx context.Context, message *Message) (emailsFails, what
 			WhatsAppInstanceID: &message.WhatsappId,
 			AttachmentNames:    nullableString(attachmentNamesStr, len(attachmentNames) > 0),
 			AttachmentCount:    len(attachmentNames),
-		})
+		}); err != nil {
+			fmt.Printf("falha ao salvar log whatsapp student %s: %v\n", stud.ID, err)
+		}
 	}
 
 	return emailFailedStudents, whatsappFailedStudents, nil

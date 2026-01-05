@@ -137,6 +137,10 @@ type sendTextResponse struct {
 	Message string `json:"message"`
 }
 
+type deleteInstanceResponse struct {
+	Message string `json:"message"`
+}
+
 // sendEvolutionText envia uma mensagem de texto simples usando a Evolution API.
 func sendEvolutionText(instanceID, number, text string) error {
 	body, err := jsonFunc(sendTextPayload{
@@ -159,4 +163,17 @@ func sendEvolutionText(instanceID, number, text string) error {
 	}
 
 	return nil
+}
+
+// deleteEvolutionInstance remove uma instância na Evolution API.
+func deleteEvolutionInstance(instanceID string) error {
+	body, err := jsonFunc(map[string]string{
+		"instanceId": instanceID,
+	})
+	if err != nil {
+		return customerror.Trace("deleteEvolutionInstance: marshal", err)
+	}
+	payload := bytes.NewBuffer(body)
+	_, err = httpClientEvolution[deleteInstanceResponse]("DELETE", "/instance/delete", payload)
+	return err
 }
