@@ -64,6 +64,12 @@ Swagger disponível em `http://localhost:${API_PORT}/swagger/index.html`.
 - **Ownership**: operações sensíveis (campus/program/course/invite) conferem o `userID` do token ao dono do recurso.
 - **Invite codes**: códigos curtos únicos por disciplina; validados como ativos/não expirados e vinculados ao enrollment, garantindo que apenas alunos pré-cadastrados possam ativar seus dados.
 - **Backdoor**: rota administrativa protegida por `ADMIN_SECRET`; trate essa chave como segredo crítico.
+  
+#### Modelo de criptografia SMTP
+- Cada instância SMTP é criada pelo usuário fornecendo um segredo (`smtpSecret`) próprio; esse segredo não é armazenado em texto plano.
+- As credenciais SMTP (email, senha, host/porta, IV) são cifradas com JWE usando o `smtpSecret` do usuário, de modo que um vazamento de banco afeta apenas a instância/usuário que teve o segredo comprometido.
+- O `JWE_SECRET` global serve apenas para proteger dados sensíveis de tokens/JWE do sistema; o segredo específico de SMTP é fornecido pelo usuário, reduzindo o blast radius.
+- Logs não carregam dados sensíveis; recomenda-se nunca registrar host/usuário/senha do SMTP em claro.
 
 ### Migrations
 Arquivo SQL em `migrations/`. Exemplo com golang-migrate:
