@@ -41,32 +41,22 @@ func (s *service) CreateInstance(ctx context.Context, userId, phone string) (*In
 	var qrCode string
 
 	_, err := database.MakeTransaction(ctx, []database.Transactional{s.whatsappInstanceRepository, s.userRepository}, func() (any, error) {
-		hasInstance, err := s.whatsappInstanceRepository.FindByPhoneAndUserId(ctx, phone, userId)
-		if err != nil {
-			return nil, fmt.Errorf("falha ao verificar instância existente: %w", err)
-		}
-		if hasInstance != nil {
-			return nil, customerror.Trace("CreateInstance", HasAlreadyInstance)
+		if err := s.ensureNoExistingInstance(ctx, phone, userId); err != nil {
+			return nil, err
 		}
 
-		user, err := s.userRepository.FindByID(ctx, userId)
+		user, err := s.fetchUser(ctx, userId)
 		if err != nil {
-			return nil, fmt.Errorf("falha ao buscar usuário: %w", err)
-		}
-		if user == nil {
-			return nil, customerror.Trace("CreateInstance", UserNotFound)
+			return nil, err
 		}
 
-		instanceName := user.Email + ":" + phone
-		instanceId, newQrCode, err := createEvolutionInstance(phone, instanceName, true)
+		instanceId, newQrCode, err := s.createRemoteInstance(phone, user.Email)
 		if err != nil {
-			return nil, customerror.Trace("CreateInstance", err)
+			return nil, err
 		}
 
-		err = s.whatsappInstanceRepository.Create(ctx, phone, userId, instanceId)
-		if err != nil {
-			// deleteEvolutionInstance(instanceId)
-			return nil, fmt.Errorf("falha ao criar instância: %w", err)
+		if err := s.persistInstance(ctx, phone, userId, instanceId); err != nil {
+			return nil, err
 		}
 
 		instance, err = s.whatsappInstanceRepository.FindByPhoneAndUserId(ctx, phone, userId)
@@ -115,4 +105,42 @@ func (s *service) DeleteInstance(ctx context.Context, userID, instanceID string)
 	}
 
 	return s.whatsappInstanceRepository.Delete(ctx, instanceID)
+}
+
+func (s *service) ensureNoExistingInstance(ctx context.Context, phone, userID string) error {
+	hasInstance, err := s.whatsappInstanceRepository.FindByPhoneAndUserId(ctx, phone, userID)
+	if err != nil {
+		return fmt.Errorf("falha ao verificar instância existente: %w", err)
+	}
+	if hasInstance != nil {
+		return customerror.Trace("CreateInstance", HasAlreadyInstance)
+	}
+	return nil
+}
+
+func (s *service) fetchUser(ctx context.Context, userID string) (*user.User, error) {
+	u, err := s.userRepository.FindByID(ctx, userID)
+	if err != nil {
+		return nil, fmt.Errorf("falha ao buscar usuário: %w", err)
+	}
+	if u == nil {
+		return nil, customerror.Trace("CreateInstance", UserNotFound)
+	}
+	return u, nil
+}
+
+func (s *service) createRemoteInstance(phone, userEmail string) (string, string, error) {
+	instanceName := userEmail + ":" + phone
+	instanceId, newQrCode, err := createEvolutionInstance(phone, instanceName, true)
+	if err != nil {
+		return "", "", customerror.Trace("CreateInstance", err)
+	}
+	return instanceId, newQrCode, nil
+}
+
+func (s *service) persistInstance(ctx context.Context, phone, userID, instanceID string) error {
+	if err := s.whatsappInstanceRepository.Create(ctx, phone, userID, instanceID); err != nil {
+		return fmt.Errorf("falha ao criar instância: %w", err)
+	}
+	return nil
 }
