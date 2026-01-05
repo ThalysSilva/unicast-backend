@@ -8,35 +8,16 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
 )
+
 // ValidationErrorHandler é um middleware que intercepta erros de validação e os transforma em respostas JSON
 func ValidationErrorHandler() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		c.Next() 
-
-		if len(c.Errors) == 0 {
-			return
-		}
+		c.Next()
 
 		errMessages := make(map[string]string)
 
 		for _, e := range c.Errors {
-			switch err := e.Err.(type) {
-			case validator.ValidationErrors:
-				for _, fe := range err {
-					switch fe.Tag() {
-					case "required":
-						errMessages[fe.Field()] = fmt.Sprintf("O campo %s é obrigatório", fe.Field())
-					case "email":
-						errMessages[fe.Field()] = fmt.Sprintf("O campo %s deve ser um email válido", fe.Field())
-					default:
-						errMessages[fe.Field()] = fmt.Sprintf("Erro de validação no campo %s", fe.Field())
-					}
-				}
-			case *json.SyntaxError:
-				errMessages["general"] = "JSON inválido: sintaxe incorreta"
-			default:
-				continue
-			}
+			accumulateValidationErrors(errMessages, e.Err)
 		}
 
 		if len(errMessages) > 0 {
@@ -44,5 +25,27 @@ func ValidationErrorHandler() gin.HandlerFunc {
 			c.Abort()
 			return
 		}
+	}
+}
+
+func accumulateValidationErrors(errMessages map[string]string, err error) {
+	switch typed := err.(type) {
+	case validator.ValidationErrors:
+		for _, fe := range typed {
+			errMessages[fe.Field()] = validationMessage(fe)
+		}
+	case *json.SyntaxError:
+		errMessages["general"] = "JSON inválido: sintaxe incorreta"
+	}
+}
+
+func validationMessage(fe validator.FieldError) string {
+	switch fe.Tag() {
+	case "required":
+		return fmt.Sprintf("O campo %s é obrigatório", fe.Field())
+	case "email":
+		return fmt.Sprintf("O campo %s deve ser um email válido", fe.Field())
+	default:
+		return fmt.Sprintf("Erro de validação no campo %s", fe.Field())
 	}
 }
