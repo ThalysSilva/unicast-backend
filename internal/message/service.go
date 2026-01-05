@@ -215,7 +215,7 @@ func (s *service) sendWhats(ctx context.Context, waInstance *whatsapp.Instance, 
 
 		for _, att := range attachments {
 			if len(att.Data) > 0 {
-				if err := whatsapp.SendMedia(waInstance.InstanceName, normalized, att.FileName, att.Data, body); err != nil {
+				if _, err := whatsapp.SendMedia(waInstance.InstanceName, normalized, att.FileName, att.Data, body); err != nil {
 					fmt.Printf("falha ao enviar anexo via whatsapp para %s: %v\n", *stud.Phone, err)
 					failed = append(failed, *stud)
 					break
@@ -223,7 +223,7 @@ func (s *service) sendWhats(ctx context.Context, waInstance *whatsapp.Instance, 
 				continue
 			}
 			if att.URL != "" {
-				if err := whatsapp.SendMediaURL(waInstance.InstanceName, normalized, att.URL, att.FileName, body); err != nil {
+				if _, err := whatsapp.SendMediaURL(waInstance.InstanceName, normalized, att.URL, att.FileName, body); err != nil {
 					fmt.Printf("falha ao enviar anexo via url whatsapp para %s: %v\n", *stud.Phone, err)
 					failed = append(failed, *stud)
 					break

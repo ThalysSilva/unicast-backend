@@ -27,7 +27,7 @@ func SendText(instanceName, number, text string) error {
 }
 
 // SendMedia envia um attachment via Evolution API (media pode ser URL ou base64).
-func SendMedia(instanceName, number string, fileName string, data []byte, caption string) error {
+func SendMedia(instanceName, number string, fileName string, data []byte, caption string) (*sendMediaResponse, error) {
 	mime := http.DetectContentType(data)
 	mediaType := inferMediaType(mime)
 	encoded := base64.StdEncoding.EncodeToString(data)
@@ -43,7 +43,7 @@ func SendMedia(instanceName, number string, fileName string, data []byte, captio
 }
 
 // SendMediaURL envia um attachment hospedado por URL via Evolution API.
-func SendMediaURL(instanceName, number string, mediaURL string, fileName string, caption string) error {
+func SendMediaURL(instanceName, number string, mediaURL string, fileName string, caption string) (*sendMediaResponse, error) {
 	return sendEvolutionMedia(instanceName, sendMediaPayload{
 		Number:    number,
 		Media:     mediaURL,

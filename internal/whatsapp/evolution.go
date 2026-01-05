@@ -81,6 +81,12 @@ type sendMediaPayload struct {
 type sendMediaResponse struct {
 	Status  string `json:"status"`
 	Message string `json:"message"`
+	Key     struct {
+		RemoteJid string `json:"remoteJid"`
+		FromMe    bool   `json:"fromMe"`
+		ID        string `json:"id"`
+	} `json:"key"`
+	MessageTimestamp string `json:"messageTimestamp"`
 }
 
 type connectResponse struct {
@@ -194,23 +200,23 @@ func sendEvolutionText(instanceID, number, text string) error {
 }
 
 // sendEvolutionMedia envia mídia/base64 ou URL via Evolution API.
-func sendEvolutionMedia(instanceName string, payload sendMediaPayload) error {
+func sendEvolutionMedia(instanceName string, payload sendMediaPayload) (*sendMediaResponse, error) {
 	body, err := jsonFunc(payload)
 	if err != nil {
-		return customerror.Trace("sendEvolutionMedia: marshal", err)
+		return nil, customerror.Trace("sendEvolutionMedia: marshal", err)
 	}
 
 	buf := bytes.NewBuffer(body)
 	resp, err := httpClientEvolution[sendMediaResponse]("POST", "/message/sendMedia/"+instanceName, buf)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	if resp == nil {
-		return customerror.Make("resposta vazia da Evolution API", http.StatusBadGateway, fmt.Errorf("empty response"))
+		return nil, customerror.Make("resposta vazia da Evolution API", http.StatusBadGateway, fmt.Errorf("empty response"))
 	}
 
-	return nil
+	return resp, nil
 }
 
 // deleteEvolutionInstance remove uma instância na Evolution API.
