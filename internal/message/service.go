@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/ThalysSilva/unicast-backend/internal/auth"
@@ -31,6 +32,7 @@ type service struct {
 	smtpRepository     smtp.Repository
 	userRepository     user.Repository
 	studentRepository  student.Repository
+	logRepository      LogRepository
 	jweSecret          []byte
 	defaultCountryCode string
 }
@@ -43,7 +45,7 @@ var (
 	ErrPhoneInvalid     = customerror.Make("telefone inválido para WhatsApp", 400, errors.New("ErrPhoneInvalid"))
 )
 
-func NewMessageService(whatsAppRepository whatsapp.Repository, smtpRepository smtp.Repository, userRepository user.Repository, studentRepository student.Repository, jweSecret []byte) Service {
+func NewMessageService(whatsAppRepository whatsapp.Repository, smtpRepository smtp.Repository, userRepository user.Repository, studentRepository student.Repository, logRepository LogRepository, jweSecret []byte) Service {
 	cfg, _ := env.Load()
 	defaultCountry := "55"
 	if cfg != nil && cfg.Defaults.CountryCode != "" {
@@ -55,6 +57,7 @@ func NewMessageService(whatsAppRepository whatsapp.Repository, smtpRepository sm
 		smtpRepository:     smtpRepository,
 		userRepository:     userRepository,
 		studentRepository:  studentRepository,
+		logRepository:      logRepository,
 		jweSecret:          jweSecret,
 		defaultCountryCode: defaultCountry,
 	}
@@ -126,13 +129,19 @@ func (s *service) Send(ctx context.Context, message *Message) (emailsFails, what
 	})
 
 	attachments := []mailer.Attachment{}
+	var attachmentNames []string
 	if message.Attachments != nil {
 		for _, attachment := range *message.Attachments {
 			attachments = append(attachments, mailer.Attachment{
 				FileName: attachment.FileName,
 				Data:     attachment.Data,
 			})
+			attachmentNames = append(attachmentNames, attachment.FileName)
 		}
+	}
+	attachmentNamesStr := ""
+	if len(attachmentNames) > 0 {
+		attachmentNamesStr = strings.Join(attachmentNames, ",")
 	}
 	emailFailedStudents := &[]student.Student{}
 
@@ -147,15 +156,15 @@ func (s *service) Send(ctx context.Context, message *Message) (emailsFails, what
 		return nil, nil, customerror.Trace("Send", err)
 	}
 
-	if err := sender.SendEmails(4, 4, 10, 5*time.Second); err != nil {
-		failedStudents, err := extractEmailFailedStudents(err, students)
-		if err != nil {
-			return nil, nil, customerror.Trace("Send", err)
+	emailSendErr := sender.SendEmails(4, 4, 10, 5*time.Second)
+	if emailSendErr != nil {
+		failedStudents, e := extractEmailFailedStudents(emailSendErr, students)
+		if e != nil {
+			return nil, nil, customerror.Trace("Send", e)
 		}
 		if len(failedStudents) > 0 {
 			emailFailedStudents = &failedStudents
 		}
-
 	}
 	whatsappFailedStudents := &[]student.Student{}
 
@@ -184,6 +193,47 @@ func (s *service) Send(ctx context.Context, message *Message) (emailsFails, what
 		whatsappFailedStudents = &failedWhats
 	}
 
+	// Persist logs
+	emailFailedSet := make(map[string]string)
+	if emailSendErr != nil && emailFailedStudents != nil {
+		for _, s := range *emailFailedStudents {
+			emailFailedSet[s.ID] = emailSendErr.Error()
+		}
+	}
+	for _, stud := range students {
+		errText, failed := emailFailedSet[stud.ID]
+		_ = s.logRepository.Save(ctx, &Log{
+			StudentID:       stud.ID,
+			Channel:         ChannelEmail,
+			Success:         !failed,
+			ErrorText:       nullableString(errText, failed),
+			Subject:         &message.Subject,
+			Body:            &message.Body,
+			SMTPID:          &message.SmtpId,
+			AttachmentNames: nullableString(attachmentNamesStr, len(attachmentNames) > 0),
+			AttachmentCount: len(attachmentNames),
+		})
+	}
+
+	whatsFailedSet := make(map[string]string)
+	for _, s := range failedWhats {
+		whatsFailedSet[s.ID] = "failed to send whatsapp"
+	}
+	for _, stud := range students {
+		errText, failed := whatsFailedSet[stud.ID]
+		_ = s.logRepository.Save(ctx, &Log{
+			StudentID:          stud.ID,
+			Channel:            ChannelWhatsApp,
+			Success:            !failed,
+			ErrorText:          nullableString(errText, failed),
+			Subject:            &message.Subject,
+			Body:               &message.Body,
+			WhatsAppInstanceID: &message.WhatsappId,
+			AttachmentNames:    nullableString(attachmentNamesStr, len(attachmentNames) > 0),
+			AttachmentCount:    len(attachmentNames),
+		})
+	}
+
 	return emailFailedStudents, whatsappFailedStudents, nil
 }
 
@@ -200,4 +250,11 @@ func sendWhatsAppWithRetry(instanceID, number, body string, attempts int, delay 
 		}
 	}
 	return lastErr
+}
+
+func nullableString(val string, set bool) *string {
+	if !set {
+		return nil
+	}
+	return &val
 }

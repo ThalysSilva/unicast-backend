@@ -12,6 +12,7 @@ import (
 	configenv "github.com/ThalysSilva/unicast-backend/internal/config/env"
 	"github.com/ThalysSilva/unicast-backend/internal/course"
 	"github.com/ThalysSilva/unicast-backend/internal/invite"
+	"github.com/ThalysSilva/unicast-backend/internal/message"
 	"github.com/ThalysSilva/unicast-backend/internal/middleware"
 	"github.com/ThalysSilva/unicast-backend/internal/program"
 	"github.com/ThalysSilva/unicast-backend/internal/repository"
@@ -68,6 +69,8 @@ func main() {
 	studentService := student.NewService(repos.Student)
 	userService := user.NewService(repos.User)
 	inviteService := invite.NewService(repos.Invite, repos.Course, repos.Enrollment, repos.Student)
+	messageLogRepo := message.NewLogRepository(db)
+	messageService := message.NewMessageService(repos.WhatsAppInstance, repos.SmtpInstance, repos.User, repos.Student, messageLogRepo, secrets.Jwe)
 
 	// Handlers
 	authHandler := auth.NewHandler(authService)
@@ -79,6 +82,7 @@ func main() {
 	studentHandler := student.NewHandler(studentService)
 	userHandler := user.NewHandler(userService)
 	inviteHandler := invite.NewHandler(inviteService)
+	messageHandler := message.NewHandler(messageService)
 
 	r := gin.Default()
 
@@ -156,6 +160,13 @@ func main() {
 		studentGroup.GET("", studentHandler.GetStudents())
 		studentGroup.PUT("/:id", studentHandler.Update())
 		studentGroup.DELETE("/:id", studentHandler.Delete())
+	}
+
+	// Rotas de mensagens
+	messageGroup := r.Group("/message")
+	{
+		messageGroup.Use(middleware.UseAuthentication(secrets.AccessToken))
+		messageGroup.POST("/send", messageHandler.Send())
 	}
 
 	// Rotas de convites

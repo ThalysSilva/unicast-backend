@@ -52,6 +52,7 @@ Swagger disponível em `http://localhost:${API_PORT}/swagger/index.html`.
 - **Enrollments**: vínculo aluno ↔ disciplina.
 - **Invites**: professor cria código curto para a disciplina (`POST /invite/:courseId`); aluno usa `POST /invite/self-register/:code` com `studentId`, `name`, `phone`, `email`. Backend valida vínculo (enrollment) e status `PENDING` antes de ativar.
 - **SMTP/WhatsApp**: criação/listagem de instâncias de envio.
+- **Mensagens**: `POST /message/send` envia e-mail e WhatsApp para alunos; logs de entrega ficam em `message_logs`.
 
 ### Segurança e credenciais
 - **Tokens**: JWT para acesso/refresh; JWE com chave de 32 bytes hex para proteger tokens sensíveis.
