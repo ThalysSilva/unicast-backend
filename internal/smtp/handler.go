@@ -33,6 +33,7 @@ func NewHandler(service Service) Handler {
 // @Accept json
 // @Produce json
 // @Param Authorization header string true "Bearer token"
+// @Security BearerAuth
 // @Param body body createInstanceInput true "Dados SMTP"
 // @Success 200 {object} api.MessageResponse
 // @Router /smtp/instance [post]

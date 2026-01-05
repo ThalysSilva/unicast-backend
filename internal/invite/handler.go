@@ -39,6 +39,7 @@ func NewHandler(service Service) Handler {
 // @Accept json
 // @Produce json
 // @Param Authorization header string true "Bearer token"
+// @Security BearerAuth
 // @Param courseId path string true "Course ID"
 // @Param body body createInviteInput false "Expiração opcional"
 // @Success 200 {object} api.DefaultResponse[map[string]string]

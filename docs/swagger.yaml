@@ -861,6 +861,8 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.DefaultResponse-internal_student_ImportResult'
+      security:
+      - BearerAuth: []
       summary: Importa estudantes para um curso (CSV)
       tags:
       - student
@@ -962,6 +964,8 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.DefaultResponse-map_string_string'
+      security:
+      - BearerAuth: []
       summary: Cria um convite para um curso
       tags:
       - invite
@@ -1158,6 +1162,8 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.MessageResponse'
+      security:
+      - BearerAuth: []
       summary: Cria uma instância SMTP
       tags:
       - smtp
@@ -1192,6 +1198,8 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.DefaultResponse-array_internal_student_Student'
+      security:
+      - BearerAuth: []
       summary: Lista estudantes com filtros
       tags:
       - student
@@ -1215,6 +1223,8 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.MessageResponse'
+      security:
+      - BearerAuth: []
       summary: Remove um estudante
       tags:
       - student
@@ -1237,6 +1247,8 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.DefaultResponse-internal_student_Student'
+      security:
+      - BearerAuth: []
       summary: Obtém um estudante por ID
       tags:
       - student
@@ -1267,6 +1279,8 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.MessageResponse'
+      security:
+      - BearerAuth: []
       summary: Atualiza um estudante
       tags:
       - student
@@ -1293,6 +1307,8 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.MessageResponse'
+      security:
+      - BearerAuth: []
       summary: Cria um estudante (pré-cadastro)
       tags:
       - student
@@ -1327,6 +1343,12 @@ paths:
       consumes:
       - application/json
       description: Busca todas as instâncias do WhatsApp para o usuário
+      parameters:
+      - description: Bearer token
+        in: header
+        name: Authorization
+        required: true
+        type: string
       produces:
       - application/json
       responses:
@@ -1339,7 +1361,7 @@ paths:
           schema:
             $ref: '#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.ErrorResponse'
       security:
-      - Bearer: []
+      - BearerAuth: []
       summary: Busca todas as instâncias do WhatsApp
       tags:
       - whatsapp
@@ -1348,6 +1370,11 @@ paths:
       - application/json
       description: Cria uma nova instância do WhatsApp para o usuário
       parameters:
+      - description: Bearer token
+        in: header
+        name: Authorization
+        required: true
+        type: string
       - description: User data
         in: body
         name: user
@@ -1366,7 +1393,7 @@ paths:
           schema:
             $ref: '#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.ErrorResponse'
       security:
-      - Bearer: []
+      - BearerAuth: []
       summary: Cria uma nova instância do WhatsApp
       tags:
       - whatsapp
@@ -1376,6 +1403,11 @@ paths:
       - application/json
       description: Remove a instância do usuário e permite criar/parear novamente.
       parameters:
+      - description: Bearer token
+        in: header
+        name: Authorization
+        required: true
+        type: string
       - description: Instance ID
         in: path
         name: id
@@ -1393,7 +1425,7 @@ paths:
           schema:
             $ref: '#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.ErrorResponse'
       security:
-      - Bearer: []
+      - BearerAuth: []
       summary: Deleta uma instância do WhatsApp
       tags:
       - whatsapp
@@ -1403,6 +1435,11 @@ paths:
       - application/json
       description: Dispara a conexão usando number (telefone com DDI/DD).
       parameters:
+      - description: Bearer token
+        in: header
+        name: Authorization
+        required: true
+        type: string
       - description: Instance ID
         in: path
         name: id
@@ -1420,13 +1457,18 @@ paths:
           schema:
             $ref: '#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.ErrorResponse'
       security:
-      - Bearer: []
+      - BearerAuth: []
       summary: Conecta/pareia uma instância na Evolution
       tags:
       - whatsapp
   /whatsapp/instance/{id}/logout:
     delete:
       parameters:
+      - description: Bearer token
+        in: header
+        name: Authorization
+        required: true
+        type: string
       - description: Instance ID
         in: path
         name: id
@@ -1438,19 +1480,24 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.DefaultResponse-map_string_string'
+            $ref: '#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.MessageResponse'
         "400":
           description: Bad Request
           schema:
             $ref: '#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.ErrorResponse'
       security:
-      - Bearer: []
+      - BearerAuth: []
       summary: Desconecta/logout de uma instância na Evolution
       tags:
       - whatsapp
   /whatsapp/instance/{id}/restart:
     post:
       parameters:
+      - description: Bearer token
+        in: header
+        name: Authorization
+        required: true
+        type: string
       - description: Instance ID
         in: path
         name: id
@@ -1462,19 +1509,24 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.DefaultResponse-map_string_string'
+            $ref: '#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.MessageResponse'
         "400":
           description: Bad Request
           schema:
             $ref: '#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.ErrorResponse'
       security:
-      - Bearer: []
+      - BearerAuth: []
       summary: Reinicia uma instância na Evolution
       tags:
       - whatsapp
   /whatsapp/instance/{id}/status:
     get:
       parameters:
+      - description: Bearer token
+        in: header
+        name: Authorization
+        required: true
+        type: string
       - description: Instance ID
         in: path
         name: id
@@ -1492,7 +1544,7 @@ paths:
           schema:
             $ref: '#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.ErrorResponse'
       security:
-      - Bearer: []
+      - BearerAuth: []
       summary: Consulta status de conexão da instância
       tags:
       - whatsapp

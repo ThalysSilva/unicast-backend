@@ -49,11 +49,12 @@ func NewHandler(service Service) Handler {
 // @Tags whatsapp
 // @Accept json
 // @Produce json
+// @Param Authorization header string true "Bearer token"
+// @Security BearerAuth
 // @Param user body createInstanceInput true "User data"
 // @Success 200 {object} api.DefaultResponse[CreateInstanceResponse]
 // @Failure 400 {object} api.ErrorResponse
 // @Router /whatsapp/instance [post]
-// @Security Bearer
 func (h *handler) CreateInstance() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var input createInstanceInput
@@ -85,10 +86,11 @@ func (h *handler) CreateInstance() gin.HandlerFunc {
 // @Tags whatsapp
 // @Accept json
 // @Produce json
+// @Param Authorization header string true "Bearer token"
+// @Security BearerAuth
 // @Success 200 {object} api.DefaultResponse[GetInstancesResponse]
 // @Failure 400 {object} api.ErrorResponse
 // @Router /whatsapp/instance [get]
-// @Security Bearer
 func (h *handler) GetInstances() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		userID := c.GetString("userID")
@@ -114,11 +116,12 @@ func (h *handler) GetInstances() gin.HandlerFunc {
 // @Tags whatsapp
 // @Accept json
 // @Produce json
+// @Param Authorization header string true "Bearer token"
+// @Security BearerAuth
 // @Param id path string true "Instance ID"
 // @Success 200 {object} api.DefaultResponse[map[string]string]
 // @Failure 400 {object} api.ErrorResponse
 // @Router /whatsapp/instance/{id} [delete]
-// @Security Bearer
 func (h *handler) DeleteInstance() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		userID := c.GetString("userID")
@@ -139,11 +142,12 @@ func (h *handler) DeleteInstance() gin.HandlerFunc {
 // @Tags whatsapp
 // @Accept json
 // @Produce json
+// @Param Authorization header string true "Bearer token"
+// @Security BearerAuth
 // @Param id path string true "Instance ID"
 // @Success 200 {object} api.DefaultResponse[connectResponse]
 // @Failure 400 {object} api.ErrorResponse
 // @Router /whatsapp/instance/{id}/connect [post]
-// @Security Bearer
 func (h *handler) ConnectInstance() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		userID := c.GetString("userID")
@@ -163,11 +167,12 @@ func (h *handler) ConnectInstance() gin.HandlerFunc {
 // @Summary Consulta status de conexão da instância
 // @Tags whatsapp
 // @Produce json
+// @Param Authorization header string true "Bearer token"
+// @Security BearerAuth
 // @Param id path string true "Instance ID"
 // @Success 200 {object} api.DefaultResponse[map[string]string]
 // @Failure 400 {object} api.ErrorResponse
 // @Router /whatsapp/instance/{id}/status [get]
-// @Security Bearer
 func (h *handler) ConnectionState() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		userID := c.GetString("userID")
@@ -188,11 +193,12 @@ func (h *handler) ConnectionState() gin.HandlerFunc {
 // @Summary Desconecta/logout de uma instância na Evolution
 // @Tags whatsapp
 // @Produce json
+// @Param Authorization header string true "Bearer token"
+// @Security BearerAuth
 // @Param id path string true "Instance ID"
-// @Success 200 {object} api.DefaultResponse[map[string]string]
+// @Success 200 {object} api.MessageResponse
 // @Failure 400 {object} api.ErrorResponse
 // @Router /whatsapp/instance/{id}/logout [delete]
-// @Security Bearer
 func (h *handler) LogoutInstance() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		userID := c.GetString("userID")
@@ -211,11 +217,12 @@ func (h *handler) LogoutInstance() gin.HandlerFunc {
 // @Summary Reinicia uma instância na Evolution
 // @Tags whatsapp
 // @Produce json
+// @Param Authorization header string true "Bearer token"
+// @Security BearerAuth
 // @Param id path string true "Instance ID"
-// @Success 200 {object} api.DefaultResponse[map[string]string]
+// @Success 200 {object} api.MessageResponse
 // @Failure 400 {object} api.ErrorResponse
 // @Router /whatsapp/instance/{id}/restart [post]
-// @Security Bearer
 func (h *handler) RestartInstance() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		userID := c.GetString("userID")

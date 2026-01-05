@@ -47,6 +47,7 @@ func NewHandler(service Service, importService ImportService) Handler {
 // @Accept json
 // @Produce json
 // @Param Authorization header string true "Bearer token"
+// @Security BearerAuth
 // @Param body body createStudentInput true "Dados do estudante"
 // @Success 200 {object} api.MessageResponse
 // @Router /student/create [post]
@@ -71,6 +72,7 @@ func (h *handler) Create() gin.HandlerFunc {
 // @Tags student
 // @Produce json
 // @Param Authorization header string true "Bearer token"
+// @Security BearerAuth
 // @Param id path string true "Student ID"
 // @Success 200 {object} api.DefaultResponse[Student]
 // @Router /student/{id} [get]
@@ -95,6 +97,7 @@ func (h *handler) GetStudent() gin.HandlerFunc {
 // @Tags student
 // @Produce json
 // @Param Authorization header string true "Bearer token"
+// @Security BearerAuth
 // @Param program query string false "Program ID"
 // @Param campus query string false "Campus ID"
 // @Param course query string false "Course ID"
@@ -142,6 +145,7 @@ func (h *handler) GetStudents() gin.HandlerFunc {
 // @Accept json
 // @Produce json
 // @Param Authorization header string true "Bearer token"
+// @Security BearerAuth
 // @Param id path string true "Student ID"
 // @Param body body createStudentInput true "Campos para atualizar"
 // @Success 200 {object} api.MessageResponse
@@ -186,6 +190,7 @@ func (h *handler) Update() gin.HandlerFunc {
 // @Tags student
 // @Produce json
 // @Param Authorization header string true "Bearer token"
+// @Security BearerAuth
 // @Param id path string true "Student ID"
 // @Success 200 {object} api.MessageResponse
 // @Router /student/{id} [delete]
@@ -206,6 +211,7 @@ func (h *handler) Delete() gin.HandlerFunc {
 // @Accept mpfd
 // @Produce json
 // @Param Authorization header string true "Bearer token"
+// @Security BearerAuth
 // @Param courseId path string true "Course ID"
 // @Param mode query string false "upsert ou clean" Enums(upsert,clean)
 // @Param file formData file true "CSV com studentId,name,phone,email,status"

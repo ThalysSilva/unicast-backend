@@ -377,6 +377,11 @@ const docTemplate = `{
         },
         "/course/{courseId}/students/import": {
             "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "consumes": [
                     "multipart/form-data"
                 ],
@@ -580,6 +585,11 @@ const docTemplate = `{
         },
         "/invite/{courseId}": {
             "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "consumes": [
                     "application/json"
                 ],
@@ -845,6 +855,11 @@ const docTemplate = `{
                 }
             },
             "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "consumes": [
                     "application/json"
                 ],
@@ -885,6 +900,11 @@ const docTemplate = `{
         },
         "/student": {
             "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "produces": [
                     "application/json"
                 ],
@@ -937,6 +957,11 @@ const docTemplate = `{
         },
         "/student/create": {
             "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "consumes": [
                     "application/json"
                 ],
@@ -977,6 +1002,11 @@ const docTemplate = `{
         },
         "/student/{id}": {
             "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "produces": [
                     "application/json"
                 ],
@@ -1010,6 +1040,11 @@ const docTemplate = `{
                 }
             },
             "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "consumes": [
                     "application/json"
                 ],
@@ -1055,6 +1090,11 @@ const docTemplate = `{
                 }
             },
             "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "produces": [
                     "application/json"
                 ],
@@ -1132,7 +1172,7 @@ const docTemplate = `{
             "get": {
                 "security": [
                     {
-                        "Bearer": []
+                        "BearerAuth": []
                     }
                 ],
                 "description": "Busca todas as instâncias do WhatsApp para o usuário",
@@ -1146,6 +1186,15 @@ const docTemplate = `{
                     "whatsapp"
                 ],
                 "summary": "Busca todas as instâncias do WhatsApp",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Bearer token",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -1164,7 +1213,7 @@ const docTemplate = `{
             "post": {
                 "security": [
                     {
-                        "Bearer": []
+                        "BearerAuth": []
                     }
                 ],
                 "description": "Cria uma nova instância do WhatsApp para o usuário",
@@ -1179,6 +1228,13 @@ const docTemplate = `{
                 ],
                 "summary": "Cria uma nova instância do WhatsApp",
                 "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Bearer token",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    },
                     {
                         "description": "User data",
                         "name": "user",
@@ -1209,7 +1265,7 @@ const docTemplate = `{
             "delete": {
                 "security": [
                     {
-                        "Bearer": []
+                        "BearerAuth": []
                     }
                 ],
                 "description": "Remove a instância do usuário e permite criar/parear novamente.",
@@ -1224,6 +1280,13 @@ const docTemplate = `{
                 ],
                 "summary": "Deleta uma instância do WhatsApp",
                 "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Bearer token",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    },
                     {
                         "type": "string",
                         "description": "Instance ID",
@@ -1252,7 +1315,7 @@ const docTemplate = `{
             "post": {
                 "security": [
                     {
-                        "Bearer": []
+                        "BearerAuth": []
                     }
                 ],
                 "description": "Dispara a conexão usando number (telefone com DDI/DD).",
@@ -1267,6 +1330,13 @@ const docTemplate = `{
                 ],
                 "summary": "Conecta/pareia uma instância na Evolution",
                 "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Bearer token",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    },
                     {
                         "type": "string",
                         "description": "Instance ID",
@@ -1295,7 +1365,7 @@ const docTemplate = `{
             "delete": {
                 "security": [
                     {
-                        "Bearer": []
+                        "BearerAuth": []
                     }
                 ],
                 "produces": [
@@ -1308,6 +1378,13 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
+                        "description": "Bearer token",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
                         "description": "Instance ID",
                         "name": "id",
                         "in": "path",
@@ -1318,7 +1395,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.DefaultResponse-map_string_string"
+                            "$ref": "#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.MessageResponse"
                         }
                     },
                     "400": {
@@ -1334,7 +1411,7 @@ const docTemplate = `{
             "post": {
                 "security": [
                     {
-                        "Bearer": []
+                        "BearerAuth": []
                     }
                 ],
                 "produces": [
@@ -1347,6 +1424,13 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
+                        "description": "Bearer token",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
                         "description": "Instance ID",
                         "name": "id",
                         "in": "path",
@@ -1357,7 +1441,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.DefaultResponse-map_string_string"
+                            "$ref": "#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.MessageResponse"
                         }
                     },
                     "400": {
@@ -1373,7 +1457,7 @@ const docTemplate = `{
             "get": {
                 "security": [
                     {
-                        "Bearer": []
+                        "BearerAuth": []
                     }
                 ],
                 "produces": [
@@ -1384,6 +1468,13 @@ const docTemplate = `{
                 ],
                 "summary": "Consulta status de conexão da instância",
                 "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Bearer token",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    },
                     {
                         "type": "string",
                         "description": "Instance ID",
