@@ -115,7 +115,7 @@ func (h *handler) GetInstances() gin.HandlerFunc {
 // @Accept json
 // @Produce json
 // @Param id path string true "Instance ID"
-// @Success 200 {object} api.DefaultResponse[any]
+// @Success 200 {object} api.DefaultResponse[map[string]string]
 // @Failure 400 {object} api.ErrorResponse
 // @Router /whatsapp/instance/{id} [delete]
 // @Security Bearer
@@ -129,9 +129,9 @@ func (h *handler) DeleteInstance() gin.HandlerFunc {
 			return
 		}
 
-		c.JSON(http.StatusOK, api.DefaultResponse[any]{
+		c.JSON(http.StatusOK, api.DefaultResponse[map[string]string]{
 			Message: "Instância deletada com sucesso.",
-			Data:    nil,
+			Data:    map[string]string{},
 		})
 	}
 }
@@ -143,7 +143,7 @@ func (h *handler) DeleteInstance() gin.HandlerFunc {
 // @Accept json
 // @Produce json
 // @Param id path string true "Instance ID"
-// @Success 200 {object} api.DefaultResponse[any]
+// @Success 200 {object} api.DefaultResponse[connectResponse]
 // @Failure 400 {object} api.ErrorResponse
 // @Router /whatsapp/instance/{id}/connect [post]
 // @Security Bearer
@@ -197,7 +197,7 @@ func (h *handler) ConnectionState() gin.HandlerFunc {
 // @Tags whatsapp
 // @Produce json
 // @Param id path string true "Instance ID"
-// @Success 200 {object} api.DefaultResponse[any]
+// @Success 200 {object} api.DefaultResponse[map[string]string]
 // @Failure 400 {object} api.ErrorResponse
 // @Router /whatsapp/instance/{id}/logout [delete]
 // @Security Bearer
@@ -211,7 +211,7 @@ func (h *handler) LogoutInstance() gin.HandlerFunc {
 			return
 		}
 
-		c.JSON(http.StatusOK, api.DefaultResponse[any]{Message: "Instância desconectada com sucesso."})
+		c.JSON(http.StatusOK, api.DefaultResponse[map[string]string]{Message: "Instância desconectada com sucesso.", Data: map[string]string{}})
 	}
 }
 
@@ -220,7 +220,7 @@ func (h *handler) LogoutInstance() gin.HandlerFunc {
 // @Tags whatsapp
 // @Produce json
 // @Param id path string true "Instance ID"
-// @Success 200 {object} api.DefaultResponse[any]
+// @Success 200 {object} api.DefaultResponse[map[string]string]
 // @Failure 400 {object} api.ErrorResponse
 // @Router /whatsapp/instance/{id}/restart [post]
 // @Security Bearer
@@ -234,6 +234,6 @@ func (h *handler) RestartInstance() gin.HandlerFunc {
 			return
 		}
 
-		c.JSON(http.StatusOK, api.DefaultResponse[any]{Message: "Instância reiniciada com sucesso."})
+		c.JSON(http.StatusOK, api.DefaultResponse[map[string]string]{Message: "Instância reiniciada com sucesso.", Data: map[string]string{}})
 	}
 }

@@ -3,6 +3,8 @@ definitions:
     properties:
       annotation:
         type: string
+      consent:
+        type: boolean
       email:
         type: string
       id:
@@ -22,12 +24,14 @@ definitions:
     - CANCELED
     - GRADUATED
     - LOCKED
+    - PENDING
     type: string
     x-enum-varnames:
     - StudentStatusActive
     - StudentStatusCanceled
     - StudentStatusGraduated
     - StudentStatusLocked
+    - StudentStatusPending
   github_com_ThalysSilva_unicast-backend_internal_user.User:
     properties:
       email:
@@ -40,10 +44,83 @@ definitions:
     - email
     - name
     type: object
+  github_com_ThalysSilva_unicast-backend_pkg_api.DefaultResponse-array_internal_campus_Campus:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/internal_campus.Campus'
+        type: array
+      message:
+        type: string
+    type: object
+  github_com_ThalysSilva_unicast-backend_pkg_api.DefaultResponse-array_internal_course_Course:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/internal_course.Course'
+        type: array
+      message:
+        type: string
+    type: object
+  github_com_ThalysSilva_unicast-backend_pkg_api.DefaultResponse-array_internal_program_Program:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/internal_program.Program'
+        type: array
+      message:
+        type: string
+    type: object
+  github_com_ThalysSilva_unicast-backend_pkg_api.DefaultResponse-array_internal_smtp_Instance:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/internal_smtp.Instance'
+        type: array
+      message:
+        type: string
+    type: object
+  github_com_ThalysSilva_unicast-backend_pkg_api.DefaultResponse-array_internal_student_Student:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/internal_student.Student'
+        type: array
+      message:
+        type: string
+    type: object
   github_com_ThalysSilva_unicast-backend_pkg_api.DefaultResponse-internal_auth_LoginResponse:
     properties:
       data:
         $ref: '#/definitions/internal_auth.LoginResponse'
+      message:
+        type: string
+    type: object
+  github_com_ThalysSilva_unicast-backend_pkg_api.DefaultResponse-internal_auth_RefreshResponse:
+    properties:
+      data:
+        $ref: '#/definitions/internal_auth.RefreshResponse'
+      message:
+        type: string
+    type: object
+  github_com_ThalysSilva_unicast-backend_pkg_api.DefaultResponse-internal_message_MessageDataResponse:
+    properties:
+      data:
+        $ref: '#/definitions/internal_message.MessageDataResponse'
+      message:
+        type: string
+    type: object
+  github_com_ThalysSilva_unicast-backend_pkg_api.DefaultResponse-internal_student_ImportResult:
+    properties:
+      data:
+        $ref: '#/definitions/internal_student.ImportResult'
+      message:
+        type: string
+    type: object
+  github_com_ThalysSilva_unicast-backend_pkg_api.DefaultResponse-internal_student_Student:
+    properties:
+      data:
+        $ref: '#/definitions/internal_student.Student'
       message:
         type: string
     type: object
@@ -61,10 +138,17 @@ definitions:
       message:
         type: string
     type: object
-  github_com_ThalysSilva_unicast-backend_pkg_api.DefaultResponse-message_MessageDataResponse:
+  github_com_ThalysSilva_unicast-backend_pkg_api.DefaultResponse-internal_whatsapp_connectResponse:
     properties:
       data:
-        $ref: '#/definitions/message.MessageDataResponse'
+        $ref: '#/definitions/internal_whatsapp.connectResponse'
+      message:
+        type: string
+    type: object
+  github_com_ThalysSilva_unicast-backend_pkg_api.DefaultResponse-map_string_string:
+    properties:
+      data:
+        $ref: '#/definitions/map_string_string'
       message:
         type: string
     type: object
@@ -123,44 +207,111 @@ definitions:
     - name
     - password
     type: object
-  internal_whatsapp.CreateInstanceResponse:
+  internal_backdoor.resetInput:
     properties:
-      instanceId:
+      email:
         type: string
-      qrCode:
+      newPassword:
         type: string
-    type: object
-  internal_whatsapp.GetInstancesResponse:
-    properties:
-      instances:
-        items:
-          $ref: '#/definitions/internal_whatsapp.Instance'
-        type: array
-      userEmail:
-        type: string
-    type: object
-  internal_whatsapp.Instance:
-    properties:
-      id:
-        type: string
-      instanceId:
-        type: string
-      phone:
-        type: string
-    required:
-    - phone
-    type: object
-  internal_whatsapp.createInstanceInput:
-    properties:
-      phone:
+      secret:
         type: string
       userId:
         type: string
     required:
-    - phone
-    - userId
+    - newPassword
+    - secret
     type: object
-  message.Attachment:
+  internal_campus.Campus:
+    properties:
+      description:
+        type: string
+      id:
+        type: string
+      name:
+        type: string
+    required:
+    - name
+    type: object
+  internal_campus.createCampusInput:
+    properties:
+      description:
+        type: string
+      name:
+        type: string
+    required:
+    - description
+    - name
+    type: object
+  internal_campus.updateCampusInput:
+    properties:
+      description:
+        type: string
+      name:
+        type: string
+    type: object
+  internal_course.Course:
+    properties:
+      description:
+        type: string
+      id:
+        type: string
+      name:
+        type: string
+      semester:
+        type: integer
+      year:
+        type: integer
+    required:
+    - name
+    - semester
+    - year
+    type: object
+  internal_course.createCourseInput:
+    properties:
+      description:
+        type: string
+      name:
+        type: string
+      semester:
+        type: integer
+      year:
+        type: integer
+    required:
+    - description
+    - name
+    - semester
+    - year
+    type: object
+  internal_course.updateCourseInput:
+    properties:
+      description:
+        type: string
+      name:
+        type: string
+      semester:
+        type: integer
+      year:
+        type: integer
+    type: object
+  internal_invite.createInviteInput:
+    properties:
+      expiresAt:
+        type: string
+    type: object
+  internal_invite.selfRegisterInput:
+    properties:
+      email:
+        type: string
+      name:
+        type: string
+      phone:
+        type: string
+      studentId:
+        type: string
+    required:
+    - studentId
+    type: object
+  internal_message.Attachment:
     properties:
       data:
         items:
@@ -168,8 +319,10 @@ definitions:
         type: array
       fileName:
         type: string
+      url:
+        type: string
     type: object
-  message.MessageDataResponse:
+  internal_message.MessageDataResponse:
     properties:
       emailsFailed:
         items:
@@ -180,11 +333,11 @@ definitions:
           $ref: '#/definitions/github_com_ThalysSilva_unicast-backend_internal_student.Student'
         type: array
     type: object
-  message.MessageInput:
+  internal_message.MessageInput:
     properties:
-      attachment:
+      attachments:
         items:
-          $ref: '#/definitions/message.Attachment'
+          $ref: '#/definitions/internal_message.Attachment'
         type: array
       body:
         type: string
@@ -210,6 +363,227 @@ definitions:
     - subject
     - to
     - whatsapp_id
+    type: object
+  internal_program.Program:
+    properties:
+      active:
+        type: boolean
+      description:
+        type: string
+      id:
+        type: string
+      name:
+        type: string
+    required:
+    - name
+    type: object
+  internal_program.createCourseInput:
+    properties:
+      active:
+        type: boolean
+      campus_id:
+        type: string
+      description:
+        type: string
+      name:
+        type: string
+    required:
+    - active
+    - campus_id
+    - description
+    - name
+    type: object
+  internal_program.updateCourseInput:
+    properties:
+      active:
+        type: boolean
+      description:
+        type: string
+      name:
+        type: string
+    type: object
+  internal_smtp.Instance:
+    properties:
+      email:
+        type: string
+      host:
+        type: string
+      id:
+        type: string
+      iv:
+        type: string
+      password:
+        type: string
+      port:
+        type: integer
+    required:
+    - email
+    - host
+    - iv
+    - password
+    - port
+    type: object
+  internal_smtp.createInstanceInput:
+    properties:
+      email:
+        type: string
+      host:
+        type: string
+      jwe:
+        type: string
+      password:
+        type: string
+      port:
+        type: integer
+    required:
+    - email
+    - host
+    - jwe
+    - password
+    - port
+    type: object
+  internal_student.ImportResult:
+    properties:
+      enrollmentsAdded:
+        type: integer
+      errors:
+        items:
+          type: string
+        type: array
+      inserted:
+        type: integer
+      updated:
+        type: integer
+    type: object
+  internal_student.Student:
+    properties:
+      annotation:
+        type: string
+      consent:
+        type: boolean
+      email:
+        type: string
+      id:
+        type: string
+      name:
+        type: string
+      phone:
+        type: string
+      status:
+        $ref: '#/definitions/internal_student.StudentStatus'
+      studentId:
+        type: string
+    type: object
+  internal_student.StudentStatus:
+    enum:
+    - ACTIVE
+    - CANCELED
+    - GRADUATED
+    - LOCKED
+    - PENDING
+    type: string
+    x-enum-varnames:
+    - StudentStatusActive
+    - StudentStatusCanceled
+    - StudentStatusGraduated
+    - StudentStatusLocked
+    - StudentStatusPending
+  internal_student.createStudentInput:
+    properties:
+      annotation:
+        type: string
+      email:
+        type: string
+      name:
+        type: string
+      phone:
+        type: string
+      status:
+        allOf:
+        - $ref: '#/definitions/internal_student.StudentStatus'
+        enum:
+        - ACTIVE
+        - CANCELED
+        - GRADUATED
+        - LOCKED
+      studentId:
+        type: string
+    required:
+    - status
+    - studentId
+    type: object
+  internal_user.createUserInput:
+    properties:
+      email:
+        type: string
+      name:
+        type: string
+      password:
+        type: string
+    required:
+    - email
+    - name
+    - password
+    type: object
+  internal_whatsapp.CreateInstanceResponse:
+    properties:
+      instanceId:
+        type: string
+      pairingCode:
+        type: string
+      qrCode:
+        type: string
+    type: object
+  internal_whatsapp.GetInstancesResponse:
+    properties:
+      instances:
+        items:
+          $ref: '#/definitions/internal_whatsapp.Instance'
+        type: array
+      userEmail:
+        type: string
+    type: object
+  internal_whatsapp.Instance:
+    properties:
+      id:
+        type: string
+      instanceName:
+        type: string
+      phone:
+        type: string
+    required:
+    - phone
+    type: object
+  internal_whatsapp.connectResponse:
+    properties:
+      code:
+        type: string
+      count:
+        type: integer
+      message:
+        type: string
+      pairingCode:
+        type: string
+      qrcode:
+        properties:
+          base64:
+            type: string
+          code:
+            type: string
+        type: object
+      status:
+        type: string
+    type: object
+  internal_whatsapp.createInstanceInput:
+    properties:
+      phone:
+        type: string
+    required:
+    - phone
+    type: object
+  map_string_string:
+    additionalProperties:
+      type: string
     type: object
 info:
   contact: {}
@@ -293,7 +667,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/internal_auth.RefreshResponse'
+            $ref: '#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.DefaultResponse-internal_auth_RefreshResponse'
         "401":
           description: Unauthorized
           schema:
@@ -325,6 +699,296 @@ paths:
       summary: Registra um novo usuário
       tags:
       - auth
+  /backdoor/reset-password:
+    post:
+      consumes:
+      - application/json
+      description: Uso administrativo com segredo estático; requer userId ou email.
+      parameters:
+      - description: Dados de reset
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/internal_backdoor.resetInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.DefaultResponse-map_string_string'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.ErrorResponse'
+      summary: Reseta a senha de um usuário (backdoor)
+      tags:
+      - backdoor
+  /campus:
+    get:
+      parameters:
+      - description: Bearer token
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.DefaultResponse-array_internal_campus_Campus'
+      summary: Lista campi
+      tags:
+      - campus
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Bearer token
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Dados do campus
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/internal_campus.createCampusInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.DefaultResponse-map_string_string'
+      summary: Cria um campus
+      tags:
+      - campus
+  /campus/{id}:
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: Bearer token
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Campus ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Campos para atualizar
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/internal_campus.updateCampusInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.DefaultResponse-map_string_string'
+      summary: Atualiza um campus
+      tags:
+      - campus
+  /course:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Bearer token
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Dados da disciplina
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/internal_course.createCourseInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.DefaultResponse-map_string_string'
+      summary: Cria uma disciplina
+      tags:
+      - course
+  /course/{courseId}/students/import:
+    post:
+      consumes:
+      - multipart/form-data
+      parameters:
+      - description: Bearer token
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Course ID
+        in: path
+        name: courseId
+        required: true
+        type: string
+      - description: upsert ou clean
+        enum:
+        - upsert
+        - clean
+        in: query
+        name: mode
+        type: string
+      - description: CSV com studentId,name,phone,email,status
+        in: formData
+        name: file
+        required: true
+        type: file
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.DefaultResponse-internal_student_ImportResult'
+      summary: Importa estudantes para um curso (CSV)
+      tags:
+      - student
+  /course/{id}:
+    delete:
+      parameters:
+      - description: Bearer token
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Course ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.DefaultResponse-map_string_string'
+      summary: Deleta uma disciplina
+      tags:
+      - course
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: Bearer token
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Course ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Campos para atualizar
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/internal_course.updateCourseInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.DefaultResponse-map_string_string'
+      summary: Atualiza uma disciplina
+      tags:
+      - course
+  /course/{programId}:
+    get:
+      parameters:
+      - description: Bearer token
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.DefaultResponse-array_internal_course_Course'
+      summary: Lista disciplinas do usuário
+      tags:
+      - course
+  /invite/{courseId}:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Bearer token
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Course ID
+        in: path
+        name: courseId
+        required: true
+        type: string
+      - description: Expiração opcional
+        in: body
+        name: body
+        schema:
+          $ref: '#/definitions/internal_invite.createInviteInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.DefaultResponse-map_string_string'
+      summary: Cria um convite para um curso
+      tags:
+      - invite
+  /invite/self-register/{code}:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Código do convite
+        in: path
+        name: code
+        required: true
+        type: string
+      - description: Dados do aluno
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/internal_invite.selfRegisterInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.DefaultResponse-map_string_string'
+      summary: Auto-registro de aluno via convite
+      tags:
+      - invite
   /message/send:
     post:
       consumes:
@@ -336,14 +1000,14 @@ paths:
         name: message
         required: true
         schema:
-          $ref: '#/definitions/message.MessageInput'
+          $ref: '#/definitions/internal_message.MessageInput'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.DefaultResponse-message_MessageDataResponse'
+            $ref: '#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.DefaultResponse-internal_message_MessageDataResponse'
         "400":
           description: Bad Request
           schema:
@@ -351,7 +1015,332 @@ paths:
       summary: Envia uma mensagem
       tags:
       - message
+  /program:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Bearer token
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Dados do programa
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/internal_program.createCourseInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.DefaultResponse-map_string_string'
+      summary: Cria um programa
+      tags:
+      - program
+  /program/{id}:
+    delete:
+      parameters:
+      - description: Bearer token
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Program ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.DefaultResponse-map_string_string'
+      summary: Deleta um programa
+      tags:
+      - program
+    get:
+      parameters:
+      - description: Bearer token
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Campus ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.DefaultResponse-array_internal_program_Program'
+      summary: Lista programas por campus
+      tags:
+      - program
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: Bearer token
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Program ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Campos para atualizar
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/internal_program.updateCourseInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.DefaultResponse-map_string_string'
+      summary: Atualiza um programa
+      tags:
+      - program
+  /smtp/instance:
+    get:
+      parameters:
+      - description: Bearer token
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.DefaultResponse-array_internal_smtp_Instance'
+      summary: Lista instâncias SMTP do usuário
+      tags:
+      - smtp
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Bearer token
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Dados SMTP
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/internal_smtp.createInstanceInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.DefaultResponse-map_string_string'
+      summary: Cria uma instância SMTP
+      tags:
+      - smtp
+  /student:
+    get:
+      parameters:
+      - description: Bearer token
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Program ID
+        in: query
+        name: program
+        type: string
+      - description: Campus ID
+        in: query
+        name: campus
+        type: string
+      - description: Course ID
+        in: query
+        name: course
+        type: string
+      - description: User ID
+        in: query
+        name: user
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.DefaultResponse-array_internal_student_Student'
+      summary: Lista estudantes com filtros
+      tags:
+      - student
+  /student/{id}:
+    delete:
+      parameters:
+      - description: Bearer token
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Student ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.DefaultResponse-map_string_string'
+      summary: Remove um estudante
+      tags:
+      - student
+    get:
+      parameters:
+      - description: Bearer token
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Student ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.DefaultResponse-internal_student_Student'
+      summary: Obtém um estudante por ID
+      tags:
+      - student
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: Bearer token
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Student ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Campos para atualizar
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/internal_student.createStudentInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.DefaultResponse-map_string_string'
+      summary: Atualiza um estudante
+      tags:
+      - student
+  /student/create:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Bearer token
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Dados do estudante
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/internal_student.createStudentInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.DefaultResponse-map_string_string'
+      summary: Cria um estudante (pré-cadastro)
+      tags:
+      - student
+  /user/create:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Bearer token
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Dados do usuário
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/internal_user.createUserInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.DefaultResponse-map_string_string'
+      summary: Cria um usuário
+      tags:
+      - user
   /whatsapp/instance:
+    get:
+      consumes:
+      - application/json
+      description: Busca todas as instâncias do WhatsApp para o usuário
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.DefaultResponse-internal_whatsapp_GetInstancesResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.ErrorResponse'
+      security:
+      - Bearer: []
+      summary: Busca todas as instâncias do WhatsApp
+      tags:
+      - whatsapp
     post:
       consumes:
       - application/json
@@ -379,25 +1368,130 @@ paths:
       summary: Cria uma nova instância do WhatsApp
       tags:
       - whatsapp
-  /whatsapp/instances:
-    get:
+  /whatsapp/instance/{id}:
+    delete:
       consumes:
       - application/json
-      description: Busca todas as instâncias do WhatsApp para o usuário
+      description: Remove a instância do usuário e permite criar/parear novamente.
+      parameters:
+      - description: Instance ID
+        in: path
+        name: id
+        required: true
+        type: string
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.DefaultResponse-internal_whatsapp_GetInstancesResponse'
+            $ref: '#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.DefaultResponse-map_string_string'
         "400":
           description: Bad Request
           schema:
             $ref: '#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.ErrorResponse'
       security:
       - Bearer: []
-      summary: Busca todas as instâncias do WhatsApp
+      summary: Deleta uma instância do WhatsApp
+      tags:
+      - whatsapp
+  /whatsapp/instance/{id}/connect:
+    post:
+      consumes:
+      - application/json
+      description: Dispara a conexão usando number (telefone com DDI/DD).
+      parameters:
+      - description: Instance ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.DefaultResponse-internal_whatsapp_connectResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.ErrorResponse'
+      security:
+      - Bearer: []
+      summary: Conecta/pareia uma instância na Evolution
+      tags:
+      - whatsapp
+  /whatsapp/instance/{id}/logout:
+    delete:
+      parameters:
+      - description: Instance ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.DefaultResponse-map_string_string'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.ErrorResponse'
+      security:
+      - Bearer: []
+      summary: Desconecta/logout de uma instância na Evolution
+      tags:
+      - whatsapp
+  /whatsapp/instance/{id}/restart:
+    post:
+      parameters:
+      - description: Instance ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.DefaultResponse-map_string_string'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.ErrorResponse'
+      security:
+      - Bearer: []
+      summary: Reinicia uma instância na Evolution
+      tags:
+      - whatsapp
+  /whatsapp/instance/{id}/status:
+    get:
+      parameters:
+      - description: Instance ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.DefaultResponse-map_string_string'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.ErrorResponse'
+      security:
+      - Bearer: []
+      summary: Consulta status de conexão da instância
       tags:
       - whatsapp
 swagger: "2.0"

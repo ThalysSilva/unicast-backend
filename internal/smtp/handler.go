@@ -1,6 +1,9 @@
 package smtp
 
-import "github.com/gin-gonic/gin"
+import (
+	"github.com/ThalysSilva/unicast-backend/pkg/api"
+	"github.com/gin-gonic/gin"
+)
 
 type handler struct {
 	service Service
@@ -25,6 +28,14 @@ func NewHandler(service Service) Handler {
 	}
 }
 
+// @Summary Cria uma instância SMTP
+// @Tags smtp
+// @Accept json
+// @Produce json
+// @Param Authorization header string true "Bearer token"
+// @Param body body createInstanceInput true "Dados SMTP"
+// @Success 200 {object} api.DefaultResponse[map[string]string]
+// @Router /smtp/instance [post]
 func (h *handler) Create(jweSecret []byte) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var input createInstanceInput
@@ -38,11 +49,17 @@ func (h *handler) Create(jweSecret []byte) gin.HandlerFunc {
 			c.Error(err)
 			return
 		}
-		c.JSON(200, gin.H{"message": "SMTP instance created successfully"})
+		c.JSON(200, api.DefaultResponse[map[string]string]{Message: "SMTP instance created successfully", Data: map[string]string{}})
 
 	}
 }
 
+// @Summary Lista instâncias SMTP do usuário
+// @Tags smtp
+// @Produce json
+// @Param Authorization header string true "Bearer token"
+// @Success 200 {object} api.DefaultResponse[[]Instance]
+// @Router /smtp/instance [get]
 func (h *handler) GetInstances() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		userID := c.GetString("userID")
@@ -51,6 +68,12 @@ func (h *handler) GetInstances() gin.HandlerFunc {
 			c.Error(err)
 			return
 		}
-		c.JSON(200, instances)
+		items := make([]Instance, 0, len(instances))
+		for _, inst := range instances {
+			if inst != nil {
+				items = append(items, *inst)
+			}
+		}
+		c.JSON(200, api.DefaultResponse[[]Instance]{Message: "Instâncias listadas com sucesso", Data: items})
 	}
 }

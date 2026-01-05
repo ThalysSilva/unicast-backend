@@ -124,7 +124,7 @@ type RefreshInput struct {
 // @OperationId refreshToken
 // @Produce json
 // @Param refreshToken body RefreshInput true "Refresh token"
-// @Success 200 {object} RefreshResponse
+// @Success 200 {object} api.DefaultResponse[RefreshResponse]
 // @Failure 401 {object} api.ErrorResponse
 // @Router /auth/refresh [post]
 func (s *handler) Refresh() gin.HandlerFunc {

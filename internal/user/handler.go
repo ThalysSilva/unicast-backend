@@ -1,6 +1,9 @@
 package user
 
-import "github.com/gin-gonic/gin"
+import (
+	"github.com/ThalysSilva/unicast-backend/pkg/api"
+	"github.com/gin-gonic/gin"
+)
 
 type handler struct {
 	service Service
@@ -22,6 +25,14 @@ func NewHandler(service Service) Handler {
 	}
 }
 
+// @Summary Cria um usuário
+// @Tags user
+// @Accept json
+// @Produce json
+// @Param Authorization header string true "Bearer token"
+// @Param body body createUserInput true "Dados do usuário"
+// @Success 200 {object} api.DefaultResponse[map[string]string]
+// @Router /user/create [post]
 func (h *handler) Create() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var input createUserInput
@@ -35,6 +46,6 @@ func (h *handler) Create() gin.HandlerFunc {
 			c.Error(err)
 			return
 		}
-		c.JSON(200, gin.H{"userId": userId})
+		c.JSON(200, api.DefaultResponse[map[string]string]{Message: "Usuário criado com sucesso", Data: map[string]string{"userId": userId}})
 	}
 }

@@ -3,6 +3,7 @@ package course
 import (
 	"errors"
 
+	"github.com/ThalysSilva/unicast-backend/pkg/api"
 	"github.com/gin-gonic/gin"
 )
 
@@ -37,6 +38,14 @@ func NewHandler(service Service) Handler {
 	}
 }
 
+// @Summary Cria uma disciplina
+// @Tags course
+// @Accept json
+// @Produce json
+// @Param Authorization header string true "Bearer token"
+// @Param body body createCourseInput true "Dados da disciplina"
+// @Success 200 {object} api.DefaultResponse[map[string]string]
+// @Router /course [post]
 func (h *handler) Create() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var input createCourseInput
@@ -50,11 +59,17 @@ func (h *handler) Create() gin.HandlerFunc {
 			c.Error(err)
 			return
 		}
-		c.JSON(200, gin.H{"message": "Campus criado com sucesso"})
+		c.JSON(200, api.DefaultResponse[map[string]string]{Message: "Disciplina criada com sucesso", Data: map[string]string{}})
 
 	}
 }
 
+// @Summary Lista disciplinas do usuário
+// @Tags course
+// @Produce json
+// @Param Authorization header string true "Bearer token"
+// @Success 200 {object} api.DefaultResponse[[]Course]
+// @Router /course/{programId} [get]
 func (h *handler) GetCoursesByProgramID() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		userID := c.GetString("userID")
@@ -63,10 +78,25 @@ func (h *handler) GetCoursesByProgramID() gin.HandlerFunc {
 			c.Error(err)
 			return
 		}
-		c.JSON(200, instances)
+		items := make([]Course, 0, len(instances))
+		for _, course := range instances {
+			if course != nil {
+				items = append(items, *course)
+			}
+		}
+		c.JSON(200, api.DefaultResponse[[]Course]{Message: "Disciplinas listadas com sucesso", Data: items})
 	}
 }
 
+// @Summary Atualiza uma disciplina
+// @Tags course
+// @Accept json
+// @Produce json
+// @Param Authorization header string true "Bearer token"
+// @Param id path string true "Course ID"
+// @Param body body updateCourseInput true "Campos para atualizar"
+// @Success 200 {object} api.DefaultResponse[map[string]string]
+// @Router /course/{id} [put]
 func (h *handler) Update() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var input updateCourseInput
@@ -112,10 +142,17 @@ func (h *handler) Update() gin.HandlerFunc {
 			c.Error(err)
 			return
 		}
-		c.JSON(200, gin.H{"message": "Campus Atualizado com sucesso"})
+		c.JSON(200, api.DefaultResponse[map[string]string]{Message: "Disciplina atualizada com sucesso", Data: map[string]string{}})
 	}
 }
 
+// @Summary Deleta uma disciplina
+// @Tags course
+// @Produce json
+// @Param Authorization header string true "Bearer token"
+// @Param id path string true "Course ID"
+// @Success 200 {object} api.DefaultResponse[map[string]string]
+// @Router /course/{id} [delete]
 func (h *handler) Delete() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		userID := c.GetString("userID")
@@ -136,6 +173,6 @@ func (h *handler) Delete() gin.HandlerFunc {
 			c.Error(err)
 			return
 		}
-		c.JSON(200, gin.H{"message": "Campus Deletado com sucesso"})
+		c.JSON(200, api.DefaultResponse[map[string]string]{Message: "Disciplina deletada com sucesso", Data: map[string]string{}})
 	}
 }

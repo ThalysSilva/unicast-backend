@@ -3,6 +3,7 @@ package campus
 import (
 	"errors"
 
+	"github.com/ThalysSilva/unicast-backend/pkg/api"
 	"github.com/gin-gonic/gin"
 )
 
@@ -32,6 +33,14 @@ func NewHandler(service Service) Handler {
 	}
 }
 
+// @Summary Cria um campus
+// @Tags campus
+// @Accept json
+// @Produce json
+// @Param Authorization header string true "Bearer token"
+// @Param body body createCampusInput true "Dados do campus"
+// @Success 200 {object} api.DefaultResponse[map[string]string]
+// @Router /campus [post]
 func (h *handler) Create() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var input createCampusInput
@@ -45,11 +54,17 @@ func (h *handler) Create() gin.HandlerFunc {
 			c.Error(err)
 			return
 		}
-		c.JSON(200, gin.H{"message": "Campus criado com sucesso"})
+		c.JSON(200, api.DefaultResponse[map[string]string]{Message: "Campus criado com sucesso", Data: map[string]string{}})
 
 	}
 }
 
+// @Summary Lista campi
+// @Tags campus
+// @Produce json
+// @Param Authorization header string true "Bearer token"
+// @Success 200 {object} api.DefaultResponse[[]Campus]
+// @Router /campus [get]
 func (h *handler) GetCampuses() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		userID := c.GetString("userID")
@@ -58,10 +73,25 @@ func (h *handler) GetCampuses() gin.HandlerFunc {
 			c.Error(err)
 			return
 		}
-		c.JSON(200, instances)
+		items := make([]Campus, 0, len(instances))
+		for _, campus := range instances {
+			if campus != nil {
+				items = append(items, *campus)
+			}
+		}
+		c.JSON(200, api.DefaultResponse[[]Campus]{Message: "Campi listados com sucesso", Data: items})
 	}
 }
 
+// @Summary Atualiza um campus
+// @Tags campus
+// @Accept json
+// @Produce json
+// @Param Authorization header string true "Bearer token"
+// @Param id path string true "Campus ID"
+// @Param body body updateCampusInput true "Campos para atualizar"
+// @Success 200 {object} api.DefaultResponse[map[string]string]
+// @Router /campus/{id} [put]
 func (h *handler) Update() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var input updateCampusInput
@@ -107,6 +137,6 @@ func (h *handler) Update() gin.HandlerFunc {
 			c.Error(err)
 			return
 		}
-		c.JSON(200, gin.H{"message": "Campus Atualizado com sucesso"})
+		c.JSON(200, api.DefaultResponse[map[string]string]{Message: "Campus atualizado com sucesso", Data: map[string]string{}})
 	}
 }

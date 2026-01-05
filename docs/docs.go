@@ -138,7 +138,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/internal_auth.RefreshResponse"
+                            "$ref": "#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.DefaultResponse-internal_auth_RefreshResponse"
                         }
                     },
                     "401": {
@@ -187,6 +187,448 @@ const docTemplate = `{
                 }
             }
         },
+        "/backdoor/reset-password": {
+            "post": {
+                "description": "Uso administrativo com segredo estático; requer userId ou email.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "backdoor"
+                ],
+                "summary": "Reseta a senha de um usuário (backdoor)",
+                "parameters": [
+                    {
+                        "description": "Dados de reset",
+                        "name": "payload",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/internal_backdoor.resetInput"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.DefaultResponse-map_string_string"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/campus": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "campus"
+                ],
+                "summary": "Lista campi",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Bearer token",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.DefaultResponse-array_internal_campus_Campus"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "campus"
+                ],
+                "summary": "Cria um campus",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Bearer token",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "description": "Dados do campus",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/internal_campus.createCampusInput"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.DefaultResponse-map_string_string"
+                        }
+                    }
+                }
+            }
+        },
+        "/campus/{id}": {
+            "put": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "campus"
+                ],
+                "summary": "Atualiza um campus",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Bearer token",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Campus ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Campos para atualizar",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/internal_campus.updateCampusInput"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.DefaultResponse-map_string_string"
+                        }
+                    }
+                }
+            }
+        },
+        "/course": {
+            "post": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "course"
+                ],
+                "summary": "Cria uma disciplina",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Bearer token",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "description": "Dados da disciplina",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/internal_course.createCourseInput"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.DefaultResponse-map_string_string"
+                        }
+                    }
+                }
+            }
+        },
+        "/course/{courseId}/students/import": {
+            "post": {
+                "consumes": [
+                    "multipart/form-data"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "student"
+                ],
+                "summary": "Importa estudantes para um curso (CSV)",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Bearer token",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Course ID",
+                        "name": "courseId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "enum": [
+                            "upsert",
+                            "clean"
+                        ],
+                        "type": "string",
+                        "description": "upsert ou clean",
+                        "name": "mode",
+                        "in": "query"
+                    },
+                    {
+                        "type": "file",
+                        "description": "CSV com studentId,name,phone,email,status",
+                        "name": "file",
+                        "in": "formData",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.DefaultResponse-internal_student_ImportResult"
+                        }
+                    }
+                }
+            }
+        },
+        "/course/{id}": {
+            "put": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "course"
+                ],
+                "summary": "Atualiza uma disciplina",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Bearer token",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Course ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Campos para atualizar",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/internal_course.updateCourseInput"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.DefaultResponse-map_string_string"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "course"
+                ],
+                "summary": "Deleta uma disciplina",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Bearer token",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Course ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.DefaultResponse-map_string_string"
+                        }
+                    }
+                }
+            }
+        },
+        "/course/{programId}": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "course"
+                ],
+                "summary": "Lista disciplinas do usuário",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Bearer token",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.DefaultResponse-array_internal_course_Course"
+                        }
+                    }
+                }
+            }
+        },
+        "/invite/self-register/{code}": {
+            "post": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "invite"
+                ],
+                "summary": "Auto-registro de aluno via convite",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Código do convite",
+                        "name": "code",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Dados do aluno",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/internal_invite.selfRegisterInput"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.DefaultResponse-map_string_string"
+                        }
+                    }
+                }
+            }
+        },
+        "/invite/{courseId}": {
+            "post": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "invite"
+                ],
+                "summary": "Cria um convite para um curso",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Bearer token",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Course ID",
+                        "name": "courseId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Expiração opcional",
+                        "name": "body",
+                        "in": "body",
+                        "schema": {
+                            "$ref": "#/definitions/internal_invite.createInviteInput"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.DefaultResponse-map_string_string"
+                        }
+                    }
+                }
+            }
+        },
         "/message/send": {
             "post": {
                 "description": "Envia uma mensagem via email e WhatsApp",
@@ -207,7 +649,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/message.MessageInput"
+                            "$ref": "#/definitions/internal_message.MessageInput"
                         }
                     }
                 ],
@@ -215,7 +657,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.DefaultResponse-message_MessageDataResponse"
+                            "$ref": "#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.DefaultResponse-internal_message_MessageDataResponse"
                         }
                     },
                     "400": {
@@ -227,7 +669,503 @@ const docTemplate = `{
                 }
             }
         },
+        "/program": {
+            "post": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "program"
+                ],
+                "summary": "Cria um programa",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Bearer token",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "description": "Dados do programa",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/internal_program.createCourseInput"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.DefaultResponse-map_string_string"
+                        }
+                    }
+                }
+            }
+        },
+        "/program/{id}": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "program"
+                ],
+                "summary": "Lista programas por campus",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Bearer token",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Campus ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.DefaultResponse-array_internal_program_Program"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "program"
+                ],
+                "summary": "Atualiza um programa",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Bearer token",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Program ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Campos para atualizar",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/internal_program.updateCourseInput"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.DefaultResponse-map_string_string"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "program"
+                ],
+                "summary": "Deleta um programa",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Bearer token",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Program ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.DefaultResponse-map_string_string"
+                        }
+                    }
+                }
+            }
+        },
+        "/smtp/instance": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "smtp"
+                ],
+                "summary": "Lista instâncias SMTP do usuário",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Bearer token",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.DefaultResponse-array_internal_smtp_Instance"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "smtp"
+                ],
+                "summary": "Cria uma instância SMTP",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Bearer token",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "description": "Dados SMTP",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/internal_smtp.createInstanceInput"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.DefaultResponse-map_string_string"
+                        }
+                    }
+                }
+            }
+        },
+        "/student": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "student"
+                ],
+                "summary": "Lista estudantes com filtros",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Bearer token",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Program ID",
+                        "name": "program",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Campus ID",
+                        "name": "campus",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Course ID",
+                        "name": "course",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "User ID",
+                        "name": "user",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.DefaultResponse-array_internal_student_Student"
+                        }
+                    }
+                }
+            }
+        },
+        "/student/create": {
+            "post": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "student"
+                ],
+                "summary": "Cria um estudante (pré-cadastro)",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Bearer token",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "description": "Dados do estudante",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/internal_student.createStudentInput"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.DefaultResponse-map_string_string"
+                        }
+                    }
+                }
+            }
+        },
+        "/student/{id}": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "student"
+                ],
+                "summary": "Obtém um estudante por ID",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Bearer token",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Student ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.DefaultResponse-internal_student_Student"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "student"
+                ],
+                "summary": "Atualiza um estudante",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Bearer token",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Student ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Campos para atualizar",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/internal_student.createStudentInput"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.DefaultResponse-map_string_string"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "student"
+                ],
+                "summary": "Remove um estudante",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Bearer token",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Student ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.DefaultResponse-map_string_string"
+                        }
+                    }
+                }
+            }
+        },
+        "/user/create": {
+            "post": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "user"
+                ],
+                "summary": "Cria um usuário",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Bearer token",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "description": "Dados do usuário",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/internal_user.createUserInput"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.DefaultResponse-map_string_string"
+                        }
+                    }
+                }
+            }
+        },
         "/whatsapp/instance": {
+            "get": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "description": "Busca todas as instâncias do WhatsApp para o usuário",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "whatsapp"
+                ],
+                "summary": "Busca todas as instâncias do WhatsApp",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.DefaultResponse-internal_whatsapp_GetInstancesResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.ErrorResponse"
+                        }
+                    }
+                }
+            },
             "post": {
                 "security": [
                     {
@@ -272,14 +1210,14 @@ const docTemplate = `{
                 }
             }
         },
-        "/whatsapp/instances": {
-            "get": {
+        "/whatsapp/instance/{id}": {
+            "delete": {
                 "security": [
                     {
                         "Bearer": []
                     }
                 ],
-                "description": "Busca todas as instâncias do WhatsApp para o usuário",
+                "description": "Remove a instância do usuário e permite criar/parear novamente.",
                 "consumes": [
                     "application/json"
                 ],
@@ -289,12 +1227,181 @@ const docTemplate = `{
                 "tags": [
                     "whatsapp"
                 ],
-                "summary": "Busca todas as instâncias do WhatsApp",
+                "summary": "Deleta uma instância do WhatsApp",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Instance ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.DefaultResponse-internal_whatsapp_GetInstancesResponse"
+                            "$ref": "#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.DefaultResponse-map_string_string"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/whatsapp/instance/{id}/connect": {
+            "post": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "description": "Dispara a conexão usando number (telefone com DDI/DD).",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "whatsapp"
+                ],
+                "summary": "Conecta/pareia uma instância na Evolution",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Instance ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.DefaultResponse-internal_whatsapp_connectResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/whatsapp/instance/{id}/logout": {
+            "delete": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "whatsapp"
+                ],
+                "summary": "Desconecta/logout de uma instância na Evolution",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Instance ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.DefaultResponse-map_string_string"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/whatsapp/instance/{id}/restart": {
+            "post": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "whatsapp"
+                ],
+                "summary": "Reinicia uma instância na Evolution",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Instance ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.DefaultResponse-map_string_string"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/whatsapp/instance/{id}/status": {
+            "get": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "whatsapp"
+                ],
+                "summary": "Consulta status de conexão da instância",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Instance ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.DefaultResponse-map_string_string"
                         }
                     },
                     "400": {
@@ -313,6 +1420,9 @@ const docTemplate = `{
             "properties": {
                 "annotation": {
                     "type": "string"
+                },
+                "consent": {
+                    "type": "boolean"
                 },
                 "email": {
                     "type": "string"
@@ -340,13 +1450,15 @@ const docTemplate = `{
                 "ACTIVE",
                 "CANCELED",
                 "GRADUATED",
-                "LOCKED"
+                "LOCKED",
+                "PENDING"
             ],
             "x-enum-varnames": [
                 "StudentStatusActive",
                 "StudentStatusCanceled",
                 "StudentStatusGraduated",
-                "StudentStatusLocked"
+                "StudentStatusLocked",
+                "StudentStatusPending"
             ]
         },
         "github_com_ThalysSilva_unicast-backend_internal_user.User": {
@@ -367,11 +1479,125 @@ const docTemplate = `{
                 }
             }
         },
+        "github_com_ThalysSilva_unicast-backend_pkg_api.DefaultResponse-array_internal_campus_Campus": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/internal_campus.Campus"
+                    }
+                },
+                "message": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_ThalysSilva_unicast-backend_pkg_api.DefaultResponse-array_internal_course_Course": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/internal_course.Course"
+                    }
+                },
+                "message": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_ThalysSilva_unicast-backend_pkg_api.DefaultResponse-array_internal_program_Program": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/internal_program.Program"
+                    }
+                },
+                "message": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_ThalysSilva_unicast-backend_pkg_api.DefaultResponse-array_internal_smtp_Instance": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/internal_smtp.Instance"
+                    }
+                },
+                "message": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_ThalysSilva_unicast-backend_pkg_api.DefaultResponse-array_internal_student_Student": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/internal_student.Student"
+                    }
+                },
+                "message": {
+                    "type": "string"
+                }
+            }
+        },
         "github_com_ThalysSilva_unicast-backend_pkg_api.DefaultResponse-internal_auth_LoginResponse": {
             "type": "object",
             "properties": {
                 "data": {
                     "$ref": "#/definitions/internal_auth.LoginResponse"
+                },
+                "message": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_ThalysSilva_unicast-backend_pkg_api.DefaultResponse-internal_auth_RefreshResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/internal_auth.RefreshResponse"
+                },
+                "message": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_ThalysSilva_unicast-backend_pkg_api.DefaultResponse-internal_message_MessageDataResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/internal_message.MessageDataResponse"
+                },
+                "message": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_ThalysSilva_unicast-backend_pkg_api.DefaultResponse-internal_student_ImportResult": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/internal_student.ImportResult"
+                },
+                "message": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_ThalysSilva_unicast-backend_pkg_api.DefaultResponse-internal_student_Student": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/internal_student.Student"
                 },
                 "message": {
                     "type": "string"
@@ -400,11 +1626,22 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_ThalysSilva_unicast-backend_pkg_api.DefaultResponse-message_MessageDataResponse": {
+        "github_com_ThalysSilva_unicast-backend_pkg_api.DefaultResponse-internal_whatsapp_connectResponse": {
             "type": "object",
             "properties": {
                 "data": {
-                    "$ref": "#/definitions/message.MessageDataResponse"
+                    "$ref": "#/definitions/internal_whatsapp.connectResponse"
+                },
+                "message": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_ThalysSilva_unicast-backend_pkg_api.DefaultResponse-map_string_string": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/map_string_string"
                 },
                 "message": {
                     "type": "string"
@@ -495,10 +1732,484 @@ const docTemplate = `{
                 }
             }
         },
+        "internal_backdoor.resetInput": {
+            "type": "object",
+            "required": [
+                "newPassword",
+                "secret"
+            ],
+            "properties": {
+                "email": {
+                    "type": "string"
+                },
+                "newPassword": {
+                    "type": "string"
+                },
+                "secret": {
+                    "type": "string"
+                },
+                "userId": {
+                    "type": "string"
+                }
+            }
+        },
+        "internal_campus.Campus": {
+            "type": "object",
+            "required": [
+                "name"
+            ],
+            "properties": {
+                "description": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
+        "internal_campus.createCampusInput": {
+            "type": "object",
+            "required": [
+                "description",
+                "name"
+            ],
+            "properties": {
+                "description": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
+        "internal_campus.updateCampusInput": {
+            "type": "object",
+            "properties": {
+                "description": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
+        "internal_course.Course": {
+            "type": "object",
+            "required": [
+                "name",
+                "semester",
+                "year"
+            ],
+            "properties": {
+                "description": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "semester": {
+                    "type": "integer"
+                },
+                "year": {
+                    "type": "integer"
+                }
+            }
+        },
+        "internal_course.createCourseInput": {
+            "type": "object",
+            "required": [
+                "description",
+                "name",
+                "semester",
+                "year"
+            ],
+            "properties": {
+                "description": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "semester": {
+                    "type": "integer"
+                },
+                "year": {
+                    "type": "integer"
+                }
+            }
+        },
+        "internal_course.updateCourseInput": {
+            "type": "object",
+            "properties": {
+                "description": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "semester": {
+                    "type": "integer"
+                },
+                "year": {
+                    "type": "integer"
+                }
+            }
+        },
+        "internal_invite.createInviteInput": {
+            "type": "object",
+            "properties": {
+                "expiresAt": {
+                    "type": "string"
+                }
+            }
+        },
+        "internal_invite.selfRegisterInput": {
+            "type": "object",
+            "required": [
+                "studentId"
+            ],
+            "properties": {
+                "email": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "phone": {
+                    "type": "string"
+                },
+                "studentId": {
+                    "type": "string"
+                }
+            }
+        },
+        "internal_message.Attachment": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                },
+                "fileName": {
+                    "type": "string"
+                },
+                "url": {
+                    "type": "string"
+                }
+            }
+        },
+        "internal_message.MessageDataResponse": {
+            "type": "object",
+            "properties": {
+                "emailsFailed": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_ThalysSilva_unicast-backend_internal_student.Student"
+                    }
+                },
+                "whatsappFailed": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_ThalysSilva_unicast-backend_internal_student.Student"
+                    }
+                }
+            }
+        },
+        "internal_message.MessageInput": {
+            "type": "object",
+            "required": [
+                "body",
+                "from",
+                "jwe",
+                "smtp_id",
+                "subject",
+                "to",
+                "whatsapp_id"
+            ],
+            "properties": {
+                "attachments": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/internal_message.Attachment"
+                    }
+                },
+                "body": {
+                    "type": "string"
+                },
+                "from": {
+                    "type": "string"
+                },
+                "jwe": {
+                    "type": "string"
+                },
+                "smtp_id": {
+                    "type": "string"
+                },
+                "subject": {
+                    "type": "string"
+                },
+                "to": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "whatsapp_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "internal_program.Program": {
+            "type": "object",
+            "required": [
+                "name"
+            ],
+            "properties": {
+                "active": {
+                    "type": "boolean"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
+        "internal_program.createCourseInput": {
+            "type": "object",
+            "required": [
+                "active",
+                "campus_id",
+                "description",
+                "name"
+            ],
+            "properties": {
+                "active": {
+                    "type": "boolean"
+                },
+                "campus_id": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
+        "internal_program.updateCourseInput": {
+            "type": "object",
+            "properties": {
+                "active": {
+                    "type": "boolean"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
+        "internal_smtp.Instance": {
+            "type": "object",
+            "required": [
+                "email",
+                "host",
+                "iv",
+                "password",
+                "port"
+            ],
+            "properties": {
+                "email": {
+                    "type": "string"
+                },
+                "host": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "iv": {
+                    "type": "string"
+                },
+                "password": {
+                    "type": "string"
+                },
+                "port": {
+                    "type": "integer"
+                }
+            }
+        },
+        "internal_smtp.createInstanceInput": {
+            "type": "object",
+            "required": [
+                "email",
+                "host",
+                "jwe",
+                "password",
+                "port"
+            ],
+            "properties": {
+                "email": {
+                    "type": "string"
+                },
+                "host": {
+                    "type": "string"
+                },
+                "jwe": {
+                    "type": "string"
+                },
+                "password": {
+                    "type": "string"
+                },
+                "port": {
+                    "type": "integer"
+                }
+            }
+        },
+        "internal_student.ImportResult": {
+            "type": "object",
+            "properties": {
+                "enrollmentsAdded": {
+                    "type": "integer"
+                },
+                "errors": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "inserted": {
+                    "type": "integer"
+                },
+                "updated": {
+                    "type": "integer"
+                }
+            }
+        },
+        "internal_student.Student": {
+            "type": "object",
+            "properties": {
+                "annotation": {
+                    "type": "string"
+                },
+                "consent": {
+                    "type": "boolean"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "phone": {
+                    "type": "string"
+                },
+                "status": {
+                    "$ref": "#/definitions/internal_student.StudentStatus"
+                },
+                "studentId": {
+                    "type": "string"
+                }
+            }
+        },
+        "internal_student.StudentStatus": {
+            "type": "string",
+            "enum": [
+                "ACTIVE",
+                "CANCELED",
+                "GRADUATED",
+                "LOCKED",
+                "PENDING"
+            ],
+            "x-enum-varnames": [
+                "StudentStatusActive",
+                "StudentStatusCanceled",
+                "StudentStatusGraduated",
+                "StudentStatusLocked",
+                "StudentStatusPending"
+            ]
+        },
+        "internal_student.createStudentInput": {
+            "type": "object",
+            "required": [
+                "status",
+                "studentId"
+            ],
+            "properties": {
+                "annotation": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "phone": {
+                    "type": "string"
+                },
+                "status": {
+                    "enum": [
+                        "ACTIVE",
+                        "CANCELED",
+                        "GRADUATED",
+                        "LOCKED"
+                    ],
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/internal_student.StudentStatus"
+                        }
+                    ]
+                },
+                "studentId": {
+                    "type": "string"
+                }
+            }
+        },
+        "internal_user.createUserInput": {
+            "type": "object",
+            "required": [
+                "email",
+                "name",
+                "password"
+            ],
+            "properties": {
+                "email": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "password": {
+                    "type": "string"
+                }
+            }
+        },
         "internal_whatsapp.CreateInstanceResponse": {
             "type": "object",
             "properties": {
                 "instanceId": {
+                    "type": "string"
+                },
+                "pairingCode": {
                     "type": "string"
                 },
                 "qrCode": {
@@ -529,10 +2240,41 @@ const docTemplate = `{
                 "id": {
                     "type": "string"
                 },
-                "instanceId": {
+                "instanceName": {
                     "type": "string"
                 },
                 "phone": {
+                    "type": "string"
+                }
+            }
+        },
+        "internal_whatsapp.connectResponse": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "string"
+                },
+                "count": {
+                    "type": "integer"
+                },
+                "message": {
+                    "type": "string"
+                },
+                "pairingCode": {
+                    "type": "string"
+                },
+                "qrcode": {
+                    "type": "object",
+                    "properties": {
+                        "base64": {
+                            "type": "string"
+                        },
+                        "code": {
+                            "type": "string"
+                        }
+                    }
+                },
+                "status": {
                     "type": "string"
                 }
             }
@@ -540,91 +2282,18 @@ const docTemplate = `{
         "internal_whatsapp.createInstanceInput": {
             "type": "object",
             "required": [
-                "phone",
-                "userId"
+                "phone"
             ],
             "properties": {
                 "phone": {
                     "type": "string"
-                },
-                "userId": {
-                    "type": "string"
                 }
             }
         },
-        "message.Attachment": {
+        "map_string_string": {
             "type": "object",
-            "properties": {
-                "data": {
-                    "type": "array",
-                    "items": {
-                        "type": "integer"
-                    }
-                },
-                "fileName": {
-                    "type": "string"
-                }
-            }
-        },
-        "message.MessageDataResponse": {
-            "type": "object",
-            "properties": {
-                "emailsFailed": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/github_com_ThalysSilva_unicast-backend_internal_student.Student"
-                    }
-                },
-                "whatsappFailed": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/github_com_ThalysSilva_unicast-backend_internal_student.Student"
-                    }
-                }
-            }
-        },
-        "message.MessageInput": {
-            "type": "object",
-            "required": [
-                "body",
-                "from",
-                "jwe",
-                "smtp_id",
-                "subject",
-                "to",
-                "whatsapp_id"
-            ],
-            "properties": {
-                "attachment": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/message.Attachment"
-                    }
-                },
-                "body": {
-                    "type": "string"
-                },
-                "from": {
-                    "type": "string"
-                },
-                "jwe": {
-                    "type": "string"
-                },
-                "smtp_id": {
-                    "type": "string"
-                },
-                "subject": {
-                    "type": "string"
-                },
-                "to": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "whatsapp_id": {
-                    "type": "string"
-                }
+            "additionalProperties": {
+                "type": "string"
             }
         }
     }

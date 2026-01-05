@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/ThalysSilva/unicast-backend/pkg/api"
 	"github.com/gin-gonic/gin"
 )
 
@@ -40,6 +41,15 @@ func NewHandler(service Service, importService ImportService) Handler {
 		importService: importService,
 	}
 }
+
+// @Summary Cria um estudante (pré-cadastro)
+// @Tags student
+// @Accept json
+// @Produce json
+// @Param Authorization header string true "Bearer token"
+// @Param body body createStudentInput true "Dados do estudante"
+// @Success 200 {object} api.DefaultResponse[map[string]string]
+// @Router /student/create [post]
 func (h *handler) Create() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var input createStudentInput
@@ -53,10 +63,17 @@ func (h *handler) Create() gin.HandlerFunc {
 			c.Error(err)
 			return
 		}
-		c.JSON(200, gin.H{"message": "Aluno criado com sucesso"})
+		c.JSON(200, api.DefaultResponse[map[string]string]{Message: "Aluno criado com sucesso", Data: map[string]string{}})
 	}
 }
 
+// @Summary Obtém um estudante por ID
+// @Tags student
+// @Produce json
+// @Param Authorization header string true "Bearer token"
+// @Param id path string true "Student ID"
+// @Success 200 {object} api.DefaultResponse[Student]
+// @Router /student/{id} [get]
 func (h *handler) GetStudent() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		studentID := c.Param("id")
@@ -70,10 +87,20 @@ func (h *handler) GetStudent() gin.HandlerFunc {
 			c.JSON(404, gin.H{"message": "Aluno não encontrado"})
 			return
 		}
-		c.JSON(200, student)
+		c.JSON(200, api.DefaultResponse[*Student]{Message: "Aluno encontrado", Data: student})
 	}
 }
 
+// @Summary Lista estudantes com filtros
+// @Tags student
+// @Produce json
+// @Param Authorization header string true "Bearer token"
+// @Param program query string false "Program ID"
+// @Param campus query string false "Campus ID"
+// @Param course query string false "Course ID"
+// @Param user query string false "User ID"
+// @Success 200 {object} api.DefaultResponse[[]Student]
+// @Router /student [get]
 func (h *handler) GetStudents() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		program := c.Query("program")
@@ -100,10 +127,25 @@ func (h *handler) GetStudents() gin.HandlerFunc {
 			c.Error(err)
 			return
 		}
-		c.JSON(200, students)
+		items := make([]Student, 0, len(students))
+		for _, student := range students {
+			if student != nil {
+				items = append(items, *student)
+			}
+		}
+		c.JSON(200, api.DefaultResponse[[]Student]{Message: "Alunos listados com sucesso", Data: items})
 	}
 }
 
+// @Summary Atualiza um estudante
+// @Tags student
+// @Accept json
+// @Produce json
+// @Param Authorization header string true "Bearer token"
+// @Param id path string true "Student ID"
+// @Param body body createStudentInput true "Campos para atualizar"
+// @Success 200 {object} api.DefaultResponse[map[string]string]
+// @Router /student/{id} [put]
 func (h *handler) Update() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		studentID := c.Param("id")
@@ -136,10 +178,17 @@ func (h *handler) Update() gin.HandlerFunc {
 			c.Error(err)
 			return
 		}
-		c.JSON(200, gin.H{"message": "Aluno atualizado com sucesso"})
+		c.JSON(200, api.DefaultResponse[map[string]string]{Message: "Aluno atualizado com sucesso", Data: map[string]string{}})
 	}
 }
 
+// @Summary Remove um estudante
+// @Tags student
+// @Produce json
+// @Param Authorization header string true "Bearer token"
+// @Param id path string true "Student ID"
+// @Success 200 {object} api.DefaultResponse[map[string]string]
+// @Router /student/{id} [delete]
 func (h *handler) Delete() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		studentID := c.Param("id")
@@ -148,10 +197,20 @@ func (h *handler) Delete() gin.HandlerFunc {
 			c.Error(err)
 			return
 		}
-		c.JSON(200, gin.H{"message": "Aluno deletado com sucesso"})
+		c.JSON(200, api.DefaultResponse[map[string]string]{Message: "Aluno deletado com sucesso", Data: map[string]string{}})
 	}
 }
 
+// @Summary Importa estudantes para um curso (CSV)
+// @Tags student
+// @Accept mpfd
+// @Produce json
+// @Param Authorization header string true "Bearer token"
+// @Param courseId path string true "Course ID"
+// @Param mode query string false "upsert ou clean" Enums(upsert,clean)
+// @Param file formData file true "CSV com studentId,name,phone,email,status"
+// @Success 200 {object} api.DefaultResponse[ImportResult]
+// @Router /course/{courseId}/students/import [post]
 func (h *handler) ImportForCourse() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		courseID := c.Param("courseId")
@@ -181,7 +240,7 @@ func (h *handler) ImportForCourse() gin.HandlerFunc {
 			return
 		}
 
-		c.JSON(http.StatusOK, result)
+		c.JSON(http.StatusOK, api.DefaultResponse[*ImportResult]{Message: "Importação concluída", Data: result})
 	}
 }
 

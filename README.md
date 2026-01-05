@@ -53,7 +53,7 @@ Swagger disponível em `http://localhost:${API_PORT}/swagger/index.html`.
 - **Invites**: professor cria código curto para a disciplina (`POST /invite/:courseId`); aluno usa `POST /invite/self-register/:code` com `studentId`, `name`, `phone`, `email`. Backend valida vínculo (enrollment) e status `PENDING` antes de ativar.
 - **Importação de alunos**: `POST /course/:courseId/students/import?mode=upsert|clean` (CSV multipart em `file`). Colunas aceitas: `studentId` (obrigatória), `name`, `phone`, `email`, `status` (1/2/3/4/5 ou ACTIVE/LOCKED/GRADUATED/CANCELED/PENDING). `mode=clean` remove matrículas do curso antes de inserir. Regras: se o aluno não existir, apenas o `studentId` é salvo com status `PENDING`; status pode ser atualizado sempre; dados de contato só são atualizados se o aluno já tiver algum contato salvo (cadastro próprio); contatos enviados para quem nunca se cadastrou são ignorados e logados.
 - **SMTP/WhatsApp**: criação/listagem de instâncias de envio.
-- **WhatsApp Instancias**: além do CRUD de instâncias, expõe connect/status/logout/restart; criação já retorna QR/pairing code para parear.
+- **WhatsApp Instâncias**: além do CRUD de instâncias, expõe connect/status/logout/restart; criação já retorna QR/pairing code para parear.
 - **Mensagens**: `POST /message/send` envia e-mail e WhatsApp para alunos; logs de entrega ficam em `message_logs`.
 - **Backdoor admin**: `POST /backdoor/reset-password` com `ADMIN_SECRET` permite reset de senha por `userId` ou `email` para recuperar acesso.
 
@@ -74,6 +74,14 @@ migrate -path migrations -database "$POSTGRES_DATABASE_URL" up
 ### Referências úteis
 - Swagger gerado em `docs/` (origem: `cmd/main/main.go` via `swag init`).
 - Banco: migrations incluem `invites`, `enrollments`, `students`, `courses`, `programs`, `campuses`, `users`, `smtp_instances`, `whatsapp_instances`.
+
+### Fluxo de uso rápido
+1. Preencha `.env`/`.env.development` conforme `example.env`.
+2. `docker-compose -f docker-compose-dev.yaml up -d` para dependências (Postgres, Redis, Evolution, Mongo, PgAdmin).
+3. `./run.sh` ou `air` (hot reload) para subir a API.
+4. Gere/swagger se precisar: `swag init -g cmd/main/main.go` (ou use o gerado em `docs/`).
+5. Use `/auth/register` e `/auth/login` para obter tokens e chamar os demais endpoints protegidos (Bearer).
+6. Cadastre campus/program/course; crie instâncias de SMTP/WhatsApp; crie invites para disciplinas; importe matrículas por curso se quiser (`/course/:courseId/students/import`); alunos finalizam o cadastro via invite `POST /invite/self-register/:code`.
 
 ### To-do / Roadmap
 - Verifique o board no [Notion](https://www.notion.so/1c702239900d80b7b24dc911e23ed2a4?v=1c702239900d8012923e000c184e26af).

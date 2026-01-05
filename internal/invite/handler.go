@@ -4,6 +4,7 @@ import (
 	"io"
 	"time"
 
+	"github.com/ThalysSilva/unicast-backend/pkg/api"
 	"github.com/gin-gonic/gin"
 )
 
@@ -33,6 +34,15 @@ func NewHandler(service Service) Handler {
 	}
 }
 
+// @Summary Cria um convite para um curso
+// @Tags invite
+// @Accept json
+// @Produce json
+// @Param Authorization header string true "Bearer token"
+// @Param courseId path string true "Course ID"
+// @Param body body createInviteInput false "Expiração opcional"
+// @Success 200 {object} api.DefaultResponse[map[string]string]
+// @Router /invite/{courseId} [post]
 func (h *handler) Create() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		courseID := c.Param("courseId")
@@ -52,13 +62,21 @@ func (h *handler) Create() gin.HandlerFunc {
 			return
 		}
 
-		c.JSON(200, gin.H{
-			"message": "Convite criado com sucesso",
-			"code":    invite.Code,
+		c.JSON(200, api.DefaultResponse[map[string]string]{
+			Message: "Convite criado com sucesso",
+			Data:    map[string]string{"code": invite.Code},
 		})
 	}
 }
 
+// @Summary Auto-registro de aluno via convite
+// @Tags invite
+// @Accept json
+// @Produce json
+// @Param code path string true "Código do convite"
+// @Param body body selfRegisterInput true "Dados do aluno"
+// @Success 200 {object} api.DefaultResponse[map[string]string]
+// @Router /invite/self-register/{code} [post]
 func (h *handler) SelfRegister() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var input selfRegisterInput
@@ -75,6 +93,6 @@ func (h *handler) SelfRegister() gin.HandlerFunc {
 			return
 		}
 
-		c.JSON(200, gin.H{"message": "Cadastro concluído com sucesso"})
+		c.JSON(200, api.DefaultResponse[map[string]string]{Message: "Cadastro concluído com sucesso", Data: map[string]string{}})
 	}
 }
