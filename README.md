@@ -71,6 +71,279 @@ Swagger disponível em `http://localhost:${API_PORT}/swagger/index.html`.
 - O `JWE_SECRET` global serve apenas para proteger dados sensíveis de tokens/JWE do sistema; o segredo específico de SMTP é fornecido pelo usuário, reduzindo o blast radius.
 - Logs não carregam dados sensíveis; recomenda-se nunca registrar host/usuário/senha do SMTP em claro.
 
+### Diagramas (Mermaid)
+
+**Arquitetura geral**
+```mermaid
+flowchart LR
+    subgraph Frontend
+        FE["Cliente Web"]
+    end
+    subgraph Backend
+        API["UniCast API (Gin)"]
+        Auth["Auth/JWT/JWE"]
+        Msg["Message Service"]
+        Inv["Invite/Enrollment"]
+        SMTP["SMTP Service"]
+        WA["WhatsApp Service"]
+        Log["Message Logs"]
+    end
+    subgraph Infra
+        PG["PostgreSQL"]
+        Evo["Evolution API\n(+ Redis interno)"]
+        Mail["SMTP Provider"]
+    end
+
+    FE -->|HTTP/JSON| API
+    API --> Auth
+    API --> Inv
+    API --> Msg
+    API --> SMTP
+    API --> WA
+    Msg --> Log
+    Auth --> PG
+    Inv --> PG
+    Msg --> PG
+    Log --> PG
+    SMTP --> PG
+    WA --> PG
+    WA -->|send/receive| Evo
+    SMTP -->|send| Mail
+```
+
+**Fluxo de auto-cadastro via invite**
+```mermaid
+sequenceDiagram
+    participant Professor
+    participant API
+    participant DB as Postgres
+    participant Aluno
+
+    Professor->>API: POST /invite/:courseId (Bearer)
+    API->>DB: cria invite (code, courseId, expiração)
+    API-->>Professor: code
+    Aluno->>API: POST /invite/self-register/:code {studentId, name, phone, email}
+    API->>DB: valida invite + enrollment PENDING
+    API->>DB: atualiza aluno (contatos, status ACTIVE)
+    API-->>Aluno: mensagem de sucesso
+```
+
+**Fluxo de envio de mensagem**
+```mermaid
+sequenceDiagram
+    participant Professor
+    participant API
+    participant DB as Postgres
+    participant Evo as Evolution API
+    participant Mail as SMTP Provider
+
+    Professor->>API: POST /message/send (Bearer)
+    API->>DB: resolve alunos/contatos e instâncias (SMTP/WA)
+    API->>Mail: envia email
+    API->>Evo: envia WhatsApp (texto/media)
+    API->>DB: grava message_logs (status, canais, destinatários)
+    API-->>Professor: resposta com falhas por canal (se houver)
+```
+
+**Criptografia de credenciais SMTP**
+```mermaid
+flowchart TD
+    subgraph Entrada
+      SmtpSecret["smtpSecret (fornecido pelo usuário)"]
+      Creds["Credenciais SMTP (email, senha, host, port)"]
+    end
+
+    subgraph Criptografia
+      JWE["JWE Encrypt/Decrypt"]
+    end
+
+    subgraph Persistência
+      DB["smtp_instances (ciphertext + iv)"]
+    end
+
+    subgraph Uso
+      SMTPClient["SMTP Client (em memória)"]
+      Mail["SMTP Provider"]
+    end
+
+    Creds --> JWE
+    SmtpSecret --> JWE
+    JWE -->|gera ciphertext| DB
+    DB -->|ciphertext| JWE
+    SmtpSecret --> JWE
+    JWE -->|dados em claro em memória| SMTPClient
+    SMTPClient --> Mail
+```
+
+**Diagrama de classes/serviços (alto nível)**
+```mermaid
+classDiagram
+    class AuthService {
+      +Register(email, password, name)
+      +Login(email, password)
+      +Refresh(token)
+    }
+    class InviteService {
+      +Create(courseId, userId, expiresAt)
+      +SelfRegister(code, studentId, name, phone, email)
+    }
+    class MessageService {
+      +Send(message)
+    }
+    class WhatsAppService {
+      +CreateInstance(userId, phone)
+      +ConnectInstance(userId, instanceId)
+      +SendText(to, body, instanceName)
+      +SendMedia(to, caption, mimetype, mediatype, media, filename, instanceName)
+    }
+    class SMTPService {
+      +CreateInstance(userId, jweSecret, smtpSecret, email, password, host, port)
+      +GetInstances(userId)
+    }
+    class StudentService {
+      +Create(studentId, name, phone, email, annotation, status)
+      +Update(id, fields)
+      +ImportForCourse(courseId, mode, records)
+      +GetStudents(filters)
+    }
+    class EnrollmentRepo {
+      +FindByCourseAndStudent(...)
+      +DeleteByCourseID(...)
+      +Create(...)
+    }
+    class StudentRepo {
+      +Create(...)
+      +Update(...)
+      +FindByID(...)
+      +FindByStudentID(...)
+    }
+    class CourseRepo {
+      +FindByProgramID(...)
+      +Update(...)
+      +Delete(...)
+    }
+
+    MessageService --> WhatsAppService
+    MessageService --> SMTPService
+    InviteService --> EnrollmentRepo
+    InviteService --> StudentService
+    StudentService --> StudentRepo
+    StudentService --> EnrollmentRepo
+```
+
+**Estados de Invite e Student (simplificado)**
+```mermaid
+stateDiagram-v2
+    [*] --> InviteActive
+    InviteActive --> InviteUsed: self-register
+    InviteActive --> InviteExpired: expiresAt (opcional)
+    InviteUsed --> [*]
+    InviteExpired --> [*]
+
+    [*] --> StudentPending
+    StudentPending --> StudentActive: self-register + consent
+    StudentActive --> StudentLocked: admin change / status import
+    StudentActive --> StudentCanceled: admin change / status import
+    StudentLocked --> StudentActive: admin reativação
+```
+
+**Entidades principais (ER simplificado)**
+```mermaid
+erDiagram
+    USER ||--o{ CAMPUS : owns
+    USER ||--o{ WHATSAPP_INSTANCE : owns
+    USER ||--o{ SMTP_INSTANCE : owns
+    USER ||--o{ MESSAGE_LOG : sends
+
+    CAMPUS ||--o{ PROGRAM : contains
+    PROGRAM ||--o{ COURSE : contains
+    COURSE ||--o{ INVITE : issues
+    COURSE ||--o{ ENROLLMENT : has
+
+    STUDENT ||--o{ ENROLLMENT : participates
+    STUDENT ||--o{ MESSAGE_LOG : receives
+
+    WHATSAPP_INSTANCE ||--o{ MESSAGE_LOG : delivers
+    SMTP_INSTANCE ||--o{ MESSAGE_LOG : delivers
+
+    USER {
+        string id
+        string name
+        string email
+    }
+    CAMPUS {
+        string id
+        string name
+    }
+    PROGRAM {
+        string id
+        string name
+        string campus_id
+    }
+    COURSE {
+        string id
+        string name
+        string program_id
+        int    year
+        int    semester
+    }
+    STUDENT {
+        string id
+        string student_id
+        string status
+    }
+    ENROLLMENT {
+        string id
+        string course_id
+        string student_id
+    }
+    INVITE {
+        string code
+        string course_id
+        datetime expires_at
+    }
+    WHATSAPP_INSTANCE {
+        string id
+        string instance_name
+        string phone
+    }
+    SMTP_INSTANCE {
+        string id
+        string email
+        string host
+        int    port
+        string iv
+    }
+    MESSAGE_LOG {
+        string id
+        string channel
+        string status
+        string recipient
+    }
+```
+
+**Atores e fluxos principais**
+```mermaid
+flowchart TB
+    Professor["Professor/Coordenador"]
+    Aluno["Aluno"]
+    Admin["Backdoor (Admin)"]
+
+    C1["Gerir campus/program/curso"]
+    C2["Importar alunos / criar invite"]
+    C3["Auto-cadastro via invite"]
+    C4["Enviar mensagens (email/WhatsApp)"]
+    C5["Gerir instâncias SMTP/WhatsApp"]
+    C6["Reset de senha (backdoor)"]
+
+    Professor --> C1
+    Professor --> C2
+    Professor --> C4
+    Professor --> C5
+    Aluno --> C3
+    Admin --> C6
+```
+
 ### Migrations
 Arquivo SQL em `migrations/`. Exemplo com golang-migrate:
 ```
