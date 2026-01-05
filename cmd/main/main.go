@@ -129,6 +129,7 @@ func main() {
 		whatsappGroup.Use(middleware.UseAuthentication(secrets.AccessToken))
 		whatsappGroup.POST("/instance", whatsappHandler.CreateInstance())
 		whatsappGroup.GET("/instance", whatsappHandler.GetInstances())
+		whatsappGroup.DELETE("/instance/:id", whatsappHandler.DeleteInstance())
 	}
 
 	// Rotas do smtp

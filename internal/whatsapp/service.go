@@ -14,6 +14,7 @@ import (
 type Service interface {
 	CreateInstance(ctx context.Context, userId, phone string) (*Instance, string, error)
 	GetInstances(ctx context.Context, userID string) ([]*Instance, error)
+	DeleteInstance(ctx context.Context, userID, instanceID string) error
 }
 
 type service struct {
@@ -31,6 +32,8 @@ func NewService(whatsappRepo Repository, userRepo user.Repository) Service {
 var (
 	HasAlreadyInstance = customerror.Make("Instância já existe", http.StatusConflict, errors.New("HasAlreadyInstance"))
 	UserNotFound       = customerror.Make("Usuário não encontrado", http.StatusNotFound, errors.New("userNotFound"))
+	InstanceNotFound   = customerror.Make("Instância não encontrada", http.StatusNotFound, errors.New("instanceNotFound"))
+	InstanceForbidden  = customerror.Make("Você não tem permissão para esta instância", http.StatusForbidden, errors.New("instanceForbidden"))
 )
 
 func (s *service) CreateInstance(ctx context.Context, userId, phone string) (*Instance, string, error) {
@@ -97,4 +100,19 @@ func (s *service) GetInstances(ctx context.Context, userID string) ([]*Instance,
 		return []*Instance{}, nil
 	}
 	return instances, nil
+}
+
+func (s *service) DeleteInstance(ctx context.Context, userID, instanceID string) error {
+	instance, err := s.whatsappInstanceRepository.FindByID(ctx, instanceID)
+	if err != nil {
+		return err
+	}
+	if instance == nil {
+		return InstanceNotFound
+	}
+	if instance.UserID != userID {
+		return InstanceForbidden
+	}
+
+	return s.whatsappInstanceRepository.Delete(ctx, instanceID)
 }

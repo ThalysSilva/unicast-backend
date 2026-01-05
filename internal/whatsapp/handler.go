@@ -29,6 +29,7 @@ type handler struct {
 type Handler interface {
 	CreateInstance() gin.HandlerFunc
 	GetInstances() gin.HandlerFunc
+	DeleteInstance() gin.HandlerFunc
 }
 
 func NewHandler(service Service) Handler {
@@ -97,6 +98,34 @@ func (h *handler) GetInstances() gin.HandlerFunc {
 		c.JSON(http.StatusOK, api.DefaultResponse[GetInstancesResponse]{
 			Message: "Instância encontrada com sucesso.",
 			Data:    response,
+		})
+	}
+}
+
+// @OperationId deleteInstance
+// @Summary Deleta uma instância do WhatsApp
+// @Description Remove a instância do usuário e permite criar/parear novamente.
+// @Tags whatsapp
+// @Accept json
+// @Produce json
+// @Param id path string true "Instance ID"
+// @Success 200 {object} api.DefaultResponse[any]
+// @Failure 400 {object} api.ErrorResponse
+// @Router /whatsapp/instance/{id} [delete]
+// @Security Bearer
+func (h *handler) DeleteInstance() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		userID := c.GetString("userID")
+		instanceID := c.Param("id")
+
+		if err := h.service.DeleteInstance(c.Request.Context(), userID, instanceID); err != nil {
+			customerror.HandleResponse(c, err)
+			return
+		}
+
+		c.JSON(http.StatusOK, api.DefaultResponse[any]{
+			Message: "Instância deletada com sucesso.",
+			Data:    nil,
 		})
 	}
 }
