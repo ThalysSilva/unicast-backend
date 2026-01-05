@@ -68,6 +68,7 @@ func main() {
 	courseService := course.NewService(repos.Course)
 	programService := program.NewService(repos.Program)
 	studentService := student.NewService(repos.Student)
+	studentImportService := student.NewImportService(repos.Student, repos.Enrollment)
 	userService := user.NewService(repos.User)
 	inviteService := invite.NewService(repos.Invite, repos.Course, repos.Enrollment, repos.Student)
 	messageLogRepo := message.NewLogRepository(db)
@@ -81,7 +82,7 @@ func main() {
 	campusHandler := campus.NewHandler(campusService)
 	courseHandler := course.NewHandler(courseService)
 	programHandler := program.NewHandler(programService)
-	studentHandler := student.NewHandler(studentService)
+	studentHandler := student.NewHandler(studentService, studentImportService)
 	userHandler := user.NewHandler(userService)
 	inviteHandler := invite.NewHandler(inviteService)
 	messageHandler := message.NewHandler(messageService)
@@ -118,6 +119,7 @@ func main() {
 		courseGroup.GET("/:programId", courseHandler.GetCoursesByProgramID())
 		courseGroup.PUT("/:id", courseHandler.Update())
 		courseGroup.DELETE("/:id", courseHandler.Delete())
+		courseGroup.POST("/:courseId/students/import", studentHandler.ImportForCourse())
 	}
 
 	// Rotas de cursos

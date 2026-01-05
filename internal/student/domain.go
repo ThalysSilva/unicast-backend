@@ -26,6 +26,7 @@ type Student struct {
 	Phone      *string       `json:"phone"`
 	Email      *string       `json:"email" validate:"email"`
 	Annotation *string       `json:"annotation"`
+	Consent    bool          `json:"consent"`
 	CreatedAt  time.Time     `json:"-"`
 	UpdatedAt  time.Time     `json:"-"`
 	Status     StudentStatus `json:"status"`

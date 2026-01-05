@@ -36,17 +36,17 @@ func (r *sqlRepository) TransactionBackend() any {
 // Insere um novo estudante
 func (r *sqlRepository) Create(ctx context.Context, studentID string, name, phone, email, annotation *string, status StudentStatus) error {
 	query := `
-        INSERT INTO students (student_id, name, phone, email, annotation, status)
-        VALUES ($1, $2, $3, $4, $5, $6)
+        INSERT INTO students (student_id, name, phone, email, annotation, status, consent)
+        VALUES ($1, $2, $3, $4, $5, $6, $7)
     `
-	_, err := r.db.ExecContext(ctx, query, studentID, name, phone, email, annotation, status)
+	_, err := r.db.ExecContext(ctx, query, studentID, name, phone, email, annotation, status, false)
 	return err
 }
 
 // Busca um estudante pelo ID
 func (r *sqlRepository) FindByID(ctx context.Context, id string) (*Student, error) {
 	query := `
-        SELECT id, student_id, name, phone, email, annotation, created_at, updated_at, status
+        SELECT id, student_id, name, phone, email, annotation, consent, created_at, updated_at, status
         FROM students
         WHERE id = $1
     `
@@ -54,7 +54,7 @@ func (r *sqlRepository) FindByID(ctx context.Context, id string) (*Student, erro
 
 	student := &Student{}
 	var name, phone, email, annotation sql.NullString
-	err := row.Scan(&student.ID, &student.StudentID, &name, &phone, &email, &annotation, &student.CreatedAt, &student.UpdatedAt, &student.Status)
+	err := row.Scan(&student.ID, &student.StudentID, &name, &phone, &email, &annotation, &student.Consent, &student.CreatedAt, &student.UpdatedAt, &student.Status)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
@@ -79,7 +79,7 @@ func (r *sqlRepository) FindByID(ctx context.Context, id string) (*Student, erro
 
 func (r *sqlRepository) FindByStudentID(ctx context.Context, studentID string) (*Student, error) {
 	query := `
-        SELECT id, student_id, name, phone, email, annotation, created_at, updated_at, status
+        SELECT id, student_id, name, phone, email, annotation, consent, created_at, updated_at, status
         FROM students
         WHERE student_id = $1
     `
@@ -99,7 +99,7 @@ func (r *sqlRepository) FindByStudentID(ctx context.Context, studentID string) (
 func (r *sqlRepository) FindByFilters(ctx context.Context, filters map[string]string) ([]*Student, error) {
 
 	query := `
-		SELECT id, student_id, name, phone, email, annotation, created_at, updated_at, status
+		SELECT id, student_id, name, phone, email, annotation, consent, created_at, updated_at, status
 		FROM students
 	`
 
@@ -138,7 +138,7 @@ func (r *sqlRepository) FindByIDs(ctx context.Context, studentIds []string) ([]*
 	}
 
 	query := fmt.Sprintf(`
-			SELECT id, student_id, name, phone, email, annotation, created_at, updated_at, status
+			SELECT id, student_id, name, phone, email, annotation, consent, created_at, updated_at, status
 			FROM students
 			WHERE id IN (%s)
 	`, strings.Join(placeholders, ","))
@@ -206,6 +206,7 @@ func scanStudent(scanner rowScanner) (*Student, error) {
 		&phone,
 		&email,
 		&annotation,
+		&student.Consent,
 		&student.CreatedAt,
 		&student.UpdatedAt,
 		&student.Status,

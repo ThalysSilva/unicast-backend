@@ -91,3 +91,9 @@ func (r *sqlRepository) Delete(ctx context.Context, id string) error {
 	_, err := r.db.ExecContext(ctx, query, id)
 	return err
 }
+
+func (r *sqlRepository) DeleteByCourseID(ctx context.Context, courseID string) error {
+	query := `DELETE FROM enrollments WHERE course_id = $1`
+	_, err := r.db.ExecContext(ctx, query, courseID)
+	return err
+}

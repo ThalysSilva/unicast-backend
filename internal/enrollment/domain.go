@@ -21,6 +21,7 @@ type Repository interface {
 	Create(ctx context.Context, courseID, studentID string) error
 	FindByID(ctx context.Context, cid string) (*Enrollment, error)
 	FindByCourseAndStudent(ctx context.Context, courseID, studentID string) (*Enrollment, error)
+	DeleteByCourseID(ctx context.Context, courseID string) error
 	Update(ctx context.Context, id string, fields map[string]any) error
 	Delete(ctx context.Context, cid string) error
 }
