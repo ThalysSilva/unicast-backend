@@ -93,57 +93,75 @@ func (s *service) Send(ctx context.Context, message *Message) (emailsFails, what
 		return nil, nil, customerror.Trace("Send", ErrStudentsNotFound)
 	}
 
-	smtp, err := s.smtpRepository.FindByID(ctx, message.SmtpId)
+	smtpInstance, waInstance, err := s.loadSenders(ctx, message.SmtpId, message.WhatsappId)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	attachments, attachmentNamesStr := buildAttachments(message)
+
+	emailFailedSlice, emailErr := s.sendEmails(ctx, message, smtpInstance, attachments, students)
+	emailFailedStudents := &emailFailedSlice
+	whatsappFailedSlice := s.sendWhats(ctx, waInstance, students, message.Body)
+	whatsappFailedStudents := &whatsappFailedSlice
+
+	s.logResults(ctx, students, emailFailedSlice, whatsappFailedSlice, message, attachmentNamesStr)
+
+	return emailFailedStudents, whatsappFailedStudents, emailErr
+}
+
+func (s *service) loadSenders(ctx context.Context, smtpID, whatsappID string) (*smtp.Instance, *whatsapp.Instance, error) {
+	smtpInstance, err := s.smtpRepository.FindByID(ctx, smtpID)
 	if err != nil {
 		return nil, nil, customerror.Trace("Send", err)
 	}
-	if smtp == nil {
+	if smtpInstance == nil {
 		return nil, nil, customerror.Trace("Send", ErrSmtpNotFound)
 	}
 
-	waInstance, err := s.whatsAppRepository.FindByID(ctx, message.WhatsappId)
+	waInstance, err := s.whatsAppRepository.FindByID(ctx, whatsappID)
 	if err != nil {
 		return nil, nil, customerror.Trace("Send", err)
 	}
 	if waInstance == nil {
 		return nil, nil, customerror.Trace("Send", ErrWhatsAppNotFound)
 	}
+	return smtpInstance, waInstance, nil
+}
 
-	decryptedJwe, err := auth.DecryptJWE[auth.JwePayload](message.Jwe, s.jweSecret)
-	if err != nil {
-		return nil, nil, customerror.Trace("Send", err)
-	}
-
-	if err != nil {
-		return nil, nil, customerror.Trace("Send", err)
-	}
-	decryptedSmtpPassword, err := encryption.DecryptSmtpPassword([]byte(smtp.Password), []byte(decryptedJwe.SmtpKeyEncoded), []byte(smtp.IV))
-	if err != nil {
-		return nil, nil, customerror.Trace("Send", err)
-	}
-	sender := mailer.NewEmailSender(mailer.SmtpAuthentication{
-		Host:     smtp.Host,
-		Port:     smtp.Port,
-		Username: smtp.Email,
-		Password: decryptedSmtpPassword,
-	})
-
+func buildAttachments(message *Message) ([]mailer.Attachment, string) {
 	attachments := []mailer.Attachment{}
-	var attachmentNames []string
+	var names []string
 	if message.Attachments != nil {
 		for _, attachment := range *message.Attachments {
 			attachments = append(attachments, mailer.Attachment{
 				FileName: attachment.FileName,
 				Data:     attachment.Data,
 			})
-			attachmentNames = append(attachmentNames, attachment.FileName)
+			names = append(names, attachment.FileName)
 		}
 	}
-	attachmentNamesStr := ""
-	if len(attachmentNames) > 0 {
-		attachmentNamesStr = strings.Join(attachmentNames, ",")
+	if len(names) == 0 {
+		return attachments, ""
 	}
-	emailFailedStudents := &[]student.Student{}
+	return attachments, strings.Join(names, ",")
+}
+
+func (s *service) sendEmails(ctx context.Context, message *Message, smtpInstance *smtp.Instance, attachments []mailer.Attachment, students []*student.Student) ([]student.Student, error) {
+	decryptedJwe, err := auth.DecryptJWE[auth.JwePayload](message.Jwe, s.jweSecret)
+	if err != nil {
+		return nil, customerror.Trace("Send", err)
+	}
+	decryptedSmtpPassword, err := encryption.DecryptSmtpPassword([]byte(smtpInstance.Password), []byte(decryptedJwe.SmtpKeyEncoded), []byte(smtpInstance.IV))
+	if err != nil {
+		return nil, customerror.Trace("Send", err)
+	}
+	sender := mailer.NewEmailSender(mailer.SmtpAuthentication{
+		Host:     smtpInstance.Host,
+		Port:     smtpInstance.Port,
+		Username: smtpInstance.Email,
+		Password: decryptedSmtpPassword,
+	})
 
 	if err := sender.SetData(&mailer.MailerData{
 		From:        message.From,
@@ -153,52 +171,57 @@ func (s *service) Send(ctx context.Context, message *Message) (emailsFails, what
 		Attachments: &attachments,
 		ContentType: mailer.TextPlain,
 	}); err != nil {
-		return nil, nil, customerror.Trace("Send", err)
+		return nil, customerror.Trace("Send", err)
 	}
 
 	emailSendErr := sender.SendEmails(4, 4, 10, 5*time.Second)
+	emailFailedStudents := []student.Student{}
 	if emailSendErr != nil {
 		failedStudents, e := extractEmailFailedStudents(emailSendErr, students)
 		if e != nil {
-			return nil, nil, customerror.Trace("Send", e)
+			return nil, customerror.Trace("Send", e)
 		}
 		if len(failedStudents) > 0 {
-			emailFailedStudents = &failedStudents
+			emailFailedStudents = failedStudents
 		}
 	}
-	whatsappFailedStudents := &[]student.Student{}
+	return emailFailedStudents, emailSendErr
+}
 
-	// Envio por WhatsApp via Evolution API
-	var failedWhats []student.Student
+func (s *service) sendWhats(ctx context.Context, waInstance *whatsapp.Instance, students []*student.Student, body string) []student.Student {
+	var failed []student.Student
+
 	for _, stud := range students {
 		if stud.Phone == nil || *stud.Phone == "" {
-			failedWhats = append(failedWhats, *stud)
+			failed = append(failed, *stud)
 			continue
 		}
 
 		normalized, err := whatsapp.NormalizeNumber(*stud.Phone, s.defaultCountryCode)
 		if err != nil {
-			failedWhats = append(failedWhats, *stud)
+			failed = append(failed, *stud)
 			continue
 		}
 
-		if err := sendWhatsAppWithRetry(waInstance.InstanceID, normalized, message.Body, 3, 1*time.Second); err != nil {
+		if err := sendWhatsAppWithRetry(waInstance.InstanceID, normalized, body, 3, 1*time.Second); err != nil {
 			fmt.Printf("falha ao enviar whatsapp para %s: %v\n", *stud.Phone, err)
-			failedWhats = append(failedWhats, *stud)
+			failed = append(failed, *stud)
 			continue
 		}
 	}
 
-	if len(failedWhats) > 0 {
-		whatsappFailedStudents = &failedWhats
+	return failed
+}
+
+func (s *service) logResults(ctx context.Context, students []*student.Student, emailFailed, whatsappFailed []student.Student, message *Message, attachmentNames string) {
+	attachmentCount := 0
+	if attachmentNames != "" {
+		attachmentCount = len(strings.Split(attachmentNames, ","))
 	}
 
-	// Persist logs
 	emailFailedSet := make(map[string]string)
-	if emailSendErr != nil && emailFailedStudents != nil {
-		for _, s := range *emailFailedStudents {
-			emailFailedSet[s.ID] = emailSendErr.Error()
-		}
+	for _, s := range emailFailed {
+		emailFailedSet[s.ID] = "failed to send email"
 	}
 	for _, stud := range students {
 		errText, failed := emailFailedSet[stud.ID]
@@ -210,15 +233,15 @@ func (s *service) Send(ctx context.Context, message *Message) (emailsFails, what
 			Subject:         &message.Subject,
 			Body:            &message.Body,
 			SMTPID:          &message.SmtpId,
-			AttachmentNames: nullableString(attachmentNamesStr, len(attachmentNames) > 0),
-			AttachmentCount: len(attachmentNames),
+			AttachmentNames: nullableString(attachmentNames, attachmentCount > 0),
+			AttachmentCount: attachmentCount,
 		}); err != nil {
 			fmt.Printf("falha ao salvar log email student %s: %v\n", stud.ID, err)
 		}
 	}
 
 	whatsFailedSet := make(map[string]string)
-	for _, s := range failedWhats {
+	for _, s := range whatsappFailed {
 		whatsFailedSet[s.ID] = "failed to send whatsapp"
 	}
 	for _, stud := range students {
@@ -231,14 +254,12 @@ func (s *service) Send(ctx context.Context, message *Message) (emailsFails, what
 			Subject:            &message.Subject,
 			Body:               &message.Body,
 			WhatsAppInstanceID: &message.WhatsappId,
-			AttachmentNames:    nullableString(attachmentNamesStr, len(attachmentNames) > 0),
-			AttachmentCount:    len(attachmentNames),
+			AttachmentNames:    nullableString(attachmentNames, attachmentCount > 0),
+			AttachmentCount:    attachmentCount,
 		}); err != nil {
 			fmt.Printf("falha ao salvar log whatsapp student %s: %v\n", stud.ID, err)
 		}
 	}
-
-	return emailFailedStudents, whatsappFailedStudents, nil
 }
 
 // sendWhatsAppWithRetry encapsula retentativa simples para envio de WhatsApp.
