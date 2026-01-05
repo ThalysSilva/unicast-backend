@@ -83,6 +83,20 @@ type sendMediaResponse struct {
 	Message string `json:"message"`
 }
 
+type connectResponse struct {
+	Status      string `json:"status"`
+	Message     string `json:"message"`
+	PairingCode string `json:"pairingCode"`
+	Code        string `json:"code"`
+	Count       int    `json:"count"`
+}
+
+type statusResponse struct {
+	Instance struct {
+		Status string `json:"status"`
+	} `json:"instance"`
+}
+
 var jsonFunc = json.Marshal
 var evolutionBaseURL = ""
 var cachedConfig *env.Config
@@ -209,5 +223,43 @@ func deleteEvolutionInstance(instanceID string) error {
 	}
 	payload := bytes.NewBuffer(body)
 	_, err = httpClientEvolution[deleteInstanceResponse]("DELETE", "/instance/delete", payload)
+	return err
+}
+
+// connectEvolutionInstance dispara a conexão/pareamento (precisa do número).
+func connectEvolutionInstance(instanceName, number string) (*connectResponse, error) {
+	payload := bytes.NewBuffer(nil)
+	resp, err := httpClientEvolution[connectResponse]("GET", fmt.Sprintf("/instance/connect/%s?number=%s", instanceName, number), payload)
+	if err != nil {
+		return nil, err
+	}
+	if resp == nil {
+		return nil, customerror.Make("resposta vazia da Evolution API (connect)", http.StatusBadGateway, fmt.Errorf("empty response"))
+	}
+	return resp, nil
+}
+
+// connectionStateEvolution retorna o status da instância.
+func connectionStateEvolution(instanceName string) (string, error) {
+	payload := bytes.NewBuffer(nil)
+	resp, err := httpClientEvolution[statusResponse]("GET", fmt.Sprintf("/instance/connectionState/%s", instanceName), payload)
+	if err != nil {
+		return "", err
+	}
+	if resp == nil {
+		return "", customerror.Make("resposta vazia da Evolution API (connectionState)", http.StatusBadGateway, fmt.Errorf("empty response"))
+	}
+	return resp.Instance.Status, nil
+}
+
+func logoutEvolutionInstance(instanceName string) error {
+	payload := bytes.NewBuffer(nil)
+	_, err := httpClientEvolution[deleteInstanceResponse]("DELETE", fmt.Sprintf("/instance/logout/%s", instanceName), payload)
+	return err
+}
+
+func restartEvolutionInstance(instanceName string) error {
+	payload := bytes.NewBuffer(nil)
+	_, err := httpClientEvolution[deleteInstanceResponse]("POST", fmt.Sprintf("/instance/restart/%s", instanceName), payload)
 	return err
 }

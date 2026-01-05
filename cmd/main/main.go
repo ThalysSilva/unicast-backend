@@ -137,6 +137,10 @@ func main() {
 		whatsappGroup.POST("/instance", whatsappHandler.CreateInstance())
 		whatsappGroup.GET("/instance", whatsappHandler.GetInstances())
 		whatsappGroup.DELETE("/instance/:id", whatsappHandler.DeleteInstance())
+		whatsappGroup.POST("/instance/:id/connect", whatsappHandler.ConnectInstance())
+		whatsappGroup.GET("/instance/:id/status", whatsappHandler.ConnectionState())
+		whatsappGroup.DELETE("/instance/:id/logout", whatsappHandler.LogoutInstance())
+		whatsappGroup.POST("/instance/:id/restart", whatsappHandler.RestartInstance())
 	}
 
 	// Rotas do smtp

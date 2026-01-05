@@ -15,6 +15,10 @@ type Service interface {
 	CreateInstance(ctx context.Context, userId, phone string) (*Instance, string, error)
 	GetInstances(ctx context.Context, userID string) ([]*Instance, error)
 	DeleteInstance(ctx context.Context, userID, instanceID string) error
+	ConnectInstance(ctx context.Context, userID, instanceID string) (*connectResponse, error)
+	ConnectionState(ctx context.Context, userID, instanceID string) (string, error)
+	LogoutInstance(ctx context.Context, userID, instanceID string) error
+	RestartInstance(ctx context.Context, userID, instanceID string) error
 }
 
 type service struct {
@@ -109,7 +113,45 @@ func (s *service) DeleteInstance(ctx context.Context, userID, instanceID string)
 		return InstanceForbidden
 	}
 
+	// Best effort: faz logout na Evolution antes de remover localmente.
+	if err := logoutEvolutionInstance(instance.InstanceName); err != nil {
+		fmt.Printf("falha ao deslogar instância na Evolution: %v\n", err)
+	}
+
 	return s.whatsappInstanceRepository.Delete(ctx, instanceID)
+}
+
+func (s *service) ConnectInstance(ctx context.Context, userID, instanceID string) (*connectResponse, error) {
+	instance, err := s.ensureOwnership(ctx, userID, instanceID)
+	if err != nil {
+		return nil, err
+	}
+	resp, err := connectEvolutionInstance(instance.InstanceName, instance.Phone)
+	return resp, err
+}
+
+func (s *service) ConnectionState(ctx context.Context, userID, instanceID string) (string, error) {
+	instance, err := s.ensureOwnership(ctx, userID, instanceID)
+	if err != nil {
+		return "", err
+	}
+	return connectionStateEvolution(instance.InstanceName)
+}
+
+func (s *service) LogoutInstance(ctx context.Context, userID, instanceID string) error {
+	instance, err := s.ensureOwnership(ctx, userID, instanceID)
+	if err != nil {
+		return err
+	}
+	return logoutEvolutionInstance(instance.InstanceName)
+}
+
+func (s *service) RestartInstance(ctx context.Context, userID, instanceID string) error {
+	instance, err := s.ensureOwnership(ctx, userID, instanceID)
+	if err != nil {
+		return err
+	}
+	return restartEvolutionInstance(instance.InstanceName)
 }
 
 func (s *service) ensureNoExistingInstance(ctx context.Context, repo Repository, phone, userID string) error {
@@ -161,4 +203,18 @@ func (s *service) withTransaction(ctx context.Context, fn func(repo Repository, 
 
 func (s *service) buildInstanceName(userEmail, phone string) string {
 	return userEmail + ":" + phone
+}
+
+func (s *service) ensureOwnership(ctx context.Context, userID, instanceID string) (*Instance, error) {
+	instance, err := s.whatsappInstanceRepository.FindByID(ctx, instanceID)
+	if err != nil {
+		return nil, err
+	}
+	if instance == nil {
+		return nil, InstanceNotFound
+	}
+	if instance.UserID != userID {
+		return nil, InstanceForbidden
+	}
+	return instance, nil
 }

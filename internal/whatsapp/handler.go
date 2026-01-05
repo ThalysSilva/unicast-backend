@@ -30,6 +30,10 @@ type Handler interface {
 	CreateInstance() gin.HandlerFunc
 	GetInstances() gin.HandlerFunc
 	DeleteInstance() gin.HandlerFunc
+	ConnectInstance() gin.HandlerFunc
+	ConnectionState() gin.HandlerFunc
+	LogoutInstance() gin.HandlerFunc
+	RestartInstance() gin.HandlerFunc
 }
 
 func NewHandler(service Service) Handler {
@@ -127,5 +131,107 @@ func (h *handler) DeleteInstance() gin.HandlerFunc {
 			Message: "Instância deletada com sucesso.",
 			Data:    nil,
 		})
+	}
+}
+
+// @OperationId connectInstance
+// @Summary Conecta/pareia uma instância na Evolution
+// @Description Dispara a conexão usando number (telefone com DDI/DD).
+// @Tags whatsapp
+// @Accept json
+// @Produce json
+// @Param id path string true "Instance ID"
+// @Success 200 {object} api.DefaultResponse[any]
+// @Failure 400 {object} api.ErrorResponse
+// @Router /whatsapp/instance/{id}/connect [post]
+// @Security Bearer
+func (h *handler) ConnectInstance() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		userID := c.GetString("userID")
+		instanceID := c.Param("id")
+
+		resp, err := h.service.ConnectInstance(c.Request.Context(), userID, instanceID)
+		if err != nil {
+			customerror.HandleResponse(c, err)
+			return
+		}
+
+		c.JSON(http.StatusOK, api.DefaultResponse[connectResponse]{
+			Message: "Instância conectando...",
+			Data:    *resp,
+		})
+	}
+}
+
+// @OperationId connectionState
+// @Summary Consulta status de conexão da instância
+// @Tags whatsapp
+// @Produce json
+// @Param id path string true "Instance ID"
+// @Success 200 {object} api.DefaultResponse[map[string]string]
+// @Failure 400 {object} api.ErrorResponse
+// @Router /whatsapp/instance/{id}/status [get]
+// @Security Bearer
+func (h *handler) ConnectionState() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		userID := c.GetString("userID")
+		instanceID := c.Param("id")
+
+		state, err := h.service.ConnectionState(c.Request.Context(), userID, instanceID)
+		if err != nil {
+			customerror.HandleResponse(c, err)
+			return
+		}
+
+		c.JSON(http.StatusOK, api.DefaultResponse[map[string]string]{
+			Message: "Status consultado com sucesso.",
+			Data:    map[string]string{"status": state},
+		})
+	}
+}
+
+// @OperationId logoutInstance
+// @Summary Desconecta/logout de uma instância na Evolution
+// @Tags whatsapp
+// @Produce json
+// @Param id path string true "Instance ID"
+// @Success 200 {object} api.DefaultResponse[any]
+// @Failure 400 {object} api.ErrorResponse
+// @Router /whatsapp/instance/{id}/logout [delete]
+// @Security Bearer
+func (h *handler) LogoutInstance() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		userID := c.GetString("userID")
+		instanceID := c.Param("id")
+
+		if err := h.service.LogoutInstance(c.Request.Context(), userID, instanceID); err != nil {
+			customerror.HandleResponse(c, err)
+			return
+		}
+
+		c.JSON(http.StatusOK, api.DefaultResponse[any]{Message: "Instância desconectada com sucesso."})
+	}
+}
+
+// @OperationId restartInstance
+// @Summary Reinicia uma instância na Evolution
+// @Tags whatsapp
+// @Produce json
+// @Param id path string true "Instance ID"
+// @Success 200 {object} api.DefaultResponse[any]
+// @Failure 400 {object} api.ErrorResponse
+// @Router /whatsapp/instance/{id}/restart [post]
+// @Security Bearer
+func (h *handler) RestartInstance() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		userID := c.GetString("userID")
+		instanceID := c.Param("id")
+
+		if err := h.service.RestartInstance(c.Request.Context(), userID, instanceID); err != nil {
+			customerror.HandleResponse(c, err)
+			return
+		}
+
+		c.JSON(http.StatusOK, api.DefaultResponse[any]{Message: "Instância reiniciada com sucesso."})
 	}
 }
