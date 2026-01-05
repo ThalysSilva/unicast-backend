@@ -98,11 +98,11 @@ func (s *service) Send(ctx context.Context, message *Message) (emailsFails, what
 		return nil, nil, err
 	}
 
-	attachments, attachmentNamesStr := buildAttachments(message)
+	mailerAttachments, rawAttachments, attachmentNamesStr := buildAttachments(message)
 
-	emailFailedSlice, emailErr := s.sendEmails(ctx, message, smtpInstance, attachments, students)
+	emailFailedSlice, emailErr := s.sendEmails(ctx, message, smtpInstance, mailerAttachments, students)
 	emailFailedStudents := &emailFailedSlice
-	whatsappFailedSlice := s.sendWhats(ctx, waInstance, students, message.Body)
+	whatsappFailedSlice := s.sendWhats(ctx, waInstance, students, message.Body, rawAttachments)
 	whatsappFailedStudents := &whatsappFailedSlice
 
 	s.logResults(ctx, students, emailFailedSlice, whatsappFailedSlice, message, attachmentNamesStr)
@@ -129,22 +129,26 @@ func (s *service) loadSenders(ctx context.Context, smtpID, whatsappID string) (*
 	return smtpInstance, waInstance, nil
 }
 
-func buildAttachments(message *Message) ([]mailer.Attachment, string) {
+func buildAttachments(message *Message) ([]mailer.Attachment, []Attachment, string) {
 	attachments := []mailer.Attachment{}
+	raw := []Attachment{}
 	var names []string
 	if message.Attachments != nil {
 		for _, attachment := range *message.Attachments {
-			attachments = append(attachments, mailer.Attachment{
-				FileName: attachment.FileName,
-				Data:     attachment.Data,
-			})
+			if len(attachment.Data) > 0 {
+				attachments = append(attachments, mailer.Attachment{
+					FileName: attachment.FileName,
+					Data:     attachment.Data,
+				})
+			}
+			raw = append(raw, attachment)
 			names = append(names, attachment.FileName)
 		}
 	}
 	if len(names) == 0 {
-		return attachments, ""
+		return attachments, raw, ""
 	}
-	return attachments, strings.Join(names, ",")
+	return attachments, raw, strings.Join(names, ",")
 }
 
 func (s *service) sendEmails(ctx context.Context, message *Message, smtpInstance *smtp.Instance, attachments []mailer.Attachment, students []*student.Student) ([]student.Student, error) {
@@ -188,7 +192,7 @@ func (s *service) sendEmails(ctx context.Context, message *Message, smtpInstance
 	return emailFailedStudents, emailSendErr
 }
 
-func (s *service) sendWhats(ctx context.Context, waInstance *whatsapp.Instance, students []*student.Student, body string) []student.Student {
+func (s *service) sendWhats(ctx context.Context, waInstance *whatsapp.Instance, students []*student.Student, body string, attachments []Attachment) []student.Student {
 	var failed []student.Student
 
 	for _, stud := range students {
@@ -203,10 +207,33 @@ func (s *service) sendWhats(ctx context.Context, waInstance *whatsapp.Instance, 
 			continue
 		}
 
-		if err := sendWhatsAppWithRetry(waInstance.InstanceID, normalized, body, 3, 1*time.Second); err != nil {
+		if err := sendWhatsAppWithRetry(waInstance.InstanceName, normalized, body, 3, 1*time.Second); err != nil {
 			fmt.Printf("falha ao enviar whatsapp para %s: %v\n", *stud.Phone, err)
 			failed = append(failed, *stud)
 			continue
+		}
+
+		for _, att := range attachments {
+			if len(att.Data) > 0 {
+				if err := whatsapp.SendMedia(waInstance.InstanceName, normalized, att.FileName, att.Data, body); err != nil {
+					fmt.Printf("falha ao enviar anexo via whatsapp para %s: %v\n", *stud.Phone, err)
+					failed = append(failed, *stud)
+					break
+				}
+				continue
+			}
+			if att.URL != "" {
+				if err := whatsapp.SendMediaURL(waInstance.InstanceName, normalized, att.URL, att.FileName, body); err != nil {
+					fmt.Printf("falha ao enviar anexo via url whatsapp para %s: %v\n", *stud.Phone, err)
+					failed = append(failed, *stud)
+					break
+				}
+				continue
+			}
+			// Se não há data nem URL, ignora o attachment
+			fmt.Printf("falha ao enviar anexo via whatsapp para %s: %v\n", *stud.Phone, err)
+			failed = append(failed, *stud)
+			break
 		}
 	}
 

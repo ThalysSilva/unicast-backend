@@ -66,7 +66,7 @@ func (h *handler) CreateInstance() gin.HandlerFunc {
 		c.JSON(http.StatusOK, api.DefaultResponse[CreateInstanceResponse]{
 			Message: "Instância criada com sucesso !.",
 			Data: CreateInstanceResponse{
-				InstanceID: instance.InstanceID,
+				InstanceID: instance.InstanceName,
 				QrCode:     qrCode,
 			},
 		})

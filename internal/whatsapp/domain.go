@@ -3,7 +3,9 @@ package whatsapp
 import (
 	"context"
 	"database/sql"
+	"encoding/base64"
 	"errors"
+	"net/http"
 	"strings"
 	"time"
 
@@ -11,17 +13,44 @@ import (
 )
 
 type Instance struct {
-	ID         string    `json:"id"`
-	Phone      string    `json:"phone" validate:"required"`
-	CreatedAt  time.Time `json:"-"`
-	UpdatedAt  time.Time `json:"-"`
-	UserID     string    `json:"-"`
-	InstanceID string    `json:"instanceId"`
+	ID           string    `json:"id"`
+	Phone        string    `json:"phone" validate:"required"`
+	CreatedAt    time.Time `json:"-"`
+	UpdatedAt    time.Time `json:"-"`
+	UserID       string    `json:"-"`
+	InstanceName string    `json:"instanceName"`
 }
 
 // SendText envia uma mensagem de texto via Evolution API usando a instância informada.
-func SendText(instanceID, number, text string) error {
-	return sendEvolutionText(instanceID, number, text)
+func SendText(instanceName, number, text string) error {
+	return sendEvolutionText(instanceName, number, text)
+}
+
+// SendMedia envia um attachment via Evolution API (media pode ser URL ou base64).
+func SendMedia(instanceName, number string, fileName string, data []byte, caption string) error {
+	mime := http.DetectContentType(data)
+	mediaType := inferMediaType(mime)
+	encoded := base64.StdEncoding.EncodeToString(data)
+
+	return sendEvolutionMedia(instanceName, sendMediaPayload{
+		Number:    number,
+		Media:     encoded,
+		MediaType: mediaType,
+		MimeType:  mime,
+		FileName:  fileName,
+		Caption:   caption,
+	})
+}
+
+// SendMediaURL envia um attachment hospedado por URL via Evolution API.
+func SendMediaURL(instanceName, number string, mediaURL string, fileName string, caption string) error {
+	return sendEvolutionMedia(instanceName, sendMediaPayload{
+		Number:    number,
+		Media:     mediaURL,
+		MediaType: inferMediaType(""),
+		FileName:  fileName,
+		Caption:   caption,
+	})
 }
 
 // NormalizeNumber sanitiza e tenta converter para um formato próximo de E.164 usando um DDI padrão.
@@ -61,4 +90,20 @@ type Repository interface {
 
 func NewRepository(db *sql.DB) Repository {
 	return newSQLRepository(db)
+}
+
+func inferMediaType(mime string) string {
+	if strings.HasPrefix(mime, "image/") {
+		return "image"
+	}
+	if strings.HasPrefix(mime, "video/") {
+		return "video"
+	}
+	if strings.HasPrefix(mime, "audio/") {
+		return "audio"
+	}
+	if mime == "" {
+		return "document"
+	}
+	return "document"
 }

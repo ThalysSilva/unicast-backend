@@ -40,7 +40,7 @@ func (s *service) CreateInstance(ctx context.Context, userId, phone string) (*In
 	var instance *Instance
 
 	// Fase 1: checa existência e usuário dentro da transação.
-	var instanceId string
+	var instanceName string
 	err := s.withTransaction(ctx, func(waRepo Repository, userRepo user.Repository) error {
 		if err := s.ensureNoExistingInstance(ctx, waRepo, phone, userId); err != nil {
 			return err
@@ -49,7 +49,7 @@ func (s *service) CreateInstance(ctx context.Context, userId, phone string) (*In
 		if err != nil {
 			return err
 		}
-		instanceId = s.buildInstanceName(user.Email, phone)
+		instanceName = s.buildInstanceName(user.Email, phone)
 		return nil
 	})
 	if err != nil {
@@ -57,7 +57,7 @@ func (s *service) CreateInstance(ctx context.Context, userId, phone string) (*In
 	}
 
 	// Fase 2: cria instância na Evolution (fora da transação para evitar órfãos).
-	remoteInstanceId, qr, err := s.createRemoteInstance(phone, instanceId)
+	remoteInstanceId, qr, err := s.createRemoteInstance(phone, instanceName)
 	if err != nil {
 		return nil, "", err
 	}
@@ -67,7 +67,7 @@ func (s *service) CreateInstance(ctx context.Context, userId, phone string) (*In
 		if err := s.ensureNoExistingInstance(ctx, waRepo, phone, userId); err != nil {
 			return err
 		}
-		if err := s.persistInstance(ctx, waRepo, phone, userId, remoteInstanceId); err != nil {
+		if err := s.persistInstance(ctx, waRepo, phone, userId, instanceName); err != nil {
 			// Em caso de falha, idealmente deletar a instância remota.
 			_ = deleteEvolutionInstance(remoteInstanceId)
 			return err

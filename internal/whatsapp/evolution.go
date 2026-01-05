@@ -54,6 +54,35 @@ type newEvolutionPayload struct {
 	Integration  string `json:"integration"`
 }
 
+type sendTextPayload struct {
+	InstanceID string `json:"instanceId"`
+	Number     string `json:"number"`
+	Text       string `json:"text"`
+}
+
+type sendTextResponse struct {
+	Status  string `json:"status"`
+	Message string `json:"message"`
+}
+
+type deleteInstanceResponse struct {
+	Message string `json:"message"`
+}
+
+type sendMediaPayload struct {
+	Number    string `json:"number"`
+	Media     string `json:"media"` // url ou base64
+	MediaType string `json:"mediatype"`
+	MimeType  string `json:"mimetype,omitempty"`
+	FileName  string `json:"fileName,omitempty"`
+	Caption   string `json:"caption,omitempty"`
+}
+
+type sendMediaResponse struct {
+	Status  string `json:"status"`
+	Message string `json:"message"`
+}
+
 var jsonFunc = json.Marshal
 var evolutionBaseURL = ""
 var cachedConfig *env.Config
@@ -126,21 +155,6 @@ func createEvolutionInstance(phone, instanceName string, qrCode bool) (instanceI
 	return resp.Instance.InstanceID, resp.Qrcode.Code, nil
 }
 
-type sendTextPayload struct {
-	InstanceID string `json:"instanceId"`
-	Number     string `json:"number"`
-	Text       string `json:"text"`
-}
-
-type sendTextResponse struct {
-	Status  string `json:"status"`
-	Message string `json:"message"`
-}
-
-type deleteInstanceResponse struct {
-	Message string `json:"message"`
-}
-
 // sendEvolutionText envia uma mensagem de texto simples usando a Evolution API.
 func sendEvolutionText(instanceID, number, text string) error {
 	body, err := jsonFunc(sendTextPayload{
@@ -154,6 +168,26 @@ func sendEvolutionText(instanceID, number, text string) error {
 
 	payload := bytes.NewBuffer(body)
 	resp, err := httpClientEvolution[sendTextResponse]("POST", "/message/sendText", payload)
+	if err != nil {
+		return err
+	}
+
+	if resp == nil {
+		return customerror.Make("resposta vazia da Evolution API", http.StatusBadGateway, fmt.Errorf("empty response"))
+	}
+
+	return nil
+}
+
+// sendEvolutionMedia envia mídia/base64 ou URL via Evolution API.
+func sendEvolutionMedia(instanceName string, payload sendMediaPayload) error {
+	body, err := jsonFunc(payload)
+	if err != nil {
+		return customerror.Trace("sendEvolutionMedia: marshal", err)
+	}
+
+	buf := bytes.NewBuffer(body)
+	resp, err := httpClientEvolution[sendMediaResponse]("POST", "/message/sendMedia/"+instanceName, buf)
 	if err != nil {
 		return err
 	}

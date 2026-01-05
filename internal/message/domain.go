@@ -4,7 +4,8 @@ import "github.com/ThalysSilva/unicast-backend/internal/student"
 
 type Attachment struct {
 	FileName string `json:"fileName"`
-	Data     []byte `json:"data"`
+	Data     []byte `json:"data,omitempty"`
+	URL      string `json:"url,omitempty"`
 }
 
 type Message struct {
