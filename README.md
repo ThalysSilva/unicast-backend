@@ -53,6 +53,7 @@ Swagger disponível em `http://localhost:${API_PORT}/swagger/index.html`.
 - **Invites**: professor cria código curto para a disciplina (`POST /invite/:courseId`); aluno usa `POST /invite/self-register/:code` com `studentId`, `name`, `phone`, `email`. Backend valida vínculo (enrollment) e status `PENDING` antes de ativar.
 - **SMTP/WhatsApp**: criação/listagem de instâncias de envio.
 - **Mensagens**: `POST /message/send` envia e-mail e WhatsApp para alunos; logs de entrega ficam em `message_logs`.
+- **Backdoor admin**: `POST /backdoor/reset-password` com `ADMIN_SECRET` permite reset de senha por `userId` ou `email` para recuperar acesso.
 
 ### Segurança e credenciais
 - **Tokens**: JWT para acesso/refresh; JWE com chave de 32 bytes hex para proteger tokens sensíveis.
@@ -60,6 +61,7 @@ Swagger disponível em `http://localhost:${API_PORT}/swagger/index.html`.
 - **Env vars**: segredos ficam no `.env`/`.env.development`. Não commitá-los; use `example.env` como base.
 - **Ownership**: operações sensíveis (campus/program/course/invite) conferem o `userID` do token ao dono do recurso.
 - **Invite codes**: códigos curtos únicos por disciplina; validados como ativos/não expirados e vinculados ao enrollment, garantindo que apenas alunos pré-cadastrados possam ativar seus dados.
+- **Backdoor**: rota administrativa protegida por `ADMIN_SECRET`; trate essa chave como segredo crítico.
 
 ### Migrations
 Arquivo SQL em `migrations/`. Exemplo com golang-migrate:

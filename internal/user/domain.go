@@ -26,8 +26,8 @@ type Repository interface {
 	SaveRefreshToken(ctx context.Context, userId string, refreshToken string) error
 	Logout(ctx context.Context, userId string) error
 	FindByID(ctx context.Context, id string) (*User, error)
+	Update(ctx context.Context, user *User) error
 }
-
 
 func NewRepository(db *sql.DB) Repository {
 	return newSQLRepository(db)

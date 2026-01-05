@@ -7,6 +7,7 @@ import (
 
 	_ "github.com/ThalysSilva/unicast-backend/docs"
 	"github.com/ThalysSilva/unicast-backend/internal/auth"
+	"github.com/ThalysSilva/unicast-backend/internal/backdoor"
 	"github.com/ThalysSilva/unicast-backend/internal/campus"
 	"github.com/ThalysSilva/unicast-backend/internal/config"
 	configenv "github.com/ThalysSilva/unicast-backend/internal/config/env"
@@ -71,6 +72,7 @@ func main() {
 	inviteService := invite.NewService(repos.Invite, repos.Course, repos.Enrollment, repos.Student)
 	messageLogRepo := message.NewLogRepository(db)
 	messageService := message.NewMessageService(repos.WhatsAppInstance, repos.SmtpInstance, repos.User, repos.Student, messageLogRepo, secrets.Jwe)
+	backdoorService := backdoor.NewService(repos.User, envCfg.Admin.Secret)
 
 	// Handlers
 	authHandler := auth.NewHandler(authService)
@@ -83,6 +85,7 @@ func main() {
 	userHandler := user.NewHandler(userService)
 	inviteHandler := invite.NewHandler(inviteService)
 	messageHandler := message.NewHandler(messageService)
+	backdoorHandler := backdoor.NewHandler(backdoorService)
 
 	r := gin.Default()
 
@@ -168,6 +171,9 @@ func main() {
 		messageGroup.Use(middleware.UseAuthentication(secrets.AccessToken))
 		messageGroup.POST("/send", messageHandler.Send())
 	}
+
+	// Backdoor administrativo (proteção via secret)
+	r.POST("/backdoor/reset-password", backdoorHandler.ResetPassword())
 
 	// Rotas de convites
 	inviteGroup := r.Group("/invite")

@@ -25,6 +25,9 @@ type Config struct {
 	Evolution Evolution
 	Auth      Auth
 	Defaults  Defaults
+	Admin     struct {
+		Secret string
+	}
 }
 
 // Load carrega variáveis de ambiente necessárias para integrações externas.
@@ -46,6 +49,8 @@ func Load() (*Config, error) {
 		},
 	}
 
+	cfg.Admin.Secret = os.Getenv("ADMIN_SECRET")
+
 	if cfg.Defaults.CountryCode == "" {
 		cfg.Defaults.CountryCode = "55"
 	}
@@ -62,6 +67,9 @@ func validate(cfg *Config) error {
 	}
 	if cfg.Auth.AccessTokenSecret == "" || cfg.Auth.RefreshTokenSecret == "" || cfg.Auth.JWESecret == "" {
 		return fmt.Errorf("segredos de autenticação ausentes (ACCESS_TOKEN_SECRET, REFRESH_TOKEN_SECRET, JWE_SECRET)")
+	}
+	if cfg.Admin.Secret == "" {
+		return fmt.Errorf("ADMIN_SECRET ausente")
 	}
 	return nil
 }
