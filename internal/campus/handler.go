@@ -2,6 +2,7 @@ package campus
 
 import (
 	"errors"
+	"net/http"
 
 	"github.com/ThalysSilva/unicast-backend/pkg/api"
 	"github.com/gin-gonic/gin"
@@ -39,7 +40,7 @@ func NewHandler(service Service) Handler {
 // @Produce json
 // @Param Authorization header string true "Bearer token"
 // @Param body body createCampusInput true "Dados do campus"
-// @Success 200 {object} api.DefaultResponse[map[string]string]
+// @Success 200 {object} api.MessageResponse
 // @Router /campus [post]
 func (h *handler) Create() gin.HandlerFunc {
 	return func(c *gin.Context) {
@@ -54,7 +55,7 @@ func (h *handler) Create() gin.HandlerFunc {
 			c.Error(err)
 			return
 		}
-		c.JSON(200, api.DefaultResponse[map[string]string]{Message: "Campus criado com sucesso", Data: map[string]string{}})
+		c.JSON(200, api.MessageResponse{Message: "Campus criado com sucesso"})
 
 	}
 }
@@ -90,7 +91,7 @@ func (h *handler) GetCampuses() gin.HandlerFunc {
 // @Param Authorization header string true "Bearer token"
 // @Param id path string true "Campus ID"
 // @Param body body updateCampusInput true "Campos para atualizar"
-// @Success 200 {object} api.DefaultResponse[map[string]string]
+// @Success 200 {object} api.MessageResponse
 // @Router /campus/{id} [put]
 func (h *handler) Update() gin.HandlerFunc {
 	return func(c *gin.Context) {
@@ -109,12 +110,12 @@ func (h *handler) Update() gin.HandlerFunc {
 		}
 
 		if campusSelected == nil {
-			c.Error(errors.New("Campus não encontrado"))
+			c.JSON(http.StatusNotFound, api.ErrorResponse{Error: "Campus não encontrado"})
 			return
 		}
 
 		if campusSelected.UserOwnerID != userID {
-			c.Error(errors.New("você não tem permissão para atualizar este campus"))
+			c.JSON(http.StatusForbidden, api.ErrorResponse{Error: "você não tem permissão para atualizar este campus"})
 			return
 		}
 
@@ -137,6 +138,6 @@ func (h *handler) Update() gin.HandlerFunc {
 			c.Error(err)
 			return
 		}
-		c.JSON(200, api.DefaultResponse[map[string]string]{Message: "Campus atualizado com sucesso", Data: map[string]string{}})
+		c.JSON(200, api.MessageResponse{Message: "Campus atualizado com sucesso"})
 	}
 }

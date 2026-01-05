@@ -129,10 +129,7 @@ func (h *handler) DeleteInstance() gin.HandlerFunc {
 			return
 		}
 
-		c.JSON(http.StatusOK, api.DefaultResponse[map[string]string]{
-			Message: "Instância deletada com sucesso.",
-			Data:    map[string]string{},
-		})
+		c.JSON(http.StatusOK, api.MessageResponse{Message: "Instância deletada com sucesso."})
 	}
 }
 
@@ -158,10 +155,7 @@ func (h *handler) ConnectInstance() gin.HandlerFunc {
 			return
 		}
 
-		c.JSON(http.StatusOK, api.DefaultResponse[connectResponse]{
-			Message: "Instância conectando...",
-			Data:    *resp,
-		})
+		c.JSON(http.StatusOK, api.DefaultResponse[connectResponse]{Message: "Instância conectando...", Data: *resp})
 	}
 }
 
@@ -185,10 +179,8 @@ func (h *handler) ConnectionState() gin.HandlerFunc {
 			return
 		}
 
-		c.JSON(http.StatusOK, api.DefaultResponse[map[string]string]{
-			Message: "Status consultado com sucesso.",
-			Data:    map[string]string{"status": state},
-		})
+		data := map[string]string{"status": state}
+		c.JSON(http.StatusOK, api.DefaultResponse[map[string]string]{Message: "Status consultado com sucesso.", Data: data})
 	}
 }
 
@@ -211,7 +203,7 @@ func (h *handler) LogoutInstance() gin.HandlerFunc {
 			return
 		}
 
-		c.JSON(http.StatusOK, api.DefaultResponse[map[string]string]{Message: "Instância desconectada com sucesso.", Data: map[string]string{}})
+		c.JSON(http.StatusOK, api.MessageResponse{Message: "Instância desconectada com sucesso."})
 	}
 }
 
@@ -234,6 +226,6 @@ func (h *handler) RestartInstance() gin.HandlerFunc {
 			return
 		}
 
-		c.JSON(http.StatusOK, api.DefaultResponse[map[string]string]{Message: "Instância reiniciada com sucesso.", Data: map[string]string{}})
+		c.JSON(http.StatusOK, api.MessageResponse{Message: "Instância reiniciada com sucesso."})
 	}
 }

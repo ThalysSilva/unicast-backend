@@ -62,10 +62,8 @@ func (h *handler) Create() gin.HandlerFunc {
 			return
 		}
 
-		c.JSON(200, api.DefaultResponse[map[string]string]{
-			Message: "Convite criado com sucesso",
-			Data:    map[string]string{"code": invite.Code},
-		})
+		data := map[string]string{"code": invite.Code}
+		c.JSON(200, api.DefaultResponse[map[string]string]{Message: "Convite criado com sucesso", Data: data})
 	}
 }
 
@@ -75,7 +73,7 @@ func (h *handler) Create() gin.HandlerFunc {
 // @Produce json
 // @Param code path string true "Código do convite"
 // @Param body body selfRegisterInput true "Dados do aluno"
-// @Success 200 {object} api.DefaultResponse[map[string]string]
+// @Success 200 {object} api.MessageResponse
 // @Router /invite/self-register/{code} [post]
 func (h *handler) SelfRegister() gin.HandlerFunc {
 	return func(c *gin.Context) {
@@ -93,6 +91,6 @@ func (h *handler) SelfRegister() gin.HandlerFunc {
 			return
 		}
 
-		c.JSON(200, api.DefaultResponse[map[string]string]{Message: "Cadastro concluído com sucesso", Data: map[string]string{}})
+		c.JSON(200, api.MessageResponse{Message: "Cadastro concluído com sucesso"})
 	}
 }

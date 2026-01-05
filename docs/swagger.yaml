@@ -157,6 +157,11 @@ definitions:
       error:
         type: string
     type: object
+  github_com_ThalysSilva_unicast-backend_pkg_api.MessageResponse:
+    properties:
+      message:
+        type: string
+    type: object
   internal_auth.LoginInput:
     properties:
       email:
@@ -717,7 +722,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.DefaultResponse-map_string_string'
+            $ref: '#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.MessageResponse'
         "400":
           description: Bad Request
           schema:
@@ -764,7 +769,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.DefaultResponse-map_string_string'
+            $ref: '#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.MessageResponse'
       summary: Cria um campus
       tags:
       - campus
@@ -795,7 +800,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.DefaultResponse-map_string_string'
+            $ref: '#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.MessageResponse'
       summary: Atualiza um campus
       tags:
       - campus
@@ -821,7 +826,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.DefaultResponse-map_string_string'
+            $ref: '#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.MessageResponse'
       summary: Cria uma disciplina
       tags:
       - course
@@ -881,7 +886,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.DefaultResponse-map_string_string'
+            $ref: '#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.MessageResponse'
       summary: Deleta uma disciplina
       tags:
       - course
@@ -911,7 +916,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.DefaultResponse-map_string_string'
+            $ref: '#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.MessageResponse'
       summary: Atualiza uma disciplina
       tags:
       - course
@@ -985,7 +990,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.DefaultResponse-map_string_string'
+            $ref: '#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.MessageResponse'
       summary: Auto-registro de aluno via convite
       tags:
       - invite
@@ -1037,7 +1042,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.DefaultResponse-map_string_string'
+            $ref: '#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.MessageResponse'
       summary: Cria um programa
       tags:
       - program
@@ -1060,7 +1065,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.DefaultResponse-map_string_string'
+            $ref: '#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.MessageResponse'
       summary: Deleta um programa
       tags:
       - program
@@ -1112,7 +1117,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.DefaultResponse-map_string_string'
+            $ref: '#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.MessageResponse'
       summary: Atualiza um programa
       tags:
       - program
@@ -1155,7 +1160,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.DefaultResponse-map_string_string'
+            $ref: '#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.MessageResponse'
       summary: Cria uma instância SMTP
       tags:
       - smtp
@@ -1212,7 +1217,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.DefaultResponse-map_string_string'
+            $ref: '#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.MessageResponse'
       summary: Remove um estudante
       tags:
       - student
@@ -1264,7 +1269,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.DefaultResponse-map_string_string'
+            $ref: '#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.MessageResponse'
       summary: Atualiza um estudante
       tags:
       - student
@@ -1290,7 +1295,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.DefaultResponse-map_string_string'
+            $ref: '#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.MessageResponse'
       summary: Cria um estudante (pré-cadastro)
       tags:
       - student

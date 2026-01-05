@@ -48,7 +48,7 @@ func NewHandler(service Service, importService ImportService) Handler {
 // @Produce json
 // @Param Authorization header string true "Bearer token"
 // @Param body body createStudentInput true "Dados do estudante"
-// @Success 200 {object} api.DefaultResponse[map[string]string]
+// @Success 200 {object} api.MessageResponse
 // @Router /student/create [post]
 func (h *handler) Create() gin.HandlerFunc {
 	return func(c *gin.Context) {
@@ -63,7 +63,7 @@ func (h *handler) Create() gin.HandlerFunc {
 			c.Error(err)
 			return
 		}
-		c.JSON(200, api.DefaultResponse[map[string]string]{Message: "Aluno criado com sucesso", Data: map[string]string{}})
+		c.JSON(200, api.MessageResponse{Message: "Aluno criado com sucesso"})
 	}
 }
 
@@ -84,7 +84,7 @@ func (h *handler) GetStudent() gin.HandlerFunc {
 			return
 		}
 		if student == nil {
-			c.JSON(404, gin.H{"message": "Aluno não encontrado"})
+			c.JSON(http.StatusNotFound, api.ErrorResponse{Error: "Aluno não encontrado"})
 			return
 		}
 		c.JSON(200, api.DefaultResponse[*Student]{Message: "Aluno encontrado", Data: student})
@@ -144,7 +144,7 @@ func (h *handler) GetStudents() gin.HandlerFunc {
 // @Param Authorization header string true "Bearer token"
 // @Param id path string true "Student ID"
 // @Param body body createStudentInput true "Campos para atualizar"
-// @Success 200 {object} api.DefaultResponse[map[string]string]
+// @Success 200 {object} api.MessageResponse
 // @Router /student/{id} [put]
 func (h *handler) Update() gin.HandlerFunc {
 	return func(c *gin.Context) {
@@ -178,7 +178,7 @@ func (h *handler) Update() gin.HandlerFunc {
 			c.Error(err)
 			return
 		}
-		c.JSON(200, api.DefaultResponse[map[string]string]{Message: "Aluno atualizado com sucesso", Data: map[string]string{}})
+		c.JSON(200, api.MessageResponse{Message: "Aluno atualizado com sucesso"})
 	}
 }
 
@@ -187,7 +187,7 @@ func (h *handler) Update() gin.HandlerFunc {
 // @Produce json
 // @Param Authorization header string true "Bearer token"
 // @Param id path string true "Student ID"
-// @Success 200 {object} api.DefaultResponse[map[string]string]
+// @Success 200 {object} api.MessageResponse
 // @Router /student/{id} [delete]
 func (h *handler) Delete() gin.HandlerFunc {
 	return func(c *gin.Context) {
@@ -197,7 +197,7 @@ func (h *handler) Delete() gin.HandlerFunc {
 			c.Error(err)
 			return
 		}
-		c.JSON(200, api.DefaultResponse[map[string]string]{Message: "Aluno deletado com sucesso", Data: map[string]string{}})
+		c.JSON(200, api.MessageResponse{Message: "Aluno deletado com sucesso"})
 	}
 }
 

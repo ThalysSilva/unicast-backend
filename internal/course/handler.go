@@ -2,6 +2,7 @@ package course
 
 import (
 	"errors"
+	"net/http"
 
 	"github.com/ThalysSilva/unicast-backend/pkg/api"
 	"github.com/gin-gonic/gin"
@@ -44,7 +45,7 @@ func NewHandler(service Service) Handler {
 // @Produce json
 // @Param Authorization header string true "Bearer token"
 // @Param body body createCourseInput true "Dados da disciplina"
-// @Success 200 {object} api.DefaultResponse[map[string]string]
+// @Success 200 {object} api.MessageResponse
 // @Router /course [post]
 func (h *handler) Create() gin.HandlerFunc {
 	return func(c *gin.Context) {
@@ -59,7 +60,7 @@ func (h *handler) Create() gin.HandlerFunc {
 			c.Error(err)
 			return
 		}
-		c.JSON(200, api.DefaultResponse[map[string]string]{Message: "Disciplina criada com sucesso", Data: map[string]string{}})
+		c.JSON(200, api.MessageResponse{Message: "Disciplina criada com sucesso"})
 
 	}
 }
@@ -95,7 +96,7 @@ func (h *handler) GetCoursesByProgramID() gin.HandlerFunc {
 // @Param Authorization header string true "Bearer token"
 // @Param id path string true "Course ID"
 // @Param body body updateCourseInput true "Campos para atualizar"
-// @Success 200 {object} api.DefaultResponse[map[string]string]
+// @Success 200 {object} api.MessageResponse
 // @Router /course/{id} [put]
 func (h *handler) Update() gin.HandlerFunc {
 	return func(c *gin.Context) {
@@ -113,7 +114,7 @@ func (h *handler) Update() gin.HandlerFunc {
 			return
 		}
 		if !isOwner {
-			c.Error(errors.New("você não tem permissão para atualizar este curso"))
+			c.JSON(http.StatusForbidden, api.ErrorResponse{Error: "você não tem permissão para atualizar este curso"})
 			return
 		}
 
@@ -142,7 +143,7 @@ func (h *handler) Update() gin.HandlerFunc {
 			c.Error(err)
 			return
 		}
-		c.JSON(200, api.DefaultResponse[map[string]string]{Message: "Disciplina atualizada com sucesso", Data: map[string]string{}})
+		c.JSON(200, api.MessageResponse{Message: "Disciplina atualizada com sucesso"})
 	}
 }
 
@@ -151,7 +152,7 @@ func (h *handler) Update() gin.HandlerFunc {
 // @Produce json
 // @Param Authorization header string true "Bearer token"
 // @Param id path string true "Course ID"
-// @Success 200 {object} api.DefaultResponse[map[string]string]
+// @Success 200 {object} api.MessageResponse
 // @Router /course/{id} [delete]
 func (h *handler) Delete() gin.HandlerFunc {
 	return func(c *gin.Context) {
@@ -164,7 +165,7 @@ func (h *handler) Delete() gin.HandlerFunc {
 			return
 		}
 		if !isOwner {
-			c.Error(errors.New("você não tem permissão para deletar este curso"))
+			c.JSON(http.StatusForbidden, api.ErrorResponse{Error: "você não tem permissão para deletar este curso"})
 			return
 		}
 
@@ -173,6 +174,6 @@ func (h *handler) Delete() gin.HandlerFunc {
 			c.Error(err)
 			return
 		}
-		c.JSON(200, api.DefaultResponse[map[string]string]{Message: "Disciplina deletada com sucesso", Data: map[string]string{}})
+		c.JSON(200, api.MessageResponse{Message: "Disciplina deletada com sucesso"})
 	}
 }

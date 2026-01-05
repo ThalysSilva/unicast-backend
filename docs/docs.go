@@ -215,7 +215,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.DefaultResponse-map_string_string"
+                            "$ref": "#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.MessageResponse"
                         }
                     },
                     "400": {
@@ -287,7 +287,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.DefaultResponse-map_string_string"
+                            "$ref": "#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.MessageResponse"
                         }
                     }
                 }
@@ -334,7 +334,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.DefaultResponse-map_string_string"
+                            "$ref": "#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.MessageResponse"
                         }
                     }
                 }
@@ -374,7 +374,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.DefaultResponse-map_string_string"
+                            "$ref": "#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.MessageResponse"
                         }
                     }
                 }
@@ -476,7 +476,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.DefaultResponse-map_string_string"
+                            "$ref": "#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.MessageResponse"
                         }
                     }
                 }
@@ -509,7 +509,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.DefaultResponse-map_string_string"
+                            "$ref": "#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.MessageResponse"
                         }
                     }
                 }
@@ -577,7 +577,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.DefaultResponse-map_string_string"
+                            "$ref": "#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.MessageResponse"
                         }
                     }
                 }
@@ -703,7 +703,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.DefaultResponse-map_string_string"
+                            "$ref": "#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.MessageResponse"
                         }
                     }
                 }
@@ -783,7 +783,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.DefaultResponse-map_string_string"
+                            "$ref": "#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.MessageResponse"
                         }
                     }
                 }
@@ -816,7 +816,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.DefaultResponse-map_string_string"
+                            "$ref": "#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.MessageResponse"
                         }
                     }
                 }
@@ -882,7 +882,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.DefaultResponse-map_string_string"
+                            "$ref": "#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.MessageResponse"
                         }
                     }
                 }
@@ -974,7 +974,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.DefaultResponse-map_string_string"
+                            "$ref": "#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.MessageResponse"
                         }
                     }
                 }
@@ -1054,7 +1054,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.DefaultResponse-map_string_string"
+                            "$ref": "#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.MessageResponse"
                         }
                     }
                 }
@@ -1087,7 +1087,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.DefaultResponse-map_string_string"
+                            "$ref": "#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.MessageResponse"
                         }
                     }
                 }
@@ -1652,6 +1652,14 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "error": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_ThalysSilva_unicast-backend_pkg_api.MessageResponse": {
+            "type": "object",
+            "properties": {
+                "message": {
                     "type": "string"
                 }
             }

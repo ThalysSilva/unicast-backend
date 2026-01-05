@@ -34,7 +34,7 @@ func NewHandler(service Service) Handler {
 // @Produce json
 // @Param Authorization header string true "Bearer token"
 // @Param body body createInstanceInput true "Dados SMTP"
-// @Success 200 {object} api.DefaultResponse[map[string]string]
+// @Success 200 {object} api.MessageResponse
 // @Router /smtp/instance [post]
 func (h *handler) Create(jweSecret []byte) gin.HandlerFunc {
 	return func(c *gin.Context) {
@@ -49,7 +49,7 @@ func (h *handler) Create(jweSecret []byte) gin.HandlerFunc {
 			c.Error(err)
 			return
 		}
-		c.JSON(200, api.DefaultResponse[map[string]string]{Message: "SMTP instance created successfully", Data: map[string]string{}})
+		c.JSON(200, api.MessageResponse{Message: "SMTP instance created successfully"})
 
 	}
 }

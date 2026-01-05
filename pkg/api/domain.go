@@ -8,3 +8,8 @@ type DefaultResponse[T any] struct {
 	Message string `json:"message"`
 	Data    T      `json:"data"`
 }
+
+// MessageResponse cobre respostas sem payload de dados.
+type MessageResponse struct {
+	Message string `json:"message"`
+}

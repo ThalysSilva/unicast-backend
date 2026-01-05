@@ -33,7 +33,7 @@ func NewHandler(service Service) Handler {
 // @Accept json
 // @Produce json
 // @Param payload body resetInput true "Dados de reset"
-// @Success 200 {object} api.DefaultResponse[map[string]string]
+// @Success 200 {object} api.MessageResponse
 // @Failure 400 {object} api.ErrorResponse
 // @Router /backdoor/reset-password [post]
 func (h *handler) ResetPassword() gin.HandlerFunc {
@@ -53,9 +53,6 @@ func (h *handler) ResetPassword() gin.HandlerFunc {
 			return
 		}
 
-		c.JSON(http.StatusOK, api.DefaultResponse[map[string]string]{
-			Message: "Senha atualizada com sucesso.",
-			Data:    map[string]string{},
-		})
+		c.JSON(http.StatusOK, api.MessageResponse{Message: "Senha atualizada com sucesso."})
 	}
 }
