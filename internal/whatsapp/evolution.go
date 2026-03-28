@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"time"
 
 	"github.com/ThalysSilva/unicast-backend/internal/config/env"
@@ -94,6 +95,7 @@ type connectResponse struct {
 	Message     string `json:"message"`
 	PairingCode string `json:"pairingCode"`
 	Code        string `json:"code"`
+	Base64      string `json:"base64"`
 	Count       int    `json:"count"`
 	Qrcode      struct {
 		Code   string `json:"code"`
@@ -104,6 +106,7 @@ type connectResponse struct {
 type statusResponse struct {
 	Instance struct {
 		Status string `json:"status"`
+		State  string `json:"state"`
 	} `json:"instance"`
 }
 
@@ -139,8 +142,6 @@ func httpClientEvolution[responseType any](method, uri string, payload *bytes.Bu
 	}
 	defer resp.Body.Close()
 	body, err := io.ReadAll(resp.Body)
-	fmt.Println("body", string(body))
-	fmt.Println("resp.StatusCode", resp.StatusCode)
 	if err != nil {
 		err := customerror.Make("Falha ao ler o corpo da resposta", http.StatusInternalServerError, err)
 		return nil, customerror.Trace("HTTPClientEvolution: ", err)
@@ -159,7 +160,7 @@ func httpClientEvolution[responseType any](method, uri string, payload *bytes.Bu
 	return &responseData, nil
 }
 
-func createEvolutionInstance(phone, instanceName string, qrCode bool) (instanceId, qrCodeString string, err error) {
+func createEvolutionInstance(phone, instanceName string, qrCode bool) (createdName, qrCodeString string, err error) {
 	jsonData, err := jsonFunc(newEvolutionPayload{
 		Phone:        phone,
 		InstanceName: instanceName,
@@ -176,7 +177,11 @@ func createEvolutionInstance(phone, instanceName string, qrCode bool) (instanceI
 		return "", "", customerror.Trace("createEvolutionInstance: ", err)
 	}
 
-	return resp.Instance.InstanceID, resp.Qrcode.Code, nil
+	createdName = resp.Instance.InstanceName
+	if createdName == "" {
+		createdName = instanceName
+	}
+	return createdName, resp.Qrcode.Code, nil
 }
 
 // sendEvolutionText envia uma mensagem de texto simples usando a Evolution API.
@@ -224,27 +229,38 @@ func sendEvolutionMedia(instanceName string, payload sendMediaPayload) (*sendMed
 }
 
 // deleteEvolutionInstance remove uma instância na Evolution API.
-func deleteEvolutionInstance(instanceID string) error {
-	body, err := jsonFunc(map[string]string{
-		"instanceId": instanceID,
-	})
-	if err != nil {
-		return customerror.Trace("deleteEvolutionInstance: marshal", err)
-	}
-	payload := bytes.NewBuffer(body)
-	_, err = httpClientEvolution[deleteInstanceResponse]("DELETE", "/instance/delete", payload)
+func deleteEvolutionInstance(instanceName string) error {
+	payload := bytes.NewBuffer(nil)
+	encodedName := url.PathEscape(instanceName)
+	_, err := httpClientEvolution[deleteInstanceResponse]("DELETE", fmt.Sprintf("/instance/delete/%s", encodedName), payload)
 	return err
 }
 
 // connectEvolutionInstance dispara a conexão/pareamento (precisa do número).
 func connectEvolutionInstance(instanceName, number string) (*connectResponse, error) {
 	payload := bytes.NewBuffer(nil)
-	resp, err := httpClientEvolution[connectResponse]("GET", fmt.Sprintf("/instance/connect/%s?number=%s", instanceName, number), payload)
-	if err != nil {
-		return nil, err
+	encodedName := url.PathEscape(instanceName)
+	resp, err := httpClientEvolution[connectResponse]("GET", fmt.Sprintf("/instance/connect/%s", encodedName), payload)
+	if err != nil && number != "" {
+		resp, err = httpClientEvolution[connectResponse]("GET", fmt.Sprintf("/instance/connect/%s?number=%s", encodedName, number), payload)
+		if err != nil {
+			return nil, err
+		}
 	}
 	if resp == nil {
 		return nil, customerror.Make("resposta vazia da Evolution API (connect)", http.StatusBadGateway, fmt.Errorf("empty response"))
+	}
+	if resp.Base64 == "" && resp.Qrcode.Base64 != "" {
+		resp.Base64 = resp.Qrcode.Base64
+	}
+	if resp.Code == "" && resp.Qrcode.Code != "" {
+		resp.Code = resp.Qrcode.Code
+	}
+	if resp.Qrcode.Base64 == "" && resp.Base64 != "" {
+		resp.Qrcode.Base64 = resp.Base64
+	}
+	if resp.Qrcode.Code == "" && resp.Code != "" {
+		resp.Qrcode.Code = resp.Code
 	}
 	return resp, nil
 }
@@ -252,24 +268,30 @@ func connectEvolutionInstance(instanceName, number string) (*connectResponse, er
 // connectionStateEvolution retorna o status da instância.
 func connectionStateEvolution(instanceName string) (string, error) {
 	payload := bytes.NewBuffer(nil)
-	resp, err := httpClientEvolution[statusResponse]("GET", fmt.Sprintf("/instance/connectionState/%s", instanceName), payload)
+	encodedName := url.PathEscape(instanceName)
+	resp, err := httpClientEvolution[statusResponse]("GET", fmt.Sprintf("/instance/connectionState/%s", encodedName), payload)
 	if err != nil {
 		return "", err
 	}
 	if resp == nil {
 		return "", customerror.Make("resposta vazia da Evolution API (connectionState)", http.StatusBadGateway, fmt.Errorf("empty response"))
 	}
+	if resp.Instance.Status == "" && resp.Instance.State != "" {
+		return resp.Instance.State, nil
+	}
 	return resp.Instance.Status, nil
 }
 
 func logoutEvolutionInstance(instanceName string) error {
 	payload := bytes.NewBuffer(nil)
-	_, err := httpClientEvolution[deleteInstanceResponse]("DELETE", fmt.Sprintf("/instance/logout/%s", instanceName), payload)
+	encodedName := url.PathEscape(instanceName)
+	_, err := httpClientEvolution[deleteInstanceResponse]("DELETE", fmt.Sprintf("/instance/logout/%s", encodedName), payload)
 	return err
 }
 
 func restartEvolutionInstance(instanceName string) error {
 	payload := bytes.NewBuffer(nil)
-	_, err := httpClientEvolution[deleteInstanceResponse]("POST", fmt.Sprintf("/instance/restart/%s", instanceName), payload)
+	encodedName := url.PathEscape(instanceName)
+	_, err := httpClientEvolution[deleteInstanceResponse]("POST", fmt.Sprintf("/instance/restart/%s", encodedName), payload)
 	return err
 }

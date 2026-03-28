@@ -2,3 +2,5 @@
 main.exe
 /tmp/*
 /.gocache
+
+.codex

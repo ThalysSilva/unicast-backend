@@ -2345,6 +2345,9 @@ const docTemplate = `{
         "internal_whatsapp.connectResponse": {
             "type": "object",
             "properties": {
+                "base64": {
+                    "type": "string"
+                },
                 "code": {
                     "type": "string"
                 },

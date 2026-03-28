@@ -13,9 +13,9 @@ type sqlRepository struct {
 }
 
 func newSQLRepository(db *sql.DB) Repository {
-	newDb := database.NewSQLTx(db)
 	return &sqlRepository{
-		db: newDb.DB,
+		db:    database.NewSQLTx(db).DB,
+		sqlDB: db,
 	}
 }
 func (r *sqlRepository) WithTransaction(tx any) any {
@@ -31,7 +31,7 @@ func (r *sqlRepository) TransactionBackend() any {
 
 func (r *sqlRepository) Create(ctx context.Context, phone, userID, instanceID string) error {
 	query := `
-		INSERT INTO whatsapp_instances (phone, user_id, instance_id)
+		INSERT INTO whatsapp_instances (phone, user_id, instance_name)
 		VALUES ($1, $2, $3)
 	`
 	_, err := r.db.ExecContext(ctx, query, phone, userID, instanceID)

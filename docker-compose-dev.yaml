@@ -31,7 +31,7 @@ services:
 
   evolution-api-unicast:
     container_name: evolution-api-unicast
-    image: atendai/evolution-api:v2.1.1
+    image: evoapicloud/evolution-api:v2.3.7
     restart: always
     ports:
       - "${EVOLUTION_PORT}:${EVOLUTION_PORT}"

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/ThalysSilva/unicast-backend/internal/user"
 	"github.com/ThalysSilva/unicast-backend/pkg/customerror"
@@ -61,9 +62,12 @@ func (s *service) CreateInstance(ctx context.Context, userId, phone string) (*In
 	}
 
 	// Fase 2: cria instância na Evolution (fora da transação para evitar órfãos).
-	remoteInstanceId, qr, err := s.createRemoteInstance(phone, instanceName)
+	remoteInstanceName, qr, err := s.createRemoteInstance(instanceName, phone)
 	if err != nil {
 		return nil, nil, err
+	}
+	if remoteInstanceName != "" {
+		instanceName = remoteInstanceName
 	}
 
 	// Fase 3: persiste no banco.
@@ -73,7 +77,7 @@ func (s *service) CreateInstance(ctx context.Context, userId, phone string) (*In
 		}
 		if err := s.persistInstance(ctx, waRepo, phone, userId, instanceName); err != nil {
 			// Em caso de falha, idealmente deletar a instância remota.
-			_ = deleteEvolutionInstance(remoteInstanceId)
+			_ = deleteEvolutionInstance(remoteInstanceName)
 			return err
 		}
 		var errFetch error
@@ -127,9 +131,11 @@ func (s *service) DeleteInstance(ctx context.Context, userID, instanceID string)
 		return InstanceForbidden
 	}
 
-	// Best effort: faz logout na Evolution antes de remover localmente.
-	if err := logoutEvolutionInstance(instance.InstanceName); err != nil {
-		fmt.Printf("falha ao deslogar instância na Evolution: %v\n", err)
+	// Deleta na Evolution antes de remover localmente.
+	if err := retryEvolution(ctx, 3, 500*time.Millisecond, func() error {
+		return deleteEvolutionInstance(instance.InstanceName)
+	}); err != nil {
+		return fmt.Errorf("falha ao deletar instância na Evolution: %w", err)
 	}
 
 	return s.whatsappInstanceRepository.Delete(ctx, instanceID)
@@ -190,13 +196,12 @@ func (s *service) fetchUser(ctx context.Context, repo user.Repository, userID st
 	return u, nil
 }
 
-func (s *service) createRemoteInstance(phone, userEmail string) (string, string, error) {
-	instanceName := userEmail + ":" + phone
-	instanceId, newQrCode, err := createEvolutionInstance(phone, instanceName, true)
+func (s *service) createRemoteInstance(instanceName, phone string) (string, string, error) {
+	createdName, newQrCode, err := createEvolutionInstance(phone, instanceName, true)
 	if err != nil {
 		return "", "", customerror.Trace("CreateInstance", err)
 	}
-	return instanceId, newQrCode, nil
+	return createdName, newQrCode, nil
 }
 
 func (s *service) persistInstance(ctx context.Context, repo Repository, phone, userID, instanceID string) error {
@@ -217,6 +222,26 @@ func (s *service) withTransaction(ctx context.Context, fn func(repo Repository, 
 
 func (s *service) buildInstanceName(userEmail, phone string) string {
 	return userEmail + ":" + phone
+}
+
+func retryEvolution(ctx context.Context, attempts int, delay time.Duration, op func() error) error {
+	var lastErr error
+	for i := 0; i < attempts; i++ {
+		if err := op(); err == nil {
+			return nil
+		} else {
+			lastErr = err
+		}
+		if i == attempts-1 {
+			break
+		}
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-time.After(delay):
+		}
+	}
+	return lastErr
 }
 
 func (s *service) ensureOwnership(ctx context.Context, userID, instanceID string) (*Instance, error) {
