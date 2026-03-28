@@ -3,6 +3,8 @@ package smtp
 import (
 	"context"
 	"encoding/base64"
+	"errors"
+	"net/http"
 
 	"github.com/ThalysSilva/unicast-backend/internal/auth"
 	"github.com/ThalysSilva/unicast-backend/internal/encryption"
@@ -16,11 +18,17 @@ type smtpService struct {
 type Service interface {
 	Create(ctx context.Context, jweSecret []byte, userId, jwe, email, password, host string, port int) error
 	GetInstances(ctx context.Context, userID string) ([]*Instance, error)
+	DeleteInstance(ctx context.Context, userID, instanceID string) error
 }
 
 func NewService(smtpRepository Repository) Service {
 	return &smtpService{smtpRepository: smtpRepository}
 }
+
+var (
+	InstanceNotFound  = customerror.Make("Instância SMTP não encontrada", http.StatusNotFound, errors.New("smtpInstanceNotFound"))
+	InstanceForbidden = customerror.Make("Você não tem permissão para esta instância SMTP", http.StatusForbidden, errors.New("smtpInstanceForbidden"))
+)
 
 func (s *smtpService) Create(ctx context.Context, jweSecret []byte, userId, jwe, email, password, host string, port int) error {
 	decryptedJwe, err := auth.DecryptJWE[auth.JwePayload](jwe, jweSecret)
@@ -45,4 +53,18 @@ func (s *smtpService) Create(ctx context.Context, jweSecret []byte, userId, jwe,
 
 func (s *smtpService) GetInstances(ctx context.Context, userID string) ([]*Instance, error) {
 	return s.smtpRepository.GetInstances(ctx, userID)
+}
+
+func (s *smtpService) DeleteInstance(ctx context.Context, userID, instanceID string) error {
+	instance, err := s.smtpRepository.FindByID(ctx, instanceID)
+	if err != nil {
+		return err
+	}
+	if instance == nil {
+		return InstanceNotFound
+	}
+	if instance.UserID != userID {
+		return InstanceForbidden
+	}
+	return s.smtpRepository.Delete(ctx, instanceID)
 }

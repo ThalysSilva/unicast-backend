@@ -20,6 +20,7 @@ type createInstanceInput struct {
 type Handler interface {
 	Create(jweSecret []byte) gin.HandlerFunc
 	GetInstances() gin.HandlerFunc
+	DeleteInstance() gin.HandlerFunc
 }
 
 func NewHandler(service Service) Handler {
@@ -76,5 +77,26 @@ func (h *handler) GetInstances() gin.HandlerFunc {
 			}
 		}
 		c.JSON(200, api.DefaultResponse[[]Instance]{Message: "Instâncias listadas com sucesso", Data: items})
+	}
+}
+
+// @Summary Remove uma instância SMTP
+// @Tags smtp
+// @Produce json
+// @Param Authorization header string true "Bearer token"
+// @Security BearerAuth
+// @Param id path string true "Instance ID"
+// @Success 200 {object} api.MessageResponse
+// @Failure 400 {object} api.ErrorResponse
+// @Router /smtp/instance/{id} [delete]
+func (h *handler) DeleteInstance() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		userID := c.GetString("userID")
+		instanceID := c.Param("id")
+		if err := h.service.DeleteInstance(c.Request.Context(), userID, instanceID); err != nil {
+			c.Error(err)
+			return
+		}
+		c.JSON(200, api.MessageResponse{Message: "SMTP instance deleted successfully"})
 	}
 }

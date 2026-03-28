@@ -152,6 +152,7 @@ func main() {
 		smtpGroup.Use(middleware.UseAuthentication(secrets.AccessToken))
 		smtpGroup.POST("/instance", smtpHandler.Create(secrets.Jwe))
 		smtpGroup.GET("/instance", smtpHandler.GetInstances())
+		smtpGroup.DELETE("/instance/:id", smtpHandler.DeleteInstance())
 	}
 
 	// Rotas do usuario
