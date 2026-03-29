@@ -40,7 +40,7 @@ func (r *sqlRepository) Create(ctx context.Context, phone, userID, instanceID st
 
 func (r *sqlRepository) FindByID(ctx context.Context, id string) (*Instance, error) {
 	query := `
-		SELECT id, phone, created_at, updated_at, user_id, instance_name
+		SELECT id, phone, connection_status, created_at, updated_at, user_id, instance_name
 		FROM whatsapp_instances
 		WHERE id = $1
 	`
@@ -48,7 +48,7 @@ func (r *sqlRepository) FindByID(ctx context.Context, id string) (*Instance, err
 
 	instance := &Instance{}
 	var instanceName string
-	err := row.Scan(&instance.ID, &instance.Phone, &instance.CreatedAt, &instance.UpdatedAt, &instance.UserID, &instanceName)
+	err := row.Scan(&instance.ID, &instance.Phone, &instance.ConnectionStatus, &instance.CreatedAt, &instance.UpdatedAt, &instance.UserID, &instanceName)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
@@ -61,7 +61,7 @@ func (r *sqlRepository) FindByID(ctx context.Context, id string) (*Instance, err
 
 func (r *sqlRepository) FindByPhoneAndUserId(ctx context.Context, phone, userId string) (*Instance, error) {
 	query := `
-		SELECT id, phone, created_at, updated_at, user_id, instance_name
+		SELECT id, phone, connection_status, created_at, updated_at, user_id, instance_name
 		FROM whatsapp_instances
 		WHERE phone = $1 AND user_id = $2
 	`
@@ -69,7 +69,7 @@ func (r *sqlRepository) FindByPhoneAndUserId(ctx context.Context, phone, userId 
 
 	instance := &Instance{}
 	var instanceName string
-	err := row.Scan(&instance.ID, &instance.Phone, &instance.CreatedAt, &instance.UpdatedAt, &instance.UserID, &instanceName)
+	err := row.Scan(&instance.ID, &instance.Phone, &instance.ConnectionStatus, &instance.CreatedAt, &instance.UpdatedAt, &instance.UserID, &instanceName)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
@@ -82,7 +82,7 @@ func (r *sqlRepository) FindByPhoneAndUserId(ctx context.Context, phone, userId 
 
 func (r *sqlRepository) FindAllByUserId(ctx context.Context, userId string) ([]*Instance, error) {
 	query := `
-		SELECT id, phone, created_at, updated_at, user_id, instance_name
+		SELECT id, phone, connection_status, created_at, updated_at, user_id, instance_name
 		FROM whatsapp_instances
 		WHERE user_id = $1
 	`
@@ -96,7 +96,7 @@ func (r *sqlRepository) FindAllByUserId(ctx context.Context, userId string) ([]*
 	for rows.Next() {
 		instance := &Instance{}
 		var instanceName string
-		err := rows.Scan(&instance.ID, &instance.Phone, &instance.CreatedAt, &instance.UpdatedAt, &instance.UserID, &instanceName)
+		err := rows.Scan(&instance.ID, &instance.Phone, &instance.ConnectionStatus, &instance.CreatedAt, &instance.UpdatedAt, &instance.UserID, &instanceName)
 		if err != nil {
 			return nil, fmt.Errorf("falha ao escanear instância: %w", err)
 		}

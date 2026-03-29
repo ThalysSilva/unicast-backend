@@ -13,12 +13,13 @@ import (
 )
 
 type Instance struct {
-	ID           string    `json:"id"`
-	Phone        string    `json:"phone" validate:"required"`
-	CreatedAt    time.Time `json:"-"`
-	UpdatedAt    time.Time `json:"-"`
-	UserID       string    `json:"-"`
-	InstanceName string    `json:"instanceName"`
+	ID               string    `json:"id"`
+	Phone            string    `json:"phone" validate:"required"`
+	ConnectionStatus string    `json:"connectionStatus"`
+	CreatedAt        time.Time `json:"-"`
+	UpdatedAt        time.Time `json:"-"`
+	UserID           string    `json:"-"`
+	InstanceName     string    `json:"instanceName"`
 }
 
 // SendText envia uma mensagem de texto via Evolution API usando a instância informada.

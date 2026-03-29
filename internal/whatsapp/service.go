@@ -85,6 +85,9 @@ func (s *service) CreateInstance(ctx context.Context, userId, phone string) (*In
 		if errFetch != nil {
 			return fmt.Errorf("falha ao buscar instância criada: %w", errFetch)
 		}
+		if err := waRepo.Update(ctx, instance.ID, map[string]any{"connection_status": "connecting"}); err != nil {
+			return fmt.Errorf("falha ao atualizar status da instância criada: %w", err)
+		}
 		return nil
 	})
 	if err != nil {
@@ -155,7 +158,14 @@ func (s *service) ConnectionState(ctx context.Context, userID, instanceID string
 	if err != nil {
 		return "", err
 	}
-	return connectionStateEvolution(instance.InstanceName)
+	state, err := connectionStateEvolution(instance.InstanceName)
+	if err != nil {
+		return "", err
+	}
+	if err := s.whatsappInstanceRepository.Update(ctx, instance.ID, map[string]any{"connection_status": state}); err != nil {
+		return "", fmt.Errorf("falha ao atualizar status da instância: %w", err)
+	}
+	return state, nil
 }
 
 func (s *service) LogoutInstance(ctx context.Context, userID, instanceID string) error {
