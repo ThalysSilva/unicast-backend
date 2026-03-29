@@ -19,7 +19,7 @@ import (
 type Service interface {
 	Create(ctx context.Context, courseID, userID string, expiresAt *time.Time) (*Invite, error)
 	GetCurrent(ctx context.Context, courseID, userID string) (*Invite, error)
-	SelfRegister(ctx context.Context, code, studentID, name, phone, email string) error
+	SelfRegister(ctx context.Context, code, studentID, name, phone, email string, consent bool) error
 }
 
 type inviteService struct {
@@ -37,6 +37,7 @@ var (
 	ErrEnrollmentNotFound = customerror.Make("estudante não está vinculado à disciplina", http.StatusBadRequest, errors.New("ErrEnrollmentNotFound"))
 	ErrStudentNotPending  = customerror.Make("estudante já cadastrou os dados", http.StatusConflict, errors.New("ErrStudentNotPending"))
 	ErrStudentNotFound    = customerror.Make("estudante não encontrado", http.StatusNotFound, errors.New("ErrStudentNotFound"))
+	ErrConsentRequired    = customerror.Make("é necessário aceitar o recebimento automatizado de notificações", http.StatusBadRequest, errors.New("ErrConsentRequired"))
 )
 
 func NewService(
@@ -97,7 +98,7 @@ func (s *inviteService) GetCurrent(ctx context.Context, courseID, userID string)
 	return s.inviteRepository.FindLatestByCourseID(ctx, courseID)
 }
 
-func (s *inviteService) SelfRegister(ctx context.Context, code, studentID, name, phone, email string) error {
+func (s *inviteService) SelfRegister(ctx context.Context, code, studentID, name, phone, email string, consent bool) error {
 	inviteFound, err := s.inviteRepository.FindByCode(ctx, code)
 	if err != nil {
 		return err
@@ -112,14 +113,6 @@ func (s *inviteService) SelfRegister(ctx context.Context, code, studentID, name,
 		return ErrInviteExpired
 	}
 
-	enrollmentFound, err := s.enrollmentRepository.FindByCourseAndStudent(ctx, inviteFound.CourseID, studentID)
-	if err != nil {
-		return err
-	}
-	if enrollmentFound == nil {
-		return ErrEnrollmentNotFound
-	}
-
 	studentFound, err := s.studentRepository.FindByStudentID(ctx, studentID)
 	if err != nil {
 		return err
@@ -127,12 +120,25 @@ func (s *inviteService) SelfRegister(ctx context.Context, code, studentID, name,
 	if studentFound == nil {
 		return ErrStudentNotFound
 	}
+
+	enrollmentFound, err := s.enrollmentRepository.FindByCourseAndStudent(ctx, inviteFound.CourseID, studentFound.ID)
+	if err != nil {
+		return err
+	}
+	if enrollmentFound == nil {
+		return ErrEnrollmentNotFound
+	}
+
 	if studentFound.Status != student.StudentStatusPending {
 		return ErrStudentNotPending
 	}
+	if !consent {
+		return ErrConsentRequired
+	}
 
 	fields := map[string]any{
-		"status": student.StudentStatusActive,
+		"status":  student.StudentStatusActive,
+		"consent": true,
 	}
 	if name != "" {
 		fields["name"] = name

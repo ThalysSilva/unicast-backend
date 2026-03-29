@@ -66,7 +66,7 @@ func (r *sqlRepository) FindByID(ctx context.Context, id string) (*Course, error
 
 func (r *sqlRepository) FindByIDWithUserOwnerID(ctx context.Context, id string) (*CourseWithOwnerID, error) {
 	query := `
-		SELECT id, name, description, year, semester, program_id, created_at, updated_at, ca.user_owner_id
+		SELECT courses.id, courses.name, courses.description, courses.year, courses.semester, courses.program_id, courses.created_at, courses.updated_at, ca.user_owner_id
 		FROM courses
 		JOIN programs p ON p.id = courses.program_id
 		JOIN campuses ca ON ca.id = p.campus_id

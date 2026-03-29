@@ -84,6 +84,13 @@ func (s *importService) processRecord(ctx context.Context, courseID string, idx 
 		if err := s.studentsRepo.Create(ctx, rec.StudentID, nil, nil, nil, nil, StudentStatusPending); err != nil {
 			return fmt.Errorf("linha %d: erro ao criar student: %v", idx+1, err)
 		}
+		existing, err = s.studentsRepo.FindByStudentID(ctx, rec.StudentID)
+		if err != nil {
+			return fmt.Errorf("linha %d: erro ao buscar student criado: %v", idx+1, err)
+		}
+		if existing == nil {
+			return fmt.Errorf("linha %d: student criado nao foi encontrado", idx+1)
+		}
 		result.Inserted++
 	} else {
 		if err := s.updateExisting(ctx, rec, existing, idx, result); err != nil {
@@ -91,7 +98,7 @@ func (s *importService) processRecord(ctx context.Context, courseID string, idx 
 		}
 	}
 
-	if err := s.ensureEnrollment(ctx, courseID, rec.StudentID, idx, result); err != nil {
+	if err := s.ensureEnrollment(ctx, courseID, existing.ID, idx, result); err != nil {
 		return err
 	}
 
@@ -126,8 +133,8 @@ func (s *importService) updateExisting(ctx context.Context, rec ImportRecord, ex
 	return nil
 }
 
-func (s *importService) ensureEnrollment(ctx context.Context, courseID, studentID string, idx int, result *ImportResult) error {
-	enroll, err := s.enrollmentRepo.FindByCourseAndStudent(ctx, courseID, studentID)
+func (s *importService) ensureEnrollment(ctx context.Context, courseID, studentUUID string, idx int, result *ImportResult) error {
+	enroll, err := s.enrollmentRepo.FindByCourseAndStudent(ctx, courseID, studentUUID)
 	if err != nil {
 		return fmt.Errorf("linha %d: erro ao verificar enrollment: %v", idx+1, err)
 	}
@@ -135,7 +142,7 @@ func (s *importService) ensureEnrollment(ctx context.Context, courseID, studentI
 		return nil
 	}
 
-	if err := s.enrollmentRepo.Create(ctx, courseID, studentID); err != nil {
+	if err := s.enrollmentRepo.Create(ctx, courseID, studentUUID); err != nil {
 		return fmt.Errorf("linha %d: erro ao criar enrollment: %v", idx+1, err)
 	}
 	result.EnrollmentsAdded++

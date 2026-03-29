@@ -139,6 +139,7 @@ func (m *emailSenderImpl) SetData(data *MailerData) error {
 	if len(data.Body) == 0 {
 		return errors.New("nenhum corpo fornecido")
 	}
+	data.SmtpAuthentication = m.data.SmtpAuthentication
 	m.data = data
 	return nil
 }
@@ -196,7 +197,7 @@ func (m *emailSenderImpl) SendEmails(poolsForSend int, poolsForRetry int, groupS
 	if err != nil {
 		return err
 	}
-	defer pool.Close()
+	defer closeEmailPoolSafely(pool, 2*time.Second)
 
 	sendChan := emailsChan
 	if m.interceptChan != nil {
@@ -285,4 +286,17 @@ func (m *emailSenderImpl) SendEmails(poolsForSend int, poolsForRetry int, groupS
 		return &emailsWithErrors
 	}
 	return nil
+}
+
+func closeEmailPoolSafely(pool emailPool, timeout time.Duration) {
+	done := make(chan struct{})
+	go func() {
+		pool.Close()
+		close(done)
+	}()
+
+	select {
+	case <-done:
+	case <-time.After(timeout):
+	}
 }

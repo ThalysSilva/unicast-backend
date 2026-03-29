@@ -2,6 +2,7 @@ package smtp
 
 import (
 	"github.com/ThalysSilva/unicast-backend/pkg/api"
+	"github.com/ThalysSilva/unicast-backend/pkg/customerror"
 	"github.com/gin-gonic/gin"
 )
 
@@ -17,8 +18,16 @@ type createInstanceInput struct {
 	Jwe      string `json:"jwe" binding:"required"`
 }
 
+type testConnectionInput struct {
+	Email    string `json:"email" binding:"required,email"`
+	Password string `json:"password" binding:"required"`
+	Host     string `json:"host" binding:"required"`
+	Port     int    `json:"port" binding:"required"`
+}
+
 type Handler interface {
 	Create(jweSecret []byte) gin.HandlerFunc
+	TestConnection() gin.HandlerFunc
 	GetInstances() gin.HandlerFunc
 	DeleteInstance() gin.HandlerFunc
 }
@@ -48,11 +57,36 @@ func (h *handler) Create(jweSecret []byte) gin.HandlerFunc {
 		userID := c.GetString("userID")
 		err := h.service.Create(c.Request.Context(), jweSecret, userID, input.Jwe, input.Email, input.Password, input.Host, input.Port)
 		if err != nil {
-			c.Error(err)
+			customerror.HandleResponse(c, err)
 			return
 		}
 		c.JSON(200, api.MessageResponse{Message: "SMTP instance created successfully"})
 
+	}
+}
+
+// @Summary Testa uma conexão SMTP
+// @Tags smtp
+// @Accept json
+// @Produce json
+// @Param Authorization header string true "Bearer token"
+// @Security BearerAuth
+// @Param body body createInstanceInput true "Dados SMTP"
+// @Success 200 {object} api.MessageResponse
+// @Failure 400 {object} api.ErrorResponse
+// @Router /smtp/instance/test [post]
+func (h *handler) TestConnection() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var input testConnectionInput
+		if err := c.ShouldBindJSON(&input); err != nil {
+			c.Error(err)
+			return
+		}
+		if err := h.service.TestConnection(c.Request.Context(), input.Email, input.Password, input.Host, input.Port); err != nil {
+			customerror.HandleResponse(c, err)
+			return
+		}
+		c.JSON(200, api.MessageResponse{Message: "Conexao SMTP validada com sucesso"})
 	}
 }
 
@@ -67,7 +101,7 @@ func (h *handler) GetInstances() gin.HandlerFunc {
 		userID := c.GetString("userID")
 		instances, err := h.service.GetInstances(c.Request.Context(), userID)
 		if err != nil {
-			c.Error(err)
+			customerror.HandleResponse(c, err)
 			return
 		}
 		items := make([]Instance, 0, len(instances))
@@ -94,7 +128,7 @@ func (h *handler) DeleteInstance() gin.HandlerFunc {
 		userID := c.GetString("userID")
 		instanceID := c.Param("id")
 		if err := h.service.DeleteInstance(c.Request.Context(), userID, instanceID); err != nil {
-			c.Error(err)
+			customerror.HandleResponse(c, err)
 			return
 		}
 		c.JSON(200, api.MessageResponse{Message: "SMTP instance deleted successfully"})

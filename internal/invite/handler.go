@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/ThalysSilva/unicast-backend/pkg/api"
+	"github.com/ThalysSilva/unicast-backend/pkg/customerror"
 	"github.com/gin-gonic/gin"
 )
 
@@ -21,6 +22,7 @@ type selfRegisterInput struct {
 	Name      string `json:"name"`
 	Phone     string `json:"phone"`
 	Email     string `json:"email"`
+	Consent   bool   `json:"consent"`
 }
 
 type Handler interface {
@@ -43,7 +45,7 @@ func NewHandler(service Service) Handler {
 // @Security BearerAuth
 // @Param courseId path string true "Course ID"
 // @Param body body createInviteInput false "Expiração opcional"
-// @Success 200 {object} api.DefaultResponse[map[string]string]
+// @Success 201 {object} api.DefaultResponse[*Invite]
 // @Router /invite/{courseId} [post]
 func (h *handler) Create() gin.HandlerFunc {
 	return func(c *gin.Context) {
@@ -60,12 +62,11 @@ func (h *handler) Create() gin.HandlerFunc {
 
 		invite, err := h.service.Create(c.Request.Context(), courseID, userID, input.ExpiresAt)
 		if err != nil {
-			c.Error(err)
+			customerror.HandleResponse(c, err)
 			return
 		}
 
-		data := map[string]string{"code": invite.Code}
-		c.JSON(200, api.DefaultResponse[map[string]string]{Message: "Convite criado com sucesso", Data: data})
+		c.JSON(201, api.DefaultResponse[*Invite]{Message: "Convite criado com sucesso", Data: invite})
 	}
 }
 
@@ -85,7 +86,7 @@ func (h *handler) GetCurrent() gin.HandlerFunc {
 
 		invite, err := h.service.GetCurrent(c.Request.Context(), courseID, userID)
 		if err != nil {
-			c.Error(err)
+			customerror.HandleResponse(c, err)
 			return
 		}
 
@@ -111,9 +112,9 @@ func (h *handler) SelfRegister() gin.HandlerFunc {
 
 		code := c.Param("code")
 
-		err := h.service.SelfRegister(c.Request.Context(), code, input.StudentID, input.Name, input.Phone, input.Email)
+		err := h.service.SelfRegister(c.Request.Context(), code, input.StudentID, input.Name, input.Phone, input.Email, input.Consent)
 		if err != nil {
-			c.Error(err)
+			customerror.HandleResponse(c, err)
 			return
 		}
 

@@ -5,10 +5,13 @@ import (
 	"encoding/base64"
 	"errors"
 	"net/http"
+	"strings"
+	"time"
 
 	"github.com/ThalysSilva/unicast-backend/internal/auth"
 	"github.com/ThalysSilva/unicast-backend/internal/encryption"
 	"github.com/ThalysSilva/unicast-backend/pkg/customerror"
+	"github.com/ThalysSilva/unicast-backend/pkg/mailer"
 )
 
 type smtpService struct {
@@ -17,6 +20,7 @@ type smtpService struct {
 
 type Service interface {
 	Create(ctx context.Context, jweSecret []byte, userId, jwe, email, password, host string, port int) error
+	TestConnection(ctx context.Context, email, password, host string, port int) error
 	GetInstances(ctx context.Context, userID string) ([]*Instance, error)
 	DeleteInstance(ctx context.Context, userID, instanceID string) error
 }
@@ -49,6 +53,24 @@ func (s *smtpService) Create(ctx context.Context, jweSecret []byte, userId, jwe,
 		return customerror.Trace("Create", err)
 	}
 	return nil
+}
+
+func (s *smtpService) TestConnection(ctx context.Context, email, password, host string, port int) error {
+	err := mailer.TestSMTPConnection(mailer.SmtpAuthentication{
+		Host:     host,
+		Port:     port,
+		Username: email,
+		Password: password,
+	}, 8*time.Second)
+	if err == nil {
+		return nil
+	}
+
+	if strings.Contains(err.Error(), "SmtpClientAuthentication is disabled for the Mailbox") {
+		return customerror.Trace("TestConnection", customerror.Make("SMTP AUTH desabilitado para esta mailbox", http.StatusBadRequest, err))
+	}
+
+	return customerror.Trace("TestConnection", customerror.Make("Falha ao testar conexao SMTP", http.StatusBadGateway, err))
 }
 
 func (s *smtpService) GetInstances(ctx context.Context, userID string) ([]*Instance, error) {
