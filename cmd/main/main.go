@@ -120,6 +120,7 @@ func main() {
 		courseGroup.GET("/:programId", courseHandler.GetCoursesByProgramID())
 		courseGroup.PUT("/:id", courseHandler.Update())
 		courseGroup.DELETE("/:id", courseHandler.Delete())
+		courseGroup.POST("/:courseId/students", studentHandler.AddToCourse())
 		courseGroup.POST("/:courseId/students/import", studentHandler.ImportForCourse())
 	}
 

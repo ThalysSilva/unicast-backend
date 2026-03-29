@@ -29,6 +29,10 @@ type updateStudentInput struct {
 	Status     StudentStatus `json:"status" binding:"omitempty,oneof=ACTIVE CANCELED GRADUATED LOCKED PENDING"`
 }
 
+type addStudentToCourseInput struct {
+	StudentID string `json:"studentId" binding:"required"`
+}
+
 type Handler interface {
 	Create() gin.HandlerFunc
 	GetStudent() gin.HandlerFunc
@@ -36,6 +40,7 @@ type Handler interface {
 	Update() gin.HandlerFunc
 	Delete() gin.HandlerFunc
 	ImportForCourse() gin.HandlerFunc
+	AddToCourse() gin.HandlerFunc
 }
 
 func NewHandler(service Service, importService ImportService) Handler {
@@ -250,6 +255,34 @@ func (h *handler) ImportForCourse() gin.HandlerFunc {
 		}
 
 		c.JSON(http.StatusOK, api.DefaultResponse[*ImportResult]{Message: "Importação concluída", Data: result})
+	}
+}
+
+// @Summary Adiciona uma matrícula individual a uma disciplina
+// @Tags student
+// @Accept json
+// @Produce json
+// @Param Authorization header string true "Bearer token"
+// @Security BearerAuth
+// @Param courseId path string true "Course ID"
+// @Param body body addStudentToCourseInput true "Matrícula do aluno"
+// @Success 200 {object} api.MessageResponse
+// @Router /course/{courseId}/students [post]
+func (h *handler) AddToCourse() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		courseID := c.Param("courseId")
+		var input addStudentToCourseInput
+		if err := c.ShouldBindJSON(&input); err != nil {
+			c.Error(err)
+			return
+		}
+
+		if err := h.importService.AddStudentToCourse(c.Request.Context(), courseID, input.StudentID); err != nil {
+			c.Error(err)
+			return
+		}
+
+		c.JSON(http.StatusOK, api.MessageResponse{Message: "Matrícula vinculada à disciplina com sucesso"})
 	}
 }
 

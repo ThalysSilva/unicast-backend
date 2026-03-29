@@ -31,6 +31,7 @@ type ImportResult struct {
 
 type ImportService interface {
 	ImportForCourse(ctx context.Context, courseID string, mode ImportMode, records []ImportRecord) (*ImportResult, error)
+	AddStudentToCourse(ctx context.Context, courseID, studentID string) error
 }
 
 type importService struct {
@@ -59,6 +60,14 @@ func (s *importService) ImportForCourse(ctx context.Context, courseID string, mo
 	}
 
 	return result, nil
+}
+
+func (s *importService) AddStudentToCourse(ctx context.Context, courseID, studentID string) error {
+	result := &ImportResult{}
+	return s.processRecord(ctx, courseID, 0, ImportRecord{
+		StudentID: studentID,
+		Status:    StudentStatusPending,
+	}, result)
 }
 
 func (s *importService) processRecord(ctx context.Context, courseID string, idx int, rec ImportRecord, result *ImportResult) error {
