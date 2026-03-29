@@ -73,7 +73,7 @@ func (h *handler) Create() gin.HandlerFunc {
 // @Router /program/{id} [get]
 func (h *handler) GetProgramsByCampusID() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		campusID := c.Param("id")
+		campusID := c.Param("campusID")
 		instances, err := h.service.GetProgramsByCampusID(c.Request.Context(), campusID)
 		if err != nil {
 			c.Error(err)
