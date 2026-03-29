@@ -22,6 +22,7 @@ type Repository interface {
 	database.Transactional
 	Create(ctx context.Context, courseID, code string, expiresAt *time.Time) error
 	FindByCode(ctx context.Context, code string) (*Invite, error)
+	FindLatestByCourseID(ctx context.Context, courseID string) (*Invite, error)
 }
 
 func NewRepository(db *sql.DB) Repository {

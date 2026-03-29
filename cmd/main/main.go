@@ -189,6 +189,7 @@ func main() {
 	{
 		inviteGroup.Use(middleware.UseAuthentication(secrets.AccessToken))
 		inviteGroup.POST("/:courseId", inviteHandler.Create())
+		inviteGroup.GET("/:courseId/current", inviteHandler.GetCurrent())
 	}
 	r.POST("/invite/self-register/:code", inviteHandler.SelfRegister())
 

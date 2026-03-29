@@ -18,6 +18,7 @@ import (
 
 type Service interface {
 	Create(ctx context.Context, courseID, userID string, expiresAt *time.Time) (*Invite, error)
+	GetCurrent(ctx context.Context, courseID, userID string) (*Invite, error)
 	SelfRegister(ctx context.Context, code, studentID, name, phone, email string) error
 }
 
@@ -82,6 +83,18 @@ func (s *inviteService) Create(ctx context.Context, courseID, userID string, exp
 	}
 
 	return nil, customerror.Trace("inviteService.Create", errors.New("falha ao gerar código único após múltiplas tentativas"))
+}
+
+func (s *inviteService) GetCurrent(ctx context.Context, courseID, userID string) (*Invite, error) {
+	courseWithOwner, err := s.courseRepository.FindByIDWithUserOwnerID(ctx, courseID)
+	if err != nil {
+		return nil, err
+	}
+	if courseWithOwner == nil || courseWithOwner.UserOwnerID != userID {
+		return nil, ErrNotCourseOwner
+	}
+
+	return s.inviteRepository.FindLatestByCourseID(ctx, courseID)
 }
 
 func (s *inviteService) SelfRegister(ctx context.Context, code, studentID, name, phone, email string) error {

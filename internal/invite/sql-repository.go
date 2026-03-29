@@ -68,3 +68,28 @@ func (r *sqlRepository) FindByCode(ctx context.Context, code string) (*Invite, e
 	}
 	return invite, nil
 }
+
+func (r *sqlRepository) FindLatestByCourseID(ctx context.Context, courseID string) (*Invite, error) {
+	query := `
+        SELECT id, course_id, code, expires_at, active, created_at, updated_at
+        FROM invites
+        WHERE course_id = $1
+        ORDER BY created_at DESC
+        LIMIT 1
+    `
+	row := r.db.QueryRowContext(ctx, query, courseID)
+
+	invite := &Invite{}
+	var expiresAt sql.NullTime
+	err := row.Scan(&invite.ID, &invite.CourseID, &invite.Code, &expiresAt, &invite.Active, &invite.CreatedAt, &invite.UpdatedAt)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil
+		}
+		return nil, customerror.Trace("inviteRepository: findLatestByCourseID", err)
+	}
+	if expiresAt.Valid {
+		invite.ExpiresAt = &expiresAt.Time
+	}
+	return invite, nil
+}

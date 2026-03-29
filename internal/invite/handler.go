@@ -25,6 +25,7 @@ type selfRegisterInput struct {
 
 type Handler interface {
 	Create() gin.HandlerFunc
+	GetCurrent() gin.HandlerFunc
 	SelfRegister() gin.HandlerFunc
 }
 
@@ -65,6 +66,30 @@ func (h *handler) Create() gin.HandlerFunc {
 
 		data := map[string]string{"code": invite.Code}
 		c.JSON(200, api.DefaultResponse[map[string]string]{Message: "Convite criado com sucesso", Data: data})
+	}
+}
+
+// @Summary Busca o convite mais recente de um curso
+// @Tags invite
+// @Accept json
+// @Produce json
+// @Param Authorization header string true "Bearer token"
+// @Security BearerAuth
+// @Param courseId path string true "Course ID"
+// @Success 200 {object} api.DefaultResponse[*Invite]
+// @Router /invite/{courseId}/current [get]
+func (h *handler) GetCurrent() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		courseID := c.Param("courseId")
+		userID := c.GetString("userID")
+
+		invite, err := h.service.GetCurrent(c.Request.Context(), courseID, userID)
+		if err != nil {
+			c.Error(err)
+			return
+		}
+
+		c.JSON(200, api.DefaultResponse[*Invite]{Message: "Convite carregado com sucesso", Data: invite})
 	}
 }
 
