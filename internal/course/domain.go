@@ -30,6 +30,7 @@ type Repository interface {
 	FindByID(ctx context.Context, id string) (*Course, error)
 	FindByIDWithUserOwnerID(ctx context.Context, id string) (*CourseWithOwnerID, error)
 	FindByProgramID(ctx context.Context, programID string) ([]*Course, error)
+	FindByUserOwnerID(ctx context.Context, userOwnerID string) ([]*Course, error)
 	// Campos disponíveis para atualização
 	//
 	// - name string

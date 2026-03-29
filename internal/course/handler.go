@@ -15,6 +15,7 @@ type handler struct {
 type createCourseInput struct {
 	Name        string `json:"name" binding:"required"`
 	Description string `json:"description" binding:"required"`
+	ProgramID   string `json:"program_id" binding:"required"`
 	Year        int    `json:"year" binding:"required"`
 	Semester    int    `json:"semester" binding:"required"`
 }
@@ -54,8 +55,7 @@ func (h *handler) Create() gin.HandlerFunc {
 			c.Error(err)
 			return
 		}
-		userID := c.GetString("userID")
-		err := h.service.Create(c.Request.Context(), userID, input.Name, input.Description, input.Year, input.Semester)
+		err := h.service.Create(c.Request.Context(), input.ProgramID, input.Name, input.Description, input.Year, input.Semester)
 		if err != nil {
 			c.Error(err)
 			return
@@ -73,8 +73,17 @@ func (h *handler) Create() gin.HandlerFunc {
 // @Router /course/{programId} [get]
 func (h *handler) GetCoursesByProgramID() gin.HandlerFunc {
 	return func(c *gin.Context) {
+		programID := c.Param("programId")
 		userID := c.GetString("userID")
-		instances, err := h.service.GetCoursesByProgramID(c.Request.Context(), userID)
+		var (
+			instances []*Course
+			err error
+		)
+		if programID == "any" {
+			instances, err = h.service.GetCoursesByUserID(c.Request.Context(), userID)
+		} else {
+			instances, err = h.service.GetCoursesByProgramID(c.Request.Context(), programID)
+		}
 		if err != nil {
 			c.Error(err)
 			return

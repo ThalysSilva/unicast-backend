@@ -9,7 +9,7 @@ import (
 )
 
 type Service interface {
-	Create(ctx context.Context, studentID string, name, phone, email, annotation *string, status StudentStatus) error
+	Create(ctx context.Context, studentID string) error
 	GetStudent(ctx context.Context, id string) (*Student, error)
 	GetStudents(ctx context.Context, filters map[string]string) ([]*Student, error)
 	Update(ctx context.Context, id string, fields map[string]any) error
@@ -30,9 +30,9 @@ func NewService(studentRepository Repository) Service {
 	}
 }
 
-func (s *studentService) Create(ctx context.Context, studentID string, name, phone, email, annotation *string, status StudentStatus) error {
+func (s *studentService) Create(ctx context.Context, studentID string) error {
 
-	err := s.studentRepository.Create(ctx, studentID, name, phone, email, annotation, status)
+	err := s.studentRepository.Create(ctx, studentID, nil, nil, nil, nil, StudentStatusPending)
 	if err != nil {
 		return err
 	}

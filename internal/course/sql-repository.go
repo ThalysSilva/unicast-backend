@@ -110,6 +110,32 @@ func (r *sqlRepository) FindByProgramID(ctx context.Context, programID string) (
 	return courses, nil
 }
 
+func (r *sqlRepository) FindByUserOwnerID(ctx context.Context, userOwnerID string) ([]*Course, error) {
+	query := `
+		SELECT c.id, c.name, c.description, c.year, c.semester, c.program_id, c.created_at, c.updated_at
+		FROM courses c
+		JOIN programs p ON p.id = c.program_id
+		JOIN campuses ca ON ca.id = p.campus_id
+		WHERE ca.user_owner_id = $1
+	`
+	rows, err := r.db.QueryContext(ctx, query, userOwnerID)
+	if err != nil {
+		return nil, customerror.Trace("courseRepository: findByUserOwnerID", err)
+	}
+	defer rows.Close()
+
+	var courses []*Course
+	for rows.Next() {
+		course := &Course{}
+		err := rows.Scan(&course.ID, &course.Name, &course.Description, &course.Year, &course.Semester, &course.ProgramID, &course.CreatedAt, &course.UpdatedAt)
+		if err != nil {
+			return nil, customerror.Trace("courseRepository: findByUserOwnerID", err)
+		}
+		courses = append(courses, course)
+	}
+	return courses, nil
+}
+
 func (r *sqlRepository) FindByNameAndProgramID(ctx context.Context, name, programID string) (*Course, error) {
 	query := `
 		SELECT id, name, description, year, semester, program_id, created_at, updated_at

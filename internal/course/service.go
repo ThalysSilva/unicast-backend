@@ -22,6 +22,7 @@ type Service interface {
 	Create(ctx context.Context, programID, name, description string, year, semester int) error
 	GetCourse(id string) (*Course, error)
 	GetCoursesByProgramID(ctx context.Context, programID string) ([]*Course, error)
+	GetCoursesByUserID(ctx context.Context, userID string) ([]*Course, error)
 	isOwner(ctx context.Context, courseID, userID string) (bool, error)
 	Update(ctx context.Context, id string, fields map[string]any) error
 	Delete(ctx context.Context, id string) error
@@ -56,6 +57,10 @@ func (s *courseService) GetCourse(id string) (*Course, error) {
 
 func (s *courseService) GetCoursesByProgramID(ctx context.Context, programID string) ([]*Course, error) {
 	return s.courseRepository.FindByProgramID(ctx, programID)
+}
+
+func (s *courseService) GetCoursesByUserID(ctx context.Context, userID string) ([]*Course, error) {
+	return s.courseRepository.FindByUserOwnerID(ctx, userID)
 }
 
 func (s *courseService) isOwner(ctx context.Context, courseID, userID string) (bool, error) {

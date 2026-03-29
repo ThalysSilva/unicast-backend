@@ -18,12 +18,15 @@ type handler struct {
 }
 
 type createStudentInput struct {
-	StudentID  string        `json:"studentId" binding:"required"`
+	StudentID string `json:"studentId" binding:"required"`
+}
+
+type updateStudentInput struct {
 	Name       *string       `json:"name"`
-	Phone      *string       `json:"phone" `
-	Email      *string       `json:"email" binding:"email"`
+	Phone      *string       `json:"phone"`
+	Email      *string       `json:"email" binding:"omitempty,email"`
 	Annotation *string       `json:"annotation"`
-	Status     StudentStatus `json:"status" binding:"required,oneof=ACTIVE CANCELED GRADUATED LOCKED"`
+	Status     StudentStatus `json:"status" binding:"omitempty,oneof=ACTIVE CANCELED GRADUATED LOCKED PENDING"`
 }
 
 type Handler interface {
@@ -59,12 +62,12 @@ func (h *handler) Create() gin.HandlerFunc {
 			return
 		}
 
-		err := h.service.Create(c.Request.Context(), input.StudentID, input.Name, input.Phone, input.Email, input.Annotation, input.Status)
+		err := h.service.Create(c.Request.Context(), input.StudentID)
 		if err != nil {
 			c.Error(err)
 			return
 		}
-		c.JSON(200, api.MessageResponse{Message: "Aluno criado com sucesso"})
+		c.JSON(200, api.MessageResponse{Message: "Aluno pre-cadastrado com sucesso"})
 	}
 }
 
@@ -153,7 +156,7 @@ func (h *handler) GetStudents() gin.HandlerFunc {
 func (h *handler) Update() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		studentID := c.Param("id")
-		var input createStudentInput
+		var input updateStudentInput
 		if err := c.ShouldBindJSON(&input); err != nil {
 			c.Error(err)
 			return
