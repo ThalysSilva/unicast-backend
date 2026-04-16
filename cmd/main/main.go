@@ -63,7 +63,7 @@ func main() {
 	// Serviços
 	authService := auth.NewService(repos.User, secrets)
 	whatsappService := whatsapp.NewService(repos.WhatsAppInstance, repos.User)
-	smtpService := smtp.NewService(repos.SmtpInstance)
+	smtpService := smtp.NewService(repos.SmtpInstance, secrets.Jwe, envCfg.OAuth)
 	campusService := campus.NewService(repos.Campus)
 	courseService := course.NewService(repos.Course)
 	programService := program.NewService(repos.Program)
@@ -72,7 +72,7 @@ func main() {
 	userService := user.NewService(repos.User)
 	inviteService := invite.NewService(repos.Invite, repos.Course, repos.Enrollment, repos.Student)
 	messageLogRepo := message.NewLogRepository(db)
-	messageService := message.NewMessageService(repos.WhatsAppInstance, repos.SmtpInstance, repos.User, repos.Student, messageLogRepo, secrets.Jwe)
+	messageService := message.NewMessageService(repos.WhatsAppInstance, smtpService, repos.SmtpInstance, repos.User, repos.Student, messageLogRepo, secrets.Jwe)
 	backdoorService := backdoor.NewService(repos.User, envCfg.Admin.Secret)
 
 	// Handlers
@@ -151,11 +151,13 @@ func main() {
 	smtpGroup := r.Group("/smtp")
 	{
 		smtpGroup.Use(middleware.UseAuthentication(secrets.AccessToken))
+		smtpGroup.POST("/oauth/:provider/start", smtpHandler.StartOAuth())
 		smtpGroup.POST("/instance/test", smtpHandler.TestConnection())
 		smtpGroup.POST("/instance", smtpHandler.Create(secrets.Jwe))
 		smtpGroup.GET("/instance", smtpHandler.GetInstances())
 		smtpGroup.DELETE("/instance/:id", smtpHandler.DeleteInstance())
 	}
+	r.GET("/smtp/oauth/google/callback", smtpHandler.OAuthCallback(smtp.ProviderGoogle))
 
 	// Rotas do usuario
 	userGroup := r.Group("/user")

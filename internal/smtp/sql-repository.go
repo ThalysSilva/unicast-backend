@@ -3,20 +3,10 @@ package smtp
 import (
 	"context"
 	"database/sql"
-	"fmt"
-	"strings"
+	"time"
 
 	"github.com/ThalysSilva/unicast-backend/pkg/database"
 )
-
-type UpdateInstanceInput struct {
-	Host     *string
-	Port     *int
-	Email    *string
-	Password *string
-	IV       *string
-	UserID   *int
-}
 
 type sqlRepository struct {
 	db    database.DB
@@ -44,29 +34,69 @@ func (r *sqlRepository) TransactionBackend() any {
 // Insere uma nova instância SMTP
 func (r *sqlRepository) Create(ctx context.Context, userID, email, host string, port int, password, iv []byte) error {
 	query := `
-        INSERT INTO smtp_instances (host, port, email, password, iv, user_id)
-        VALUES ($1, $2, $3, $4, $5, $6)
+        INSERT INTO smtp_instances (host, port, email, password, iv, user_id, auth_mode, provider)
+        VALUES ($1, $2, $3, $4, $5, $6, 'password', 'custom_smtp')
     `
 	_, err := r.db.ExecContext(ctx, query, host, port, email, password, iv, userID)
+	return err
+}
+
+func (r *sqlRepository) UpsertOAuth(ctx context.Context, userID, email, provider, host string, port int, oauthPayload, oauthIV []byte, tokenExpiresAt *time.Time) error {
+	query := `
+		INSERT INTO smtp_instances (
+			host, port, email, password, iv, user_id, auth_mode, provider, oauth_payload, oauth_iv, token_expires_at
+		)
+		VALUES ($1, $2, $3, NULL, NULL, $4, 'oauth', $5, $6, $7, $8)
+		ON CONFLICT (user_id, provider, email) WHERE auth_mode = 'oauth'
+		DO UPDATE SET
+			host = EXCLUDED.host,
+			port = EXCLUDED.port,
+			auth_mode = 'oauth',
+			oauth_payload = EXCLUDED.oauth_payload,
+			oauth_iv = EXCLUDED.oauth_iv,
+			token_expires_at = EXCLUDED.token_expires_at,
+			updated_at = CURRENT_TIMESTAMP
+	`
+
+	_, err := r.db.ExecContext(ctx, query, host, port, email, userID, provider, oauthPayload, oauthIV, tokenExpiresAt)
 	return err
 }
 
 // Busca uma instância SMTP pelo ID
 func (r *sqlRepository) FindByID(ctx context.Context, id string) (*Instance, error) {
 	query := `
-        SELECT id, host, port, email, password, iv, created_at, updated_at, user_id
+        SELECT id, host, port, email, auth_mode, provider, password, iv, oauth_payload, oauth_iv, token_expires_at, created_at, updated_at, user_id
         FROM smtp_instances
         WHERE id = $1
     `
 	row := r.db.QueryRowContext(ctx, query, id)
 
 	instance := &Instance{}
-	err := row.Scan(&instance.ID, &instance.Host, &instance.Port, &instance.Email, &instance.Password, &instance.IV, &instance.CreatedAt, &instance.UpdatedAt, &instance.UserID)
+	var tokenExpiresAt sql.NullTime
+	err := row.Scan(
+		&instance.ID,
+		&instance.Host,
+		&instance.Port,
+		&instance.Email,
+		&instance.AuthMode,
+		&instance.Provider,
+		&instance.Password,
+		&instance.IV,
+		&instance.OAuthPayload,
+		&instance.OAuthIV,
+		&tokenExpiresAt,
+		&instance.CreatedAt,
+		&instance.UpdatedAt,
+		&instance.UserID,
+	)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
 		}
 		return nil, err
+	}
+	if tokenExpiresAt.Valid {
+		instance.TokenExpiresAt = &tokenExpiresAt.Time
 	}
 	return instance, nil
 }
@@ -74,7 +104,7 @@ func (r *sqlRepository) FindByID(ctx context.Context, id string) (*Instance, err
 func (r *sqlRepository) GetInstances(ctx context.Context, userID string) ([]*Instance, error) {
 
 	query := `
-				SELECT id, host, port, email, password, iv, created_at, updated_at, user_id
+				SELECT id, host, port, email, auth_mode, provider, password, iv, oauth_payload, oauth_iv, token_expires_at, created_at, updated_at, user_id
 				FROM smtp_instances
 				WHERE user_id = $1
 		`
@@ -88,40 +118,45 @@ func (r *sqlRepository) GetInstances(ctx context.Context, userID string) ([]*Ins
 	var instances []*Instance
 	for rows.Next() {
 		instance := &Instance{}
-		err := rows.Scan(&instance.ID, &instance.Host, &instance.Port, &instance.Email, &instance.Password, &instance.IV, &instance.CreatedAt, &instance.UpdatedAt, &instance.UserID)
+		var tokenExpiresAt sql.NullTime
+		err := rows.Scan(
+			&instance.ID,
+			&instance.Host,
+			&instance.Port,
+			&instance.Email,
+			&instance.AuthMode,
+			&instance.Provider,
+			&instance.Password,
+			&instance.IV,
+			&instance.OAuthPayload,
+			&instance.OAuthIV,
+			&tokenExpiresAt,
+			&instance.CreatedAt,
+			&instance.UpdatedAt,
+			&instance.UserID,
+		)
 		if err != nil {
 			return nil, err
+		}
+		if tokenExpiresAt.Valid {
+			instance.TokenExpiresAt = &tokenExpiresAt.Time
 		}
 		instances = append(instances, instance)
 	}
 	return instances, nil
 }
 
-// Atualiza uma instância SMTP
-func (r *sqlRepository) Update(ctx context.Context, id int, fields map[string]interface{}) error {
-
-	if len(fields) == 0 {
-		return fmt.Errorf("nenhum campo fornecido para atualização")
-	}
-
-	setters := make([]string, 0, len(fields))
-	args := make([]interface{}, 0, len(fields)+1)
-	args = append(args, id) // $1 é o id
-
-	i := 2 // Começa em $2, pois $1 é o id
-	for field, value := range fields {
-		setters = append(setters, fmt.Sprintf("%s = $%d", field, i))
-		args = append(args, value)
-		i++
-	}
-
-	query := fmt.Sprintf("UPDATE smtp_instances SET %s WHERE id = $1", strings.Join(setters, ", "))
-	_, err := r.db.ExecContext(ctx, query, args...)
-	if err != nil {
-		return fmt.Errorf("falha ao atualizar instância %d: %v", id, err)
-	}
-
-	return nil
+func (r *sqlRepository) UpdateOAuthTokens(ctx context.Context, id string, oauthPayload, oauthIV []byte, tokenExpiresAt *time.Time) error {
+	query := `
+		UPDATE smtp_instances
+		SET oauth_payload = $2,
+			oauth_iv = $3,
+			token_expires_at = $4,
+			updated_at = CURRENT_TIMESTAMP
+		WHERE id = $1
+	`
+	_, err := r.db.ExecContext(ctx, query, id, oauthPayload, oauthIV, tokenExpiresAt)
+	return err
 }
 
 // Remove uma instância SMTP pelo ID

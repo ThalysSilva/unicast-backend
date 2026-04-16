@@ -30,6 +30,7 @@ type Service interface {
 
 type service struct {
 	whatsAppRepository whatsapp.Repository
+	smtpService        smtp.Service
 	smtpRepository     smtp.Repository
 	userRepository     user.Repository
 	studentRepository  student.Repository
@@ -47,7 +48,7 @@ var (
 	ErrPhoneInvalid     = customerror.Make("telefone inválido para WhatsApp", 400, errors.New("ErrPhoneInvalid"))
 )
 
-func NewMessageService(whatsAppRepository whatsapp.Repository, smtpRepository smtp.Repository, userRepository user.Repository, studentRepository student.Repository, logRepository LogRepository, jweSecret []byte) Service {
+func NewMessageService(whatsAppRepository whatsapp.Repository, smtpService smtp.Service, smtpRepository smtp.Repository, userRepository user.Repository, studentRepository student.Repository, logRepository LogRepository, jweSecret []byte) Service {
 	cfg, _ := env.Load()
 	defaultCountry := "55"
 	if cfg != nil && cfg.Defaults.CountryCode != "" {
@@ -56,6 +57,7 @@ func NewMessageService(whatsAppRepository whatsapp.Repository, smtpRepository sm
 
 	return &service{
 		whatsAppRepository: whatsAppRepository,
+		smtpService:        smtpService,
 		smtpRepository:     smtpRepository,
 		userRepository:     userRepository,
 		studentRepository:  studentRepository,
@@ -174,25 +176,6 @@ func buildAttachments(message *Message) ([]mailer.Attachment, []Attachment, stri
 }
 
 func (s *service) sendEmails(ctx context.Context, message *Message, smtpInstance *smtp.Instance, attachments []mailer.Attachment, students []*student.Student) ([]student.Student, error) {
-	decryptedJwe, err := auth.DecryptJWE[auth.JwePayload](message.Jwe, s.jweSecret)
-	if err != nil {
-		return nil, customerror.Trace("Send", err)
-	}
-	smtpKey, err := base64.StdEncoding.DecodeString(decryptedJwe.SmtpKeyEncoded)
-	if err != nil {
-		return nil, customerror.Trace("Send", err)
-	}
-
-	decryptedSmtpPassword, err := encryption.DecryptSmtpPassword([]byte(smtpInstance.Password), smtpKey, []byte(smtpInstance.IV))
-	if err != nil {
-		return nil, customerror.Trace("Send", err)
-	}
-	sender := mailer.NewEmailSender(mailer.SmtpAuthentication{
-		Host:     smtpInstance.Host,
-		Port:     smtpInstance.Port,
-		Username: smtpInstance.Email,
-		Password: decryptedSmtpPassword,
-	})
 	from := smtpInstance.Email
 	if message.From != "" {
 		from = message.From
@@ -212,14 +195,44 @@ func (s *service) sendEmails(ctx context.Context, message *Message, smtpInstance
 		return emailFailedStudents, nil
 	}
 
-	if err := sender.SetData(&mailer.MailerData{
+	mailData := &mailer.MailerData{
 		From:        from,
 		To:          recipients,
 		Subject:     message.Subject,
 		Body:        message.Body,
 		Attachments: &attachments,
 		ContentType: mailer.TextPlain,
-	}); err != nil {
+	}
+
+	if smtpInstance.AuthMode == smtp.AuthModeOAuth {
+		if err := s.sendOAuthEmail(ctx, smtpInstance, mailData); err != nil {
+			emailFailedStudents = studentsToValues(students)
+			return emailFailedStudents, err
+		}
+		return emailFailedStudents, nil
+	}
+
+	decryptedJwe, err := auth.DecryptJWE[auth.JwePayload](message.Jwe, s.jweSecret)
+	if err != nil {
+		return nil, customerror.Trace("Send", err)
+	}
+	smtpKey, err := base64.StdEncoding.DecodeString(decryptedJwe.SmtpKeyEncoded)
+	if err != nil {
+		return nil, customerror.Trace("Send", err)
+	}
+
+	decryptedSmtpPassword, err := encryption.DecryptSmtpPassword(smtpInstance.Password, smtpKey, smtpInstance.IV)
+	if err != nil {
+		return nil, customerror.Trace("Send", err)
+	}
+	sender := mailer.NewEmailSender(mailer.SmtpAuthentication{
+		Host:     smtpInstance.Host,
+		Port:     smtpInstance.Port,
+		Username: smtpInstance.Email,
+		Password: decryptedSmtpPassword,
+	})
+
+	if err := sender.SetData(mailData); err != nil {
 		return nil, customerror.Trace("Send", err)
 	}
 
@@ -235,6 +248,33 @@ func (s *service) sendEmails(ctx context.Context, message *Message, smtpInstance
 		return emailFailedStudents, emailSendErr
 	}
 	return emailFailedStudents, emailSendErr
+}
+
+func (s *service) sendOAuthEmail(ctx context.Context, smtpInstance *smtp.Instance, data *mailer.MailerData) error {
+	accessToken, err := s.smtpService.RefreshOAuthAccessToken(ctx, smtpInstance)
+	if err != nil {
+		return customerror.Trace("Send", err)
+	}
+
+	switch smtpInstance.Provider {
+	case smtp.ProviderGoogle:
+		if err := mailer.SendWithGmailAPI(accessToken, data); err != nil {
+			return customerror.Trace("Send", err)
+		}
+		return nil
+	default:
+		return customerror.Trace("Send", customerror.Make("provedor OAuth de email inválido", 400, errors.New("invalidOAuthProvider")))
+	}
+}
+
+func studentsToValues(students []*student.Student) []student.Student {
+	out := make([]student.Student, 0, len(students))
+	for _, stud := range students {
+		if stud != nil {
+			out = append(out, *stud)
+		}
+	}
+	return out
 }
 
 func (s *service) sendWhats(ctx context.Context, waInstance *whatsapp.Instance, students []*student.Student, body string, attachments []Attachment) []student.Student {

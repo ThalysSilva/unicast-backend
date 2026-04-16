@@ -1,6 +1,8 @@
 package smtp
 
 import (
+	"net/url"
+
 	"github.com/ThalysSilva/unicast-backend/pkg/api"
 	"github.com/ThalysSilva/unicast-backend/pkg/customerror"
 	"github.com/gin-gonic/gin"
@@ -27,6 +29,8 @@ type testConnectionInput struct {
 
 type Handler interface {
 	Create(jweSecret []byte) gin.HandlerFunc
+	StartOAuth() gin.HandlerFunc
+	OAuthCallback(provider string) gin.HandlerFunc
 	TestConnection() gin.HandlerFunc
 	GetInstances() gin.HandlerFunc
 	DeleteInstance() gin.HandlerFunc
@@ -36,6 +40,10 @@ func NewHandler(service Service) Handler {
 	return &handler{
 		service: service,
 	}
+}
+
+type oauthStartResponse struct {
+	URL string `json:"url"`
 }
 
 // @Summary Cria uma instância SMTP
@@ -87,6 +95,36 @@ func (h *handler) TestConnection() gin.HandlerFunc {
 			return
 		}
 		c.JSON(200, api.MessageResponse{Message: "Conexao SMTP validada com sucesso"})
+	}
+}
+
+func (h *handler) StartOAuth() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		userID := c.GetString("userID")
+		provider := c.Param("provider")
+		authURL, err := h.service.StartOAuth(c.Request.Context(), userID, provider)
+		if err != nil {
+			customerror.HandleResponse(c, err)
+			return
+		}
+		c.JSON(200, api.DefaultResponse[oauthStartResponse]{
+			Message: "URL de autorizacao gerada com sucesso",
+			Data:    oauthStartResponse{URL: authURL},
+		})
+	}
+}
+
+func (h *handler) OAuthCallback(provider string) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		code := c.Query("code")
+		state := c.Query("state")
+		redirectURL, err := h.service.HandleOAuthCallback(c.Request.Context(), provider, code, state)
+		if err != nil {
+			msg := url.QueryEscape(err.Error())
+			c.Redirect(302, redirectURL+"?oauth_status=error&oauth_provider="+provider+"&oauth_message="+msg)
+			return
+		}
+		c.Redirect(302, redirectURL)
 	}
 }
 

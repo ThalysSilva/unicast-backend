@@ -21,10 +21,18 @@ type Defaults struct {
 	CountryCode string
 }
 
+type OAuth struct {
+	FrontendBaseURL    string
+	GoogleClientID     string
+	GoogleClientSecret string
+	GoogleRedirectURL  string
+}
+
 type Config struct {
 	Evolution Evolution
 	Auth      Auth
 	Defaults  Defaults
+	OAuth     OAuth
 	Admin     struct {
 		Secret string
 	}
@@ -47,12 +55,21 @@ func Load() (*Config, error) {
 		Defaults: Defaults{
 			CountryCode: os.Getenv("DEFAULT_COUNTRY_CODE"),
 		},
+		OAuth: OAuth{
+			FrontendBaseURL:    os.Getenv("FRONTEND_BASE_URL"),
+			GoogleClientID:     os.Getenv("GOOGLE_OAUTH_CLIENT_ID"),
+			GoogleClientSecret: os.Getenv("GOOGLE_OAUTH_CLIENT_SECRET"),
+			GoogleRedirectURL:  os.Getenv("GOOGLE_OAUTH_REDIRECT_URL"),
+		},
 	}
 
 	cfg.Admin.Secret = os.Getenv("ADMIN_SECRET")
 
 	if cfg.Defaults.CountryCode == "" {
 		cfg.Defaults.CountryCode = "55"
+	}
+	if cfg.OAuth.FrontendBaseURL == "" {
+		cfg.OAuth.FrontendBaseURL = "http://localhost:3000"
 	}
 
 	if err := validate(cfg); err != nil {

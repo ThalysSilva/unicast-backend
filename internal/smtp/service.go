@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/ThalysSilva/unicast-backend/internal/auth"
+	configenv "github.com/ThalysSilva/unicast-backend/internal/config/env"
 	"github.com/ThalysSilva/unicast-backend/internal/encryption"
 	"github.com/ThalysSilva/unicast-backend/pkg/customerror"
 	"github.com/ThalysSilva/unicast-backend/pkg/mailer"
@@ -16,17 +17,22 @@ import (
 
 type smtpService struct {
 	smtpRepository Repository
+	jweSecret      []byte
+	oauth          configenv.OAuth
 }
 
 type Service interface {
 	Create(ctx context.Context, jweSecret []byte, userId, jwe, email, password, host string, port int) error
+	StartOAuth(ctx context.Context, userID, provider string) (string, error)
+	HandleOAuthCallback(ctx context.Context, provider, code, state string) (string, error)
 	TestConnection(ctx context.Context, email, password, host string, port int) error
 	GetInstances(ctx context.Context, userID string) ([]*Instance, error)
 	DeleteInstance(ctx context.Context, userID, instanceID string) error
+	RefreshOAuthAccessToken(ctx context.Context, instance *Instance) (string, error)
 }
 
-func NewService(smtpRepository Repository) Service {
-	return &smtpService{smtpRepository: smtpRepository}
+func NewService(smtpRepository Repository, jweSecret []byte, oauth configenv.OAuth) Service {
+	return &smtpService{smtpRepository: smtpRepository, jweSecret: jweSecret, oauth: oauth}
 }
 
 var (
