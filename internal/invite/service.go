@@ -19,6 +19,8 @@ import (
 type Service interface {
 	Create(ctx context.Context, courseID, userID string, expiresAt *time.Time) (*Invite, error)
 	GetCurrent(ctx context.Context, courseID, userID string) (*Invite, error)
+	ListByCourse(ctx context.Context, courseID, userID string) ([]*Invite, error)
+	Delete(ctx context.Context, inviteID, userID string) error
 	SelfRegister(ctx context.Context, code, studentID, name, phone, email string, consent bool) error
 }
 
@@ -87,15 +89,46 @@ func (s *inviteService) Create(ctx context.Context, courseID, userID string, exp
 }
 
 func (s *inviteService) GetCurrent(ctx context.Context, courseID, userID string) (*Invite, error) {
-	courseWithOwner, err := s.courseRepository.FindByIDWithUserOwnerID(ctx, courseID)
-	if err != nil {
+	if err := s.ensureCourseOwner(ctx, courseID, userID); err != nil {
 		return nil, err
-	}
-	if courseWithOwner == nil || courseWithOwner.UserOwnerID != userID {
-		return nil, ErrNotCourseOwner
 	}
 
 	return s.inviteRepository.FindLatestByCourseID(ctx, courseID)
+}
+
+func (s *inviteService) ListByCourse(ctx context.Context, courseID, userID string) ([]*Invite, error) {
+	if err := s.ensureCourseOwner(ctx, courseID, userID); err != nil {
+		return nil, err
+	}
+
+	return s.inviteRepository.FindByCourseID(ctx, courseID)
+}
+
+func (s *inviteService) Delete(ctx context.Context, inviteID, userID string) error {
+	inviteFound, err := s.inviteRepository.FindByID(ctx, inviteID)
+	if err != nil {
+		return err
+	}
+	if inviteFound == nil {
+		return ErrInviteNotFound
+	}
+	if err := s.ensureCourseOwner(ctx, inviteFound.CourseID, userID); err != nil {
+		return err
+	}
+
+	return s.inviteRepository.Delete(ctx, inviteID)
+}
+
+func (s *inviteService) ensureCourseOwner(ctx context.Context, courseID, userID string) error {
+	courseWithOwner, err := s.courseRepository.FindByIDWithUserOwnerID(ctx, courseID)
+	if err != nil {
+		return err
+	}
+	if courseWithOwner == nil || courseWithOwner.UserOwnerID != userID {
+		return ErrNotCourseOwner
+	}
+
+	return nil
 }
 
 func (s *inviteService) SelfRegister(ctx context.Context, code, studentID, name, phone, email string, consent bool) error {

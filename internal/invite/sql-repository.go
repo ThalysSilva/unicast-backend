@@ -46,6 +46,17 @@ func (r *sqlRepository) Create(ctx context.Context, courseID, code string, expir
 	return nil
 }
 
+func (r *sqlRepository) FindByID(ctx context.Context, id string) (*Invite, error) {
+	query := `
+        SELECT id, course_id, code, expires_at, active, created_at, updated_at
+        FROM invites
+        WHERE id = $1
+    `
+	row := r.db.QueryRowContext(ctx, query, id)
+
+	return scanInvite(row, "inviteRepository: findByID")
+}
+
 func (r *sqlRepository) FindByCode(ctx context.Context, code string) (*Invite, error) {
 	query := `
         SELECT id, course_id, code, expires_at, active, created_at, updated_at
@@ -54,19 +65,7 @@ func (r *sqlRepository) FindByCode(ctx context.Context, code string) (*Invite, e
     `
 	row := r.db.QueryRowContext(ctx, query, code)
 
-	invite := &Invite{}
-	var expiresAt sql.NullTime
-	err := row.Scan(&invite.ID, &invite.CourseID, &invite.Code, &expiresAt, &invite.Active, &invite.CreatedAt, &invite.UpdatedAt)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			return nil, nil
-		}
-		return nil, customerror.Trace("inviteRepository: findByCode", err)
-	}
-	if expiresAt.Valid {
-		invite.ExpiresAt = &expiresAt.Time
-	}
-	return invite, nil
+	return scanInvite(row, "inviteRepository: findByCode")
 }
 
 func (r *sqlRepository) FindLatestByCourseID(ctx context.Context, courseID string) (*Invite, error) {
@@ -79,17 +78,61 @@ func (r *sqlRepository) FindLatestByCourseID(ctx context.Context, courseID strin
     `
 	row := r.db.QueryRowContext(ctx, query, courseID)
 
+	return scanInvite(row, "inviteRepository: findLatestByCourseID")
+}
+
+func scanInvite(scanner interface {
+	Scan(dest ...any) error
+}, trace string) (*Invite, error) {
 	invite := &Invite{}
 	var expiresAt sql.NullTime
-	err := row.Scan(&invite.ID, &invite.CourseID, &invite.Code, &expiresAt, &invite.Active, &invite.CreatedAt, &invite.UpdatedAt)
+	err := scanner.Scan(&invite.ID, &invite.CourseID, &invite.Code, &expiresAt, &invite.Active, &invite.CreatedAt, &invite.UpdatedAt)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
 		}
-		return nil, customerror.Trace("inviteRepository: findLatestByCourseID", err)
+		return nil, customerror.Trace(trace, err)
 	}
 	if expiresAt.Valid {
 		invite.ExpiresAt = &expiresAt.Time
 	}
 	return invite, nil
+}
+
+func (r *sqlRepository) FindByCourseID(ctx context.Context, courseID string) ([]*Invite, error) {
+	query := `
+        SELECT id, course_id, code, expires_at, active, created_at, updated_at
+        FROM invites
+        WHERE course_id = $1
+        ORDER BY created_at DESC
+    `
+	rows, err := r.db.QueryContext(ctx, query, courseID)
+	if err != nil {
+		return nil, customerror.Trace("inviteRepository: findByCourseID", err)
+	}
+	defer rows.Close()
+
+	invites := make([]*Invite, 0)
+	for rows.Next() {
+		invite := &Invite{}
+		var expiresAt sql.NullTime
+		err := rows.Scan(&invite.ID, &invite.CourseID, &invite.Code, &expiresAt, &invite.Active, &invite.CreatedAt, &invite.UpdatedAt)
+		if err != nil {
+			return nil, customerror.Trace("inviteRepository: findByCourseID", err)
+		}
+		if expiresAt.Valid {
+			invite.ExpiresAt = &expiresAt.Time
+		}
+		invites = append(invites, invite)
+	}
+	return invites, nil
+}
+
+func (r *sqlRepository) Delete(ctx context.Context, id string) error {
+	query := `DELETE FROM invites WHERE id = $1`
+	_, err := r.db.ExecContext(ctx, query, id)
+	if err != nil {
+		return customerror.Trace("inviteRepository: delete", err)
+	}
+	return nil
 }

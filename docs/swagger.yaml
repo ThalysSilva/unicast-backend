@@ -62,6 +62,15 @@ definitions:
       message:
         type: string
     type: object
+  github_com_ThalysSilva_unicast-backend_pkg_api.DefaultResponse-array_internal_invite_Invite:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/internal_invite.Invite'
+        type: array
+      message:
+        type: string
+    type: object
   github_com_ThalysSilva_unicast-backend_pkg_api.DefaultResponse-array_internal_program_Program:
     properties:
       data:
@@ -1006,6 +1015,32 @@ paths:
       tags:
       - course
   /invite/{courseId}:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: Bearer token
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Course ID
+        in: path
+        name: courseId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.DefaultResponse-array_internal_invite_Invite'
+      security:
+      - BearerAuth: []
+      summary: Lista convites de uma disciplina
+      tags:
+      - invite
     post:
       consumes:
       - application/json
@@ -1062,6 +1097,31 @@ paths:
       security:
       - BearerAuth: []
       summary: Busca o convite mais recente de um curso
+      tags:
+      - invite
+  /invite/{inviteId}:
+    delete:
+      parameters:
+      - description: Bearer token
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Invite ID
+        in: path
+        name: inviteId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.MessageResponse'
+      security:
+      - BearerAuth: []
+      summary: Remove um convite
       tags:
       - invite
   /invite/self-register/{code}:

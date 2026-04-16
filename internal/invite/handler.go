@@ -28,6 +28,8 @@ type selfRegisterInput struct {
 type Handler interface {
 	Create() gin.HandlerFunc
 	GetCurrent() gin.HandlerFunc
+	ListByCourse() gin.HandlerFunc
+	Delete() gin.HandlerFunc
 	SelfRegister() gin.HandlerFunc
 }
 
@@ -91,6 +93,60 @@ func (h *handler) GetCurrent() gin.HandlerFunc {
 		}
 
 		c.JSON(200, api.DefaultResponse[*Invite]{Message: "Convite carregado com sucesso", Data: invite})
+	}
+}
+
+// @Summary Lista convites de uma disciplina
+// @Tags invite
+// @Accept json
+// @Produce json
+// @Param Authorization header string true "Bearer token"
+// @Security BearerAuth
+// @Param courseId path string true "Course ID"
+// @Success 200 {object} api.DefaultResponse[[]Invite]
+// @Router /invite/{courseId} [get]
+func (h *handler) ListByCourse() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		courseID := c.Param("courseId")
+		userID := c.GetString("userID")
+
+		invites, err := h.service.ListByCourse(c.Request.Context(), courseID, userID)
+		if err != nil {
+			customerror.HandleResponse(c, err)
+			return
+		}
+
+		items := make([]Invite, 0, len(invites))
+		for _, invite := range invites {
+			if invite != nil {
+				items = append(items, *invite)
+			}
+		}
+
+		c.JSON(200, api.DefaultResponse[[]Invite]{Message: "Convites listados com sucesso", Data: items})
+	}
+}
+
+// @Summary Remove um convite
+// @Tags invite
+// @Produce json
+// @Param Authorization header string true "Bearer token"
+// @Security BearerAuth
+// @Param inviteId path string true "Invite ID"
+// @Success 200 {object} api.MessageResponse
+// @Router /invite/{inviteId} [delete]
+func (h *handler) Delete() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		inviteID := c.Param("inviteId")
+		userID := c.GetString("userID")
+
+		err := h.service.Delete(c.Request.Context(), inviteID, userID)
+		if err != nil {
+			customerror.HandleResponse(c, err)
+			return
+		}
+
+		c.JSON(200, api.MessageResponse{Message: "Convite removido com sucesso"})
 	}
 }
 
