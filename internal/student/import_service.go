@@ -107,9 +107,13 @@ func (s *importService) processRecord(ctx context.Context, courseID string, idx 
 
 func (s *importService) updateExisting(ctx context.Context, rec ImportRecord, existing *Student, idx int, result *ImportResult) error {
 	canUpdate := existing.Phone != nil || existing.Email != nil
+	status := rec.Status
+	if status == StudentStatusPending && hasCompletedContact(existing) {
+		status = StudentStatusActive
+	}
 
 	fields := map[string]any{
-		"status": rec.Status,
+		"status": status,
 	}
 
 	if canUpdate {
@@ -131,6 +135,14 @@ func (s *importService) updateExisting(ctx context.Context, rec ImportRecord, ex
 	}
 	result.Updated++
 	return nil
+}
+
+func hasCompletedContact(student *Student) bool {
+	if student == nil {
+		return false
+	}
+
+	return student.Name != nil && student.Email != nil && student.Phone != nil
 }
 
 func (s *importService) ensureEnrollment(ctx context.Context, courseID, studentUUID string, idx int, result *ImportResult) error {

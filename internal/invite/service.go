@@ -7,6 +7,7 @@ import (
 	"errors"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/ThalysSilva/unicast-backend/internal/course"
@@ -37,7 +38,7 @@ var (
 	ErrInviteExpired      = customerror.Make("convite expirado", http.StatusBadRequest, errors.New("ErrInviteExpired"))
 	ErrNotCourseOwner     = customerror.Make("você não tem permissão para este curso", http.StatusForbidden, errors.New("ErrNotCourseOwner"))
 	ErrEnrollmentNotFound = customerror.Make("estudante não está vinculado à disciplina", http.StatusBadRequest, errors.New("ErrEnrollmentNotFound"))
-	ErrStudentNotPending  = customerror.Make("estudante já cadastrou os dados", http.StatusConflict, errors.New("ErrStudentNotPending"))
+	ErrStudentRegistered  = customerror.Make("cadastro desta matrícula já está completo", http.StatusConflict, errors.New("ErrStudentRegistered"))
 	ErrStudentNotFound    = customerror.Make("estudante não encontrado", http.StatusNotFound, errors.New("ErrStudentNotFound"))
 	ErrConsentRequired    = customerror.Make("é necessário aceitar o recebimento automatizado de notificações", http.StatusBadRequest, errors.New("ErrConsentRequired"))
 )
@@ -162,8 +163,8 @@ func (s *inviteService) SelfRegister(ctx context.Context, code, studentID, name,
 		return ErrEnrollmentNotFound
 	}
 
-	if studentFound.Status != student.StudentStatusPending {
-		return ErrStudentNotPending
+	if studentContactComplete(studentFound) {
+		return ErrStudentRegistered
 	}
 	if !consent {
 		return ErrConsentRequired
@@ -184,6 +185,20 @@ func (s *inviteService) SelfRegister(ctx context.Context, code, studentID, name,
 	}
 
 	return s.studentRepository.Update(ctx, studentFound.ID, fields)
+}
+
+func studentContactComplete(studentFound *student.Student) bool {
+	if studentFound == nil {
+		return false
+	}
+
+	return hasValue(studentFound.Name) &&
+		hasValue(studentFound.Phone) &&
+		hasValue(studentFound.Email)
+}
+
+func hasValue(value *string) bool {
+	return value != nil && strings.TrimSpace(*value) != ""
 }
 
 func (s *inviteService) generateCode(courseID string, attempt int) string {
