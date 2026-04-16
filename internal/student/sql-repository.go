@@ -97,14 +97,7 @@ func (r *sqlRepository) FindByStudentID(ctx context.Context, studentID string) (
 }
 
 func (r *sqlRepository) FindByFilters(ctx context.Context, filters map[string]string) ([]*Student, error) {
-
-	query := `
-		SELECT id, student_id, name, phone, email, annotation, consent, created_at, updated_at, status
-		FROM students
-	`
-
-	whereClause, args := buildWhereClause(filters)
-	query += whereClause
+	query, args := buildFilteredStudentsQuery(filters)
 
 	rows, err := r.db.QueryContext(ctx, query, args...)
 	if err != nil {
@@ -121,6 +114,30 @@ func (r *sqlRepository) FindByFilters(ctx context.Context, filters map[string]st
 		students = append(students, student)
 	}
 	return students, nil
+}
+
+func buildFilteredStudentsQuery(filters map[string]string) (string, []any) {
+	query := `
+		SELECT DISTINCT s.id, s.student_id, s.name, s.phone, s.email, s.annotation, s.consent, s.created_at, s.updated_at, s.status
+		FROM students s
+	`
+
+	needsAcademicJoin := filters["course"] != "" ||
+		filters["program"] != "" ||
+		filters["campus"] != "" ||
+		filters["user"] != ""
+
+	if needsAcademicJoin {
+		query += `
+			JOIN enrollments e ON e.student_id = s.id
+			JOIN courses c ON c.id = e.course_id
+			JOIN programs p ON p.id = c.program_id
+			JOIN campuses ca ON ca.id = p.campus_id
+		`
+	}
+
+	whereClause, args := buildWhereClause(filters)
+	return query + whereClause, args
 }
 
 // Busca estudantes por IDs
@@ -183,12 +200,27 @@ func buildWhereClause(filters map[string]string) (string, []any) {
 
 	i := 1
 	for key, value := range filters {
-		parts = append(parts, fmt.Sprintf("%s = $%d", key, i))
+		column, ok := studentFilterColumns[key]
+		if !ok || value == "" {
+			continue
+		}
+		parts = append(parts, fmt.Sprintf("%s = $%d", column, i))
 		args = append(args, value)
 		i++
 	}
 
+	if len(parts) == 0 {
+		return "", nil
+	}
+
 	return " WHERE " + strings.Join(parts, " AND "), args
+}
+
+var studentFilterColumns = map[string]string{
+	"course":  "c.id",
+	"program": "p.id",
+	"campus":  "ca.id",
+	"user":    "ca.user_owner_id",
 }
 
 type rowScanner interface {
