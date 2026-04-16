@@ -120,7 +120,7 @@ flowchart LR
     subgraph Infra
         PG["PostgreSQL"]
         Evo["Evolution API\n(+ Redis interno)"]
-        Mail["SMTP Provider"]
+        Mail["SMTP Provider\nou Gmail API"]
     end
 
     FE -->|HTTP/JSON| API
@@ -164,22 +164,24 @@ sequenceDiagram
     participant API
     participant DB as Postgres
     participant Evo as Evolution API
-    participant Mail as SMTP Provider
+    participant Mail as SMTP/Gmail API
 
     Professor->>API: POST /message/send (Bearer)
     API->>DB: resolve alunos/contatos e instâncias (SMTP/WA)
     API->>Mail: envia email
     API->>Evo: envia WhatsApp (sendText/sendMedia)
-    API->>DB: grava message_logs (status, canais, destinatários)
+    API->>DB: grava message_logs (success/error_text por canal)
     API-->>Professor: resposta com falhas por canal (se houver)
 ```
 
-**Criptografia de credenciais SMTP**
+**Criptografia de credenciais de email**
 ```mermaid
 flowchart TD
     subgraph Entrada
       SmtpSecret["smtpSecret (fornecido pelo usuário)"]
       Creds["Credenciais SMTP (email, senha, host, port)"]
+      OAuthTokens["Tokens OAuth (access/refresh/expires)"]
+      JWESecret["JWE_SECRET do backend"]
     end
 
     subgraph Criptografia
@@ -187,21 +189,32 @@ flowchart TD
     end
 
     subgraph Persistência
-      DB["smtp_instances (ciphertext + iv)"]
+      DBPassword["smtp_instances.password + iv"]
+      DBOAuth["smtp_instances.oauth_payload + oauth_iv"]
     end
 
     subgraph Uso
       SMTPClient["SMTP Client (em memória)"]
+      GmailClient["Gmail API Client (em memória)"]
       Mail["SMTP Provider"]
+      Gmail["Gmail API"]
     end
 
     Creds --> JWE
     SmtpSecret --> JWE
-    JWE -->|gera ciphertext| DB
-    DB -->|ciphertext| JWE
+    JWE -->|senha cifrada| DBPassword
+    DBPassword -->|ciphertext| JWE
     SmtpSecret --> JWE
     JWE -->|dados em claro em memória| SMTPClient
     SMTPClient --> Mail
+
+    OAuthTokens --> JWE
+    JWESecret --> JWE
+    JWE -->|tokens cifrados| DBOAuth
+    DBOAuth -->|ciphertext| JWE
+    JWESecret --> JWE
+    JWE -->|access token em memória| GmailClient
+    GmailClient --> Gmail
 ```
 
 **Diagrama de classes/serviços (alto nível)**
@@ -218,15 +231,22 @@ classDiagram
     }
     class MessageService {
       +Send(message)
+      +formatWhatsAppBody(subject, body)
     }
     class WhatsAppService {
       +CreateInstance(userId, phone)
       +ConnectInstance(userId, instanceId)
+      +ConnectionState(userId, instanceId)
+      +LogoutInstance(userId, instanceId)
+      +RestartInstance(userId, instanceId)
       +SendText(to, body, instanceName)
       +SendMedia(to, caption, mimetype, mediatype, media, filename, instanceName)
     }
     class SMTPService {
       +CreateInstance(userId, jweSecret, smtpSecret, email, password, host, port)
+      +StartOAuth(userId, provider)
+      +HandleOAuthCallback(provider, code, state)
+      +RefreshOAuthAccessToken(instance)
       +GetInstances(userId)
     }
     class StudentService {
@@ -276,13 +296,12 @@ stateDiagram-v2
     StudentLocked --> StudentActive: admin reativação
 ```
 
-**Entidades principais (ER simplificado)**
+**Entidades principais (ER atual)**
 ```mermaid
 erDiagram
     USER ||--o{ CAMPUS : owns
     USER ||--o{ WHATSAPP_INSTANCE : owns
     USER ||--o{ SMTP_INSTANCE : owns
-    USER ||--o{ MESSAGE_LOG : sends
 
     CAMPUS ||--o{ PROGRAM : contains
     PROGRAM ||--o{ COURSE : contains
@@ -292,62 +311,112 @@ erDiagram
     STUDENT ||--o{ ENROLLMENT : participates
     STUDENT ||--o{ MESSAGE_LOG : receives
 
-    WHATSAPP_INSTANCE ||--o{ MESSAGE_LOG : delivers
-    SMTP_INSTANCE ||--o{ MESSAGE_LOG : delivers
+    WHATSAPP_INSTANCE |o--o{ MESSAGE_LOG : delivers
+    SMTP_INSTANCE |o--o{ MESSAGE_LOG : delivers
 
     USER {
         string id
-        string name
         string email
+        string name
+        string password
+        string refresh_token
+        string salt
+        timestamptz created_at
+        timestamptz updated_at
     }
     CAMPUS {
         string id
         string name
+        string description
+        string user_owner_id
+        timestamptz created_at
+        timestamptz updated_at
     }
     PROGRAM {
         string id
         string name
+        string description
         string campus_id
+        bool active
+        timestamptz created_at
+        timestamptz updated_at
     }
     COURSE {
         string id
         string name
+        string description
         string program_id
-        int    year
-        int    semester
+        int year
+        int semester
+        timestamptz created_at
+        timestamptz updated_at
     }
     STUDENT {
         string id
         string student_id
+        string name
+        string phone
+        string email
+        string annotation
         string status
+        bool consent
+        timestamptz created_at
+        timestamptz updated_at
     }
     ENROLLMENT {
         string id
         string course_id
         string student_id
+        timestamptz created_at
+        timestamptz updated_at
     }
     INVITE {
-        string code
+        string id
         string course_id
-        datetime expires_at
+        string code
+        bool active
+        timestamp expires_at
+        timestamp created_at
+        timestamp updated_at
     }
     WHATSAPP_INSTANCE {
         string id
         string instance_name
         string phone
+        string connection_status
+        string user_id
+        timestamptz created_at
+        timestamptz updated_at
     }
     SMTP_INSTANCE {
         string id
-        string email
         string host
-        int    port
-        string iv
+        int port
+        string email
+        bytea password
+        bytea iv
+        string user_id
+        string auth_mode
+        string provider
+        bytea oauth_payload
+        bytea oauth_iv
+        timestamp token_expires_at
+        timestamptz created_at
+        timestamptz updated_at
     }
     MESSAGE_LOG {
         string id
+        string student_id
         string channel
-        string status
-        string recipient
+        bool success
+        string error_text
+        string subject
+        string body
+        string smtp_id
+        string whatsapp_instance_id
+        string attachment_names
+        int attachment_count
+        timestamp created_at
     }
 ```
 
@@ -383,7 +452,7 @@ migrate -path migrations -database "$POSTGRES_DATABASE_URL" up
 - Swagger gerado em `docs/` (origem: `cmd/main/main.go` via `swag init`).
 - OAuth de email com Gmail: `docs/oauth-email-setup.md`.
 - WhatsApp/Evolution: `docs/whatsapp-evolution.md`.
-- Banco: migrations incluem `invites`, `enrollments`, `students`, `courses`, `programs`, `campuses`, `users`, `smtp_instances`, `whatsapp_instances`.
+- Banco: migrations incluem `users`, `campuses`, `programs`, `courses`, `students`, `enrollments`, `invites`, `smtp_instances`, `whatsapp_instances` e `message_logs`.
 
 ### Fluxo de uso rápido
 1. Preencha `.env`/`.env.development` conforme `example.env`.
