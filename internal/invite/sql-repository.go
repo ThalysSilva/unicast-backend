@@ -3,6 +3,7 @@ package invite
 import (
 	"context"
 	"database/sql"
+	"strings"
 	"time"
 
 	"github.com/ThalysSilva/unicast-backend/pkg/customerror"
@@ -61,9 +62,9 @@ func (r *sqlRepository) FindByCode(ctx context.Context, code string) (*Invite, e
 	query := `
         SELECT id, course_id, code, expires_at, active, created_at, updated_at
         FROM invites
-        WHERE code = $1
+        WHERE UPPER(code) = UPPER($1)
     `
-	row := r.db.QueryRowContext(ctx, query, code)
+	row := r.db.QueryRowContext(ctx, query, strings.TrimSpace(code))
 
 	return scanInvite(row, "inviteRepository: findByCode")
 }

@@ -2,6 +2,7 @@ package invite
 
 import (
 	"io"
+	"strings"
 	"time"
 
 	"github.com/ThalysSilva/unicast-backend/pkg/api"
@@ -166,7 +167,7 @@ func (h *handler) SelfRegister() gin.HandlerFunc {
 			return
 		}
 
-		code := c.Param("code")
+		code := strings.ToUpper(strings.TrimSpace(c.Param("code")))
 
 		err := h.service.SelfRegister(c.Request.Context(), code, input.StudentID, input.Name, input.Phone, input.Email, input.Consent)
 		if err != nil {
