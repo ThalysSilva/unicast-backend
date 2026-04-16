@@ -11,10 +11,10 @@ Backend em Go para fortalecer a comunicação docente–discente. Permite ao pro
 
 ### Estrutura (resumo)
 - `cmd/main/main.go`: inicialização, DI dos repositórios/serviços e rotas.
-- `internal/*`: módulos de domínio (auth, campus, program, course, student, enrollment, invite, smtp, whatsapp, user).
+- `internal/*`: módulos de domínio (auth, campus, program, course, student, enrollment, invite, message, smtp, whatsapp, user).
 - `pkg/database`: abstrações de transação e helpers SQL.
 - `migrations/`: migrações SQL (Postgres).
-- `docs/`: documentação Swagger gerada pelo `swag`.
+- `docs/`: documentação Swagger gerada pelo `swag` e guias operacionais manuais.
 
 ### Pré-requisitos
 - Go 1.24.x instalado.
@@ -52,15 +52,43 @@ Swagger disponível em `http://localhost:${API_PORT}/swagger/index.html`.
 - **Enrollments**: vínculo aluno ↔ disciplina.
 - **Invites**: professor cria código curto para a disciplina (`POST /invite/:courseId`); aluno usa `POST /invite/self-register/:code` com `studentId`, `name`, `phone`, `email`. Backend valida vínculo (enrollment) e status `PENDING` antes de ativar.
 - **Importação de alunos**: `POST /course/:courseId/students/import?mode=upsert|clean` (CSV multipart em `file`). Colunas aceitas: `studentId` (obrigatória), `name`, `phone`, `email`, `status` (1/2/3/4/5 ou ACTIVE/LOCKED/GRADUATED/CANCELED/PENDING). `mode=clean` remove matrículas do curso antes de inserir. Regras: se o aluno não existir, apenas o `studentId` é salvo com status `PENDING`; status pode ser atualizado sempre; dados de contato só são atualizados se o aluno já tiver algum contato salvo (cadastro próprio); contatos enviados para quem nunca se cadastrou são ignorados e logados.
-- **SMTP/WhatsApp**: criação/listagem de instâncias de envio.
-- **OAuth de Email**: para Gmail/Google, veja `docs/oauth-email-setup.md`.
-- **WhatsApp Instâncias**: além do CRUD de instâncias, expõe connect/status/logout/restart; criação já retorna QR/pairing code para parear.
-- **Mensagens**: `POST /message/send` envia e-mail e WhatsApp para alunos; logs de entrega ficam em `message_logs`.
+- **SMTP/Email**: criação/listagem de instâncias de envio por senha SMTP ou OAuth.
+- **OAuth de Email**: para Gmail/Google via Gmail API, veja `docs/oauth-email-setup.md`.
+- **WhatsApp Instâncias**: além do CRUD de instâncias, expõe connect/status/logout/restart; criação já retorna QR/pairing code para parear via Evolution API.
+- **Mensagens**: `POST /message/send` envia e-mail e WhatsApp para alunos; aceita anexos em base64 ou URL; logs de entrega ficam em `message_logs`.
 - **Backdoor admin**: `POST /backdoor/reset-password` com `ADMIN_SECRET` permite reset de senha por `userId` ou `email` para recuperar acesso.
+
+#### Envio de mensagens
+- O endpoint principal é `POST /message/send`.
+- É necessário informar pelo menos um canal: `smtp_id`, `whatsapp_id`, ou ambos.
+- `to` recebe os IDs internos dos alunos.
+- `subject` é usado como assunto no e-mail e como título em negrito no WhatsApp: `*Assunto*`, seguido de uma linha em branco e do corpo.
+- `body` é o corpo enviado por e-mail e WhatsApp.
+- `attachments` aceita itens com `fileName` e `data` em base64, ou `fileName` e `url`.
+- No WhatsApp, anexos são enviados pela Evolution como `image`, `video`, `audio` ou `document`, conforme o MIME/extensão do arquivo.
+- Para detalhes do contrato WhatsApp/Evolution, veja `docs/whatsapp-evolution.md`.
+
+Exemplo:
+
+```json
+{
+  "smtp_id": "uuid-da-instancia-smtp",
+  "whatsapp_id": "uuid-da-instancia-whatsapp",
+  "subject": "Aviso importante",
+  "body": "A aula foi remarcada para sexta-feira.",
+  "to": ["uuid-do-aluno"],
+  "attachments": [
+    {
+      "fileName": "comunicado.pdf",
+      "data": "JVBERi0xLjcK..."
+    }
+  ]
+}
+```
 
 ### Segurança e credenciais
 - **Tokens**: JWT para acesso/refresh; JWE com chave de 32 bytes hex para proteger tokens sensíveis.
-- **SMTP**: credenciais armazenadas com criptografia (ver `internal/encryption` / `smtp`), usando `JWE_SECRET` para cifrar dados sensíveis antes de persistir.
+- **SMTP/Email**: credenciais de senha SMTP são cifradas com segredo fornecido pelo usuário; tokens OAuth ficam cifrados com o segredo global do backend.
 - **Env vars**: segredos ficam no `.env`/`.env.development`. Não commitá-los; use `example.env` como base.
 - **Ownership**: operações sensíveis (campus/program/course/invite) conferem o `userID` do token ao dono do recurso.
 - **Invite codes**: códigos curtos únicos por disciplina; validados como ativos/não expirados e vinculados ao enrollment, garantindo que apenas alunos pré-cadastrados possam ativar seus dados.
@@ -141,7 +169,7 @@ sequenceDiagram
     Professor->>API: POST /message/send (Bearer)
     API->>DB: resolve alunos/contatos e instâncias (SMTP/WA)
     API->>Mail: envia email
-    API->>Evo: envia WhatsApp (texto/media)
+    API->>Evo: envia WhatsApp (sendText/sendMedia)
     API->>DB: grava message_logs (status, canais, destinatários)
     API-->>Professor: resposta com falhas por canal (se houver)
 ```
@@ -353,6 +381,8 @@ migrate -path migrations -database "$POSTGRES_DATABASE_URL" up
 
 ### Referências úteis
 - Swagger gerado em `docs/` (origem: `cmd/main/main.go` via `swag init`).
+- OAuth de email com Gmail: `docs/oauth-email-setup.md`.
+- WhatsApp/Evolution: `docs/whatsapp-evolution.md`.
 - Banco: migrations incluem `invites`, `enrollments`, `students`, `courses`, `programs`, `campuses`, `users`, `smtp_instances`, `whatsapp_instances`.
 
 ### Fluxo de uso rápido
@@ -362,6 +392,7 @@ migrate -path migrations -database "$POSTGRES_DATABASE_URL" up
 4. Gere/swagger se precisar: `swag init -g cmd/main/main.go` (ou use o gerado em `docs/`).
 5. Use `/auth/register` e `/auth/login` para obter tokens e chamar os demais endpoints protegidos (Bearer).
 6. Cadastre campus/program/course; crie instâncias de SMTP/WhatsApp; crie invites para disciplinas; importe matrículas por curso se quiser (`/course/:courseId/students/import`); alunos finalizam o cadastro via invite `POST /invite/self-register/:code`.
+7. Para testar envio, pareie uma instância WhatsApp, conecte uma conta de email por SMTP/OAuth se necessário, e use `POST /message/send` com `smtp_id`, `whatsapp_id`, ou ambos.
 
 ### To-do / Roadmap
 - Verifique o board no [Notion](https://www.notion.so/1c702239900d80b7b24dc911e23ed2a4?v=1c702239900d8012923e000c184e26af).

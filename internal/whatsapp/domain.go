@@ -5,7 +5,9 @@ import (
 	"database/sql"
 	"encoding/base64"
 	"errors"
+	"mime"
 	"net/http"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -29,12 +31,12 @@ func SendText(instanceName, number, text string) error {
 
 // SendMedia envia um attachment via Evolution API (media pode ser URL ou base64).
 func SendMedia(instanceName, number string, fileName string, data []byte, caption string) (*sendMediaResponse, error) {
-	mime := http.DetectContentType(data)
+	mime := detectMediaMIME(data, fileName)
 	mediaType := inferMediaType(mime)
 	encoded := base64.StdEncoding.EncodeToString(data)
 
 	return sendEvolutionMedia(instanceName, sendMediaPayload{
-		Number:    number,
+		Number:    evolutionRecipientJID(number),
 		Media:     encoded,
 		MediaType: mediaType,
 		MimeType:  mime,
@@ -45,10 +47,13 @@ func SendMedia(instanceName, number string, fileName string, data []byte, captio
 
 // SendMediaURL envia um attachment hospedado por URL via Evolution API.
 func SendMediaURL(instanceName, number string, mediaURL string, fileName string, caption string) (*sendMediaResponse, error) {
+	mime := detectMediaMIME(nil, fileName)
+
 	return sendEvolutionMedia(instanceName, sendMediaPayload{
-		Number:    number,
+		Number:    evolutionRecipientJID(number),
 		Media:     mediaURL,
-		MediaType: inferMediaType(""),
+		MediaType: inferMediaType(mime),
+		MimeType:  mime,
 		FileName:  fileName,
 		Caption:   caption,
 	})
@@ -76,6 +81,22 @@ func NormalizeNumber(raw, defaultCountryCode string) (string, error) {
 
 	// Caso contrário, prefixa o DDI e retorna.
 	return "+" + defaultCountryCode + num, nil
+}
+
+func evolutionRecipientJID(number string) string {
+	number = strings.TrimSpace(number)
+	if strings.Contains(number, "@") {
+		return number
+	}
+
+	digits := make([]rune, 0, len(number))
+	for _, r := range number {
+		if r >= '0' && r <= '9' {
+			digits = append(digits, r)
+		}
+	}
+
+	return string(digits) + "@s.whatsapp.net"
 }
 
 // Repository define operações para instâncias WhatsApp.
@@ -107,4 +128,24 @@ func inferMediaType(mime string) string {
 		return "document"
 	}
 	return "document"
+}
+
+func detectMediaMIME(data []byte, fileName string) string {
+	extensionMIME := mime.TypeByExtension(strings.ToLower(filepath.Ext(fileName)))
+	if extensionMIME != "" {
+		if idx := strings.Index(extensionMIME, ";"); idx >= 0 {
+			extensionMIME = extensionMIME[:idx]
+		}
+	}
+
+	if len(data) == 0 {
+		return extensionMIME
+	}
+
+	detectedMIME := http.DetectContentType(data)
+	if extensionMIME != "" && (detectedMIME == "application/octet-stream" || detectedMIME == "text/plain; charset=utf-8") {
+		return extensionMIME
+	}
+
+	return detectedMIME
 }

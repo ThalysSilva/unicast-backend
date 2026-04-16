@@ -56,14 +56,18 @@ type newEvolutionPayload struct {
 }
 
 type sendTextPayload struct {
-	InstanceID string `json:"instanceId"`
-	Number     string `json:"number"`
-	Text       string `json:"text"`
+	Number string `json:"number"`
+	Text   string `json:"text"`
 }
 
 type sendTextResponse struct {
-	Status  string `json:"status"`
-	Message string `json:"message"`
+	Key struct {
+		RemoteJid string `json:"remoteJid"`
+		FromMe    bool   `json:"fromMe"`
+		ID        string `json:"id"`
+	} `json:"key"`
+	Status  string          `json:"status"`
+	Message json.RawMessage `json:"message"`
 }
 
 type deleteInstanceResponse struct {
@@ -80,14 +84,14 @@ type sendMediaPayload struct {
 }
 
 type sendMediaResponse struct {
-	Status  string `json:"status"`
-	Message string `json:"message"`
+	Status  string          `json:"status"`
+	Message json.RawMessage `json:"message"`
 	Key     struct {
 		RemoteJid string `json:"remoteJid"`
 		FromMe    bool   `json:"fromMe"`
 		ID        string `json:"id"`
 	} `json:"key"`
-	MessageTimestamp string `json:"messageTimestamp"`
+	MessageTimestamp json.RawMessage `json:"messageTimestamp"`
 }
 
 type connectResponse struct {
@@ -185,18 +189,17 @@ func createEvolutionInstance(phone, instanceName string, qrCode bool) (createdNa
 }
 
 // sendEvolutionText envia uma mensagem de texto simples usando a Evolution API.
-func sendEvolutionText(instanceID, number, text string) error {
+func sendEvolutionText(instanceName, number, text string) error {
 	body, err := jsonFunc(sendTextPayload{
-		InstanceID: instanceID,
-		Number:     number,
-		Text:       text,
+		Number: evolutionRecipientJID(number),
+		Text:   text,
 	})
 	if err != nil {
 		return customerror.Trace("sendEvolutionText: marshal", err)
 	}
 
 	payload := bytes.NewBuffer(body)
-	resp, err := httpClientEvolution[sendTextResponse]("POST", "/message/sendText", payload)
+	resp, err := httpClientEvolution[sendTextResponse]("POST", "/message/sendText/"+instanceName, payload)
 	if err != nil {
 		return err
 	}

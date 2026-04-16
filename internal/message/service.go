@@ -40,12 +40,12 @@ type service struct {
 }
 
 var (
-	ErrSmtpNotFound     = customerror.Make("smtp não encontrado.", 404, errors.New("ErrSmtpNotFound"))
-	ErrWhatsAppNotFound = customerror.Make("whatsapp não encontrado.", 404, errors.New("ErrWhatsAppNotFound"))
-	ErrStudentsNotFound = customerror.Make("estudantes não encontrado.", 404, errors.New("ErrStudentsNotFound"))
+	ErrSmtpNotFound      = customerror.Make("smtp não encontrado.", 404, errors.New("ErrSmtpNotFound"))
+	ErrWhatsAppNotFound  = customerror.Make("whatsapp não encontrado.", 404, errors.New("ErrWhatsAppNotFound"))
+	ErrStudentsNotFound  = customerror.Make("estudantes não encontrado.", 404, errors.New("ErrStudentsNotFound"))
 	ErrNoChannelSelected = customerror.Make("selecione ao menos um canal de envio", 400, errors.New("ErrNoChannelSelected"))
-	ErrPhoneMissing     = customerror.Make("estudante sem telefone configurado", 400, errors.New("ErrPhoneMissing"))
-	ErrPhoneInvalid     = customerror.Make("telefone inválido para WhatsApp", 400, errors.New("ErrPhoneInvalid"))
+	ErrPhoneMissing      = customerror.Make("estudante sem telefone configurado", 400, errors.New("ErrPhoneMissing"))
+	ErrPhoneInvalid      = customerror.Make("telefone inválido para WhatsApp", 400, errors.New("ErrPhoneInvalid"))
 )
 
 func NewMessageService(whatsAppRepository whatsapp.Repository, smtpService smtp.Service, smtpRepository smtp.Repository, userRepository user.Repository, studentRepository student.Repository, logRepository LogRepository, jweSecret []byte) Service {
@@ -112,7 +112,7 @@ func (s *service) Send(ctx context.Context, message *Message) (emailsFails, what
 
 	whatsappFailedSlice := []student.Student{}
 	if waInstance != nil {
-		whatsappFailedSlice = s.sendWhats(ctx, waInstance, students, message.Body, rawAttachments)
+		whatsappFailedSlice = s.sendWhats(ctx, waInstance, students, formatWhatsAppBody(message.Subject, message.Body), rawAttachments)
 	}
 
 	s.logResults(ctx, students, emailFailedSlice, whatsappFailedSlice, message, attachmentNamesStr)
@@ -275,6 +275,14 @@ func studentsToValues(students []*student.Student) []student.Student {
 		}
 	}
 	return out
+}
+
+func formatWhatsAppBody(subject, body string) string {
+	subject = strings.TrimSpace(strings.ReplaceAll(subject, "\n", " "))
+	if subject == "" {
+		return body
+	}
+	return fmt.Sprintf("*%s*\n\n%s", subject, body)
 }
 
 func (s *service) sendWhats(ctx context.Context, waInstance *whatsapp.Instance, students []*student.Student, body string, attachments []Attachment) []student.Student {
