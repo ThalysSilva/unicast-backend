@@ -103,6 +103,13 @@ definitions:
       message:
         type: string
     type: object
+  github_com_ThalysSilva_unicast-backend_pkg_api.DefaultResponse-internal_invite_Invite:
+    properties:
+      data:
+        $ref: '#/definitions/internal_invite.Invite'
+      message:
+        type: string
+    type: object
   github_com_ThalysSilva_unicast-backend_pkg_api.DefaultResponse-internal_message_MessageDataResponse:
     properties:
       data:
@@ -277,6 +284,8 @@ definitions:
         type: string
       name:
         type: string
+      program_id:
+        type: string
       semester:
         type: integer
       year:
@@ -284,6 +293,7 @@ definitions:
     required:
     - description
     - name
+    - program_id
     - semester
     - year
     type: object
@@ -298,6 +308,19 @@ definitions:
       year:
         type: integer
     type: object
+  internal_invite.Invite:
+    properties:
+      active:
+        type: boolean
+      code:
+        type: string
+      courseId:
+        type: string
+      expiresAt:
+        type: string
+      id:
+        type: string
+    type: object
   internal_invite.createInviteInput:
     properties:
       expiresAt:
@@ -305,6 +328,8 @@ definitions:
     type: object
   internal_invite.selfRegisterInput:
     properties:
+      consent:
+        type: boolean
       email:
         type: string
       name:
@@ -362,12 +387,8 @@ definitions:
         type: string
     required:
     - body
-    - from
-    - jwe
-    - smtp_id
     - subject
     - to
-    - whatsapp_id
     type: object
   internal_program.Program:
     properties:
@@ -409,24 +430,22 @@ definitions:
     type: object
   internal_smtp.Instance:
     properties:
+      authMode:
+        type: string
       email:
         type: string
       host:
         type: string
       id:
         type: string
-      iv:
-        type: string
-      password:
-        type: string
       port:
         type: integer
+      provider:
+        type: string
+      tokenExpiresAt:
+        type: string
     required:
     - email
-    - host
-    - iv
-    - password
-    - port
     type: object
   internal_smtp.createInstanceInput:
     properties:
@@ -493,28 +512,18 @@ definitions:
     - StudentStatusGraduated
     - StudentStatusLocked
     - StudentStatusPending
-  internal_student.createStudentInput:
+  internal_student.addStudentToCourseInput:
     properties:
-      annotation:
-        type: string
-      email:
-        type: string
-      name:
-        type: string
-      phone:
-        type: string
-      status:
-        allOf:
-        - $ref: '#/definitions/internal_student.StudentStatus'
-        enum:
-        - ACTIVE
-        - CANCELED
-        - GRADUATED
-        - LOCKED
       studentId:
         type: string
     required:
-    - status
+    - studentId
+    type: object
+  internal_student.createStudentInput:
+    properties:
+      studentId:
+        type: string
+    required:
     - studentId
     type: object
   internal_user.createUserInput:
@@ -550,6 +559,8 @@ definitions:
     type: object
   internal_whatsapp.Instance:
     properties:
+      connectionStatus:
+        type: string
       id:
         type: string
       instanceName:
@@ -804,6 +815,23 @@ paths:
       tags:
       - campus
   /course:
+    get:
+      parameters:
+      - description: Bearer token
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.DefaultResponse-array_internal_course_Course'
+      summary: Lista todas as disciplinas do usuário
+      tags:
+      - course
     post:
       consumes:
       - application/json
@@ -829,6 +857,39 @@ paths:
       summary: Cria uma disciplina
       tags:
       - course
+  /course/{courseId}/students:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Bearer token
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Course ID
+        in: path
+        name: courseId
+        required: true
+        type: string
+      - description: Matrícula do aluno
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/internal_student.addStudentToCourseInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.MessageResponse'
+      security:
+      - BearerAuth: []
+      summary: Adiciona uma matrícula individual a uma disciplina
+      tags:
+      - student
   /course/{courseId}/students/import:
     post:
       consumes:
@@ -929,6 +990,11 @@ paths:
         name: Authorization
         required: true
         type: string
+      - description: Program ID
+        in: path
+        name: programId
+        required: true
+        type: string
       produces:
       - application/json
       responses:
@@ -936,7 +1002,7 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.DefaultResponse-array_internal_course_Course'
-      summary: Lista disciplinas do usuário
+      summary: Lista disciplinas por curso
       tags:
       - course
   /invite/{courseId}:
@@ -962,13 +1028,40 @@ paths:
       produces:
       - application/json
       responses:
-        "200":
-          description: OK
+        "201":
+          description: Created
           schema:
-            $ref: '#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.DefaultResponse-map_string_string'
+            $ref: '#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.DefaultResponse-internal_invite_Invite'
       security:
       - BearerAuth: []
       summary: Cria um convite para um curso
+      tags:
+      - invite
+  /invite/{courseId}/current:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: Bearer token
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Course ID
+        in: path
+        name: courseId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.DefaultResponse-internal_invite_Invite'
+      security:
+      - BearerAuth: []
+      summary: Busca o convite mais recente de um curso
       tags:
       - invite
   /invite/self-register/{code}:
@@ -1167,6 +1260,67 @@ paths:
       security:
       - BearerAuth: []
       summary: Cria uma instância SMTP
+      tags:
+      - smtp
+  /smtp/instance/{id}:
+    delete:
+      parameters:
+      - description: Bearer token
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Instance ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.MessageResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Remove uma instância SMTP
+      tags:
+      - smtp
+  /smtp/instance/test:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Bearer token
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Dados SMTP
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/internal_smtp.createInstanceInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.MessageResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Testa uma conexão SMTP
       tags:
       - smtp
   /student:

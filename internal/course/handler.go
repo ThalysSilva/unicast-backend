@@ -29,6 +29,7 @@ type updateCourseInput struct {
 
 type Handler interface {
 	Create() gin.HandlerFunc
+	GetCourses() gin.HandlerFunc
 	GetCoursesByProgramID() gin.HandlerFunc
 	Update() gin.HandlerFunc
 	Delete() gin.HandlerFunc
@@ -65,25 +66,41 @@ func (h *handler) Create() gin.HandlerFunc {
 	}
 }
 
-// @Summary Lista disciplinas do usuário
+// @Summary Lista todas as disciplinas do usuário
 // @Tags course
 // @Produce json
 // @Param Authorization header string true "Bearer token"
+// @Success 200 {object} api.DefaultResponse[[]Course]
+// @Router /course [get]
+func (h *handler) GetCourses() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		userID := c.GetString("userID")
+		instances, err := h.service.GetCoursesByUserID(c.Request.Context(), userID)
+		if err != nil {
+			c.Error(err)
+			return
+		}
+		items := make([]Course, 0, len(instances))
+		for _, course := range instances {
+			if course != nil {
+				items = append(items, *course)
+			}
+		}
+		c.JSON(200, api.DefaultResponse[[]Course]{Message: "Disciplinas listadas com sucesso", Data: items})
+	}
+}
+
+// @Summary Lista disciplinas por curso
+// @Tags course
+// @Produce json
+// @Param Authorization header string true "Bearer token"
+// @Param programId path string true "Program ID"
 // @Success 200 {object} api.DefaultResponse[[]Course]
 // @Router /course/{programId} [get]
 func (h *handler) GetCoursesByProgramID() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		programID := c.Param("programId")
-		userID := c.GetString("userID")
-		var (
-			instances []*Course
-			err error
-		)
-		if programID == "any" {
-			instances, err = h.service.GetCoursesByUserID(c.Request.Context(), userID)
-		} else {
-			instances, err = h.service.GetCoursesByProgramID(c.Request.Context(), programID)
-		}
+		instances, err := h.service.GetCoursesByProgramID(c.Request.Context(), programID)
 		if err != nil {
 			c.Error(err)
 			return

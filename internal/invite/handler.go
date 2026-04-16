@@ -45,7 +45,7 @@ func NewHandler(service Service) Handler {
 // @Security BearerAuth
 // @Param courseId path string true "Course ID"
 // @Param body body createInviteInput false "Expiração opcional"
-// @Success 201 {object} api.DefaultResponse[*Invite]
+// @Success 201 {object} api.DefaultResponse[Invite]
 // @Router /invite/{courseId} [post]
 func (h *handler) Create() gin.HandlerFunc {
 	return func(c *gin.Context) {
@@ -77,7 +77,7 @@ func (h *handler) Create() gin.HandlerFunc {
 // @Param Authorization header string true "Bearer token"
 // @Security BearerAuth
 // @Param courseId path string true "Course ID"
-// @Success 200 {object} api.DefaultResponse[*Invite]
+// @Success 200 {object} api.DefaultResponse[Invite]
 // @Router /invite/{courseId}/current [get]
 func (h *handler) GetCurrent() gin.HandlerFunc {
 	return func(c *gin.Context) {

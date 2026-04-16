@@ -336,6 +336,32 @@ const docTemplate = `{
             }
         },
         "/course": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "course"
+                ],
+                "summary": "Lista todas as disciplinas do usuário",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Bearer token",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.DefaultResponse-array_internal_course_Course"
+                        }
+                    }
+                }
+            },
             "post": {
                 "consumes": [
                     "application/json"
@@ -362,6 +388,58 @@ const docTemplate = `{
                         "required": true,
                         "schema": {
                             "$ref": "#/definitions/internal_course.createCourseInput"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.MessageResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/course/{courseId}/students": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "student"
+                ],
+                "summary": "Adiciona uma matrícula individual a uma disciplina",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Bearer token",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Course ID",
+                        "name": "courseId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Matrícula do aluno",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/internal_student.addStudentToCourseInput"
                         }
                     }
                 ],
@@ -523,13 +601,20 @@ const docTemplate = `{
                 "tags": [
                     "course"
                 ],
-                "summary": "Lista disciplinas do usuário",
+                "summary": "Lista disciplinas por curso",
                 "parameters": [
                     {
                         "type": "string",
                         "description": "Bearer token",
                         "name": "Authorization",
                         "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Program ID",
+                        "name": "programId",
+                        "in": "path",
                         "required": true
                     }
                 ],
@@ -625,10 +710,53 @@ const docTemplate = `{
                     }
                 ],
                 "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.DefaultResponse-internal_invite_Invite"
+                        }
+                    }
+                }
+            }
+        },
+        "/invite/{courseId}/current": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "invite"
+                ],
+                "summary": "Busca o convite mais recente de um curso",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Bearer token",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Course ID",
+                        "name": "courseId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.DefaultResponse-map_string_string"
+                            "$ref": "#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.DefaultResponse-internal_invite_Invite"
                         }
                     }
                 }
@@ -893,6 +1021,103 @@ const docTemplate = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.MessageResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/smtp/instance/test": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "smtp"
+                ],
+                "summary": "Testa uma conexão SMTP",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Bearer token",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "description": "Dados SMTP",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/internal_smtp.createInstanceInput"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.MessageResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/smtp/instance/{id}": {
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "smtp"
+                ],
+                "summary": "Remove uma instância SMTP",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Bearer token",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Instance ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.MessageResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.ErrorResponse"
                         }
                     }
                 }
@@ -1657,6 +1882,17 @@ const docTemplate = `{
                 }
             }
         },
+        "github_com_ThalysSilva_unicast-backend_pkg_api.DefaultResponse-internal_invite_Invite": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/internal_invite.Invite"
+                },
+                "message": {
+                    "type": "string"
+                }
+            }
+        },
         "github_com_ThalysSilva_unicast-backend_pkg_api.DefaultResponse-internal_message_MessageDataResponse": {
             "type": "object",
             "properties": {
@@ -1920,6 +2156,7 @@ const docTemplate = `{
             "required": [
                 "description",
                 "name",
+                "program_id",
                 "semester",
                 "year"
             ],
@@ -1928,6 +2165,9 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "name": {
+                    "type": "string"
+                },
+                "program_id": {
                     "type": "string"
                 },
                 "semester": {
@@ -1955,6 +2195,26 @@ const docTemplate = `{
                 }
             }
         },
+        "internal_invite.Invite": {
+            "type": "object",
+            "properties": {
+                "active": {
+                    "type": "boolean"
+                },
+                "code": {
+                    "type": "string"
+                },
+                "courseId": {
+                    "type": "string"
+                },
+                "expiresAt": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                }
+            }
+        },
         "internal_invite.createInviteInput": {
             "type": "object",
             "properties": {
@@ -1969,6 +2229,9 @@ const docTemplate = `{
                 "studentId"
             ],
             "properties": {
+                "consent": {
+                    "type": "boolean"
+                },
                 "email": {
                     "type": "string"
                 },
@@ -2021,12 +2284,8 @@ const docTemplate = `{
             "type": "object",
             "required": [
                 "body",
-                "from",
-                "jwe",
-                "smtp_id",
                 "subject",
-                "to",
-                "whatsapp_id"
+                "to"
             ],
             "properties": {
                 "attachments": {
@@ -2121,13 +2380,12 @@ const docTemplate = `{
         "internal_smtp.Instance": {
             "type": "object",
             "required": [
-                "email",
-                "host",
-                "iv",
-                "password",
-                "port"
+                "email"
             ],
             "properties": {
+                "authMode": {
+                    "type": "string"
+                },
                 "email": {
                     "type": "string"
                 },
@@ -2137,14 +2395,14 @@ const docTemplate = `{
                 "id": {
                     "type": "string"
                 },
-                "iv": {
-                    "type": "string"
-                },
-                "password": {
-                    "type": "string"
-                },
                 "port": {
                     "type": "integer"
+                },
+                "provider": {
+                    "type": "string"
+                },
+                "tokenExpiresAt": {
+                    "type": "string"
                 }
             }
         },
@@ -2241,38 +2499,23 @@ const docTemplate = `{
                 "StudentStatusPending"
             ]
         },
-        "internal_student.createStudentInput": {
+        "internal_student.addStudentToCourseInput": {
             "type": "object",
             "required": [
-                "status",
                 "studentId"
             ],
             "properties": {
-                "annotation": {
+                "studentId": {
                     "type": "string"
-                },
-                "email": {
-                    "type": "string"
-                },
-                "name": {
-                    "type": "string"
-                },
-                "phone": {
-                    "type": "string"
-                },
-                "status": {
-                    "enum": [
-                        "ACTIVE",
-                        "CANCELED",
-                        "GRADUATED",
-                        "LOCKED"
-                    ],
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/internal_student.StudentStatus"
-                        }
-                    ]
-                },
+                }
+            }
+        },
+        "internal_student.createStudentInput": {
+            "type": "object",
+            "required": [
+                "studentId"
+            ],
+            "properties": {
                 "studentId": {
                     "type": "string"
                 }
@@ -2331,6 +2574,9 @@ const docTemplate = `{
                 "phone"
             ],
             "properties": {
+                "connectionStatus": {
+                    "type": "string"
+                },
                 "id": {
                     "type": "string"
                 },

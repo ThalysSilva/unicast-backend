@@ -449,7 +449,7 @@ migrate -path migrations -database "$POSTGRES_DATABASE_URL" up
 ```
 
 ### Referências úteis
-- Swagger gerado em `docs/` (origem: `cmd/main/main.go` via `swag init`).
+- Swagger gerado em `docs/` (origem: `cmd/main/main.go` via `swag init -g cmd/main/main.go --parseInternal --parseDependency --parseDepth 1`).
 - OAuth de email com Gmail: `docs/oauth-email-setup.md`.
 - WhatsApp/Evolution: `docs/whatsapp-evolution.md`.
 - Banco: migrations incluem `users`, `campuses`, `programs`, `courses`, `students`, `enrollments`, `invites`, `smtp_instances`, `whatsapp_instances` e `message_logs`.
@@ -458,7 +458,7 @@ migrate -path migrations -database "$POSTGRES_DATABASE_URL" up
 1. Preencha `.env`/`.env.development` conforme `example.env`.
 2. `docker-compose -f docker-compose-dev.yaml up -d` para dependências (Postgres, Redis, Evolution, Mongo, PgAdmin).
 3. `./run.sh` ou `air` (hot reload) para subir a API.
-4. Gere/swagger se precisar: `swag init -g cmd/main/main.go` (ou use o gerado em `docs/`).
+4. Gere o Swagger se precisar: `swag init -g cmd/main/main.go --parseInternal --parseDependency --parseDepth 1` (ou use o gerado em `docs/`).
 5. Use `/auth/register` e `/auth/login` para obter tokens e chamar os demais endpoints protegidos (Bearer).
 6. Cadastre campus/program/course; crie instâncias de SMTP/WhatsApp; crie invites para disciplinas; importe matrículas por curso se quiser (`/course/:courseId/students/import`); alunos finalizam o cadastro via invite `POST /invite/self-register/:code`.
 7. Para testar envio, pareie uma instância WhatsApp, conecte uma conta de email por SMTP/OAuth se necessário, e use `POST /message/send` com `smtp_id`, `whatsapp_id`, ou ambos.

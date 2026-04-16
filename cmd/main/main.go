@@ -117,6 +117,7 @@ func main() {
 	{
 		courseGroup.Use(middleware.UseAuthentication(secrets.AccessToken))
 		courseGroup.POST("", courseHandler.Create())
+		courseGroup.GET("", courseHandler.GetCourses())
 		courseGroup.GET("/:programId", courseHandler.GetCoursesByProgramID())
 		courseGroup.PUT("/:id", courseHandler.Update())
 		courseGroup.DELETE("/:id", courseHandler.Delete())
