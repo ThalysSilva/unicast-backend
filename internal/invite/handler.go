@@ -29,7 +29,7 @@ type selfRegisterInput struct {
 type Handler interface {
 	Create() gin.HandlerFunc
 	GetCurrent() gin.HandlerFunc
-	ListByCourse() gin.HandlerFunc
+	ListByDiscipline() gin.HandlerFunc
 	Delete() gin.HandlerFunc
 	SelfRegister() gin.HandlerFunc
 }
@@ -40,19 +40,19 @@ func NewHandler(service Service) Handler {
 	}
 }
 
-// @Summary Cria um convite para um curso
+// @Summary Cria um convite para uma disciplina
 // @Tags invite
 // @Accept json
 // @Produce json
 // @Param Authorization header string true "Bearer token"
 // @Security BearerAuth
-// @Param courseId path string true "Course ID"
+// @Param disciplineId path string true "Discipline ID"
 // @Param body body createInviteInput false "Expiração opcional"
 // @Success 201 {object} api.DefaultResponse[Invite]
-// @Router /invite/{courseId} [post]
+// @Router /invite/{disciplineId} [post]
 func (h *handler) Create() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		courseID := c.Param("courseId")
+		disciplineID := c.Param("disciplineId")
 		userID := c.GetString("userID")
 
 		var input createInviteInput
@@ -63,7 +63,7 @@ func (h *handler) Create() gin.HandlerFunc {
 			}
 		}
 
-		invite, err := h.service.Create(c.Request.Context(), courseID, userID, input.ExpiresAt)
+		invite, err := h.service.Create(c.Request.Context(), disciplineID, userID, input.ExpiresAt)
 		if err != nil {
 			customerror.HandleResponse(c, err)
 			return
@@ -73,21 +73,21 @@ func (h *handler) Create() gin.HandlerFunc {
 	}
 }
 
-// @Summary Busca o convite mais recente de um curso
+// @Summary Busca o convite mais recente de uma disciplina
 // @Tags invite
 // @Accept json
 // @Produce json
 // @Param Authorization header string true "Bearer token"
 // @Security BearerAuth
-// @Param courseId path string true "Course ID"
+// @Param disciplineId path string true "Discipline ID"
 // @Success 200 {object} api.DefaultResponse[Invite]
-// @Router /invite/{courseId}/current [get]
+// @Router /invite/{disciplineId}/current [get]
 func (h *handler) GetCurrent() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		courseID := c.Param("courseId")
+		disciplineID := c.Param("disciplineId")
 		userID := c.GetString("userID")
 
-		invite, err := h.service.GetCurrent(c.Request.Context(), courseID, userID)
+		invite, err := h.service.GetCurrent(c.Request.Context(), disciplineID, userID)
 		if err != nil {
 			customerror.HandleResponse(c, err)
 			return
@@ -103,15 +103,15 @@ func (h *handler) GetCurrent() gin.HandlerFunc {
 // @Produce json
 // @Param Authorization header string true "Bearer token"
 // @Security BearerAuth
-// @Param courseId path string true "Course ID"
+// @Param disciplineId path string true "Discipline ID"
 // @Success 200 {object} api.DefaultResponse[[]Invite]
-// @Router /invite/{courseId} [get]
-func (h *handler) ListByCourse() gin.HandlerFunc {
+// @Router /invite/{disciplineId} [get]
+func (h *handler) ListByDiscipline() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		courseID := c.Param("courseId")
+		disciplineID := c.Param("disciplineId")
 		userID := c.GetString("userID")
 
-		invites, err := h.service.ListByCourse(c.Request.Context(), courseID, userID)
+		invites, err := h.service.ListByDiscipline(c.Request.Context(), disciplineID, userID)
 		if err != nil {
 			customerror.HandleResponse(c, err)
 			return

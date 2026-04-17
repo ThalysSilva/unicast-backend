@@ -1,7 +1,7 @@
 
 ## Unicast
 
-Backend em Go para fortalecer a comunicação docente–discente. Permite ao professor cadastrar disciplinas e alunos (pré-cadastrados por matrícula) e enviar mensagens que chegam por múltiplos canais (WhatsApp e e-mail), reduzindo o risco de a informação passar despercebida. Inclui autenticação, gestão de campus/curso/disciplina, convites públicos com código curto para o auto-cadastro do aluno, e integrações de SMTP e WhatsApp.
+Backend em Go para fortalecer a comunicação docente–discente. Permite ao professor cadastrar disciplinas e alunos (pré-cadastrados por matrícula) e enviar mensagens que chegam por múltiplos canais (WhatsApp e e-mail), reduzindo o risco de a informação passar despercebida. Inclui autenticação, gestão de campus/curso/disciplina, convites públicos com código curto para o auto-cadastro do aluno, e integrações de Email e WhatsApp.
 
 ### Stack
 - Go 1.24.x (Gin, Swagger, JWT/JWE, PQ)
@@ -11,7 +11,7 @@ Backend em Go para fortalecer a comunicação docente–discente. Permite ao pro
 
 ### Estrutura (resumo)
 - `cmd/main/main.go`: inicialização, DI dos repositórios/serviços e rotas.
-- `internal/*`: módulos de domínio (auth, campus, program, course, student, enrollment, invite, message, smtp, whatsapp, user).
+- `internal/*`: módulos de domínio (auth, campus, program, discipline, student, enrollment, invite, message, smtp, whatsapp, user).
 - `pkg/database`: abstrações de transação e helpers SQL.
 - `migrations/`: migrações SQL (Postgres).
 - `docs/`: documentação Swagger gerada pelo `swag` e guias operacionais manuais.
@@ -47,12 +47,12 @@ Swagger disponível em `http://localhost:${API_PORT}/swagger/index.html`.
 
 ### Fluxos principais
 - **Auth**: `/auth/register`, `/auth/login`, `/auth/refresh`, `/auth/logout` (Bearer).
-- **Campus/Program/Course**: CRUD protegido; ownership validado por usuário.
+- **Campus/Program/Discipline**: CRUD protegido; ownership validado por usuário. No produto: `program` = curso e `discipline` = disciplina/oferta.
 - **Students**: pré-cadastro com status (PENDING, ACTIVE, etc.).
 - **Enrollments**: vínculo aluno ↔ disciplina.
-- **Invites**: professor cria código curto para a disciplina (`POST /invite/:courseId`); aluno usa `POST /invite/self-register/:code` com `studentId`, `name`, `phone`, `email`. Backend valida vínculo (enrollment) e status `PENDING` antes de ativar.
-- **Importação de alunos**: `POST /course/:courseId/students/import?mode=upsert|clean` (CSV multipart em `file`). Colunas aceitas: `studentId` (obrigatória), `name`, `phone`, `email`, `status` (1/2/3/4/5 ou ACTIVE/LOCKED/GRADUATED/CANCELED/PENDING). `mode=clean` remove matrículas do curso antes de inserir. Regras: se o aluno não existir, apenas o `studentId` é salvo com status `PENDING`; status pode ser atualizado sempre; dados de contato só são atualizados se o aluno já tiver algum contato salvo (cadastro próprio); contatos enviados para quem nunca se cadastrou são ignorados e logados.
-- **SMTP/Email**: criação/listagem de instâncias de envio por senha SMTP ou OAuth.
+- **Invites**: professor cria código curto para a disciplina (`POST /invite/:disciplineId`); aluno usa `POST /invite/self-register/:code` com `studentId`, `name`, `phone`, `email`. Backend valida o vínculo (`enrollment`), permite uma conclusão de auto-cadastro por vínculo da disciplina e ativa o aluno ao concluir.
+- **Importação de alunos**: `POST /discipline/:disciplineId/students/import?mode=upsert|clean` (CSV multipart em `file`). Colunas aceitas: `studentId` (obrigatória), `name`, `phone`, `email`, `status` (1/2/3/4/5 ou ACTIVE/LOCKED/GRADUATED/CANCELED/PENDING). `mode=clean` remove matrículas da disciplina antes de inserir. Regras: se o aluno não existir, apenas o `studentId` é salvo com status `PENDING`; status pode ser atualizado sempre; dados de contato só são atualizados se o aluno já tiver algum contato salvo (cadastro próprio); contatos enviados para quem nunca se cadastrou são ignorados e logados.
+- **Email**: criação/listagem de instâncias de envio por senha SMTP ou OAuth.
 - **OAuth de Email**: para Gmail/Google via Gmail API, veja `docs/oauth-email-setup.md`.
 - **WhatsApp Instâncias**: além do CRUD de instâncias, expõe connect/status/logout/restart; criação já retorna QR/pairing code para parear via Evolution API.
 - **Mensagens**: `POST /message/send` envia e-mail e WhatsApp para alunos; aceita anexos em base64 ou URL; logs de entrega ficam em `message_logs`.
@@ -88,10 +88,10 @@ Exemplo:
 
 ### Segurança e credenciais
 - **Tokens**: JWT para acesso/refresh; JWE com chave de 32 bytes hex para proteger tokens sensíveis.
-- **SMTP/Email**: credenciais de senha SMTP são cifradas com segredo fornecido pelo usuário; tokens OAuth ficam cifrados com o segredo global do backend.
+- **Email**: credenciais de senha SMTP são cifradas com segredo fornecido pelo usuário; tokens OAuth ficam cifrados com o segredo global do backend.
 - **Env vars**: segredos ficam no `.env`/`.env.development`. Não commitá-los; use `example.env` como base.
-- **Ownership**: operações sensíveis (campus/program/course/invite) conferem o `userID` do token ao dono do recurso.
-- **Invite codes**: códigos curtos únicos por disciplina; validados como ativos/não expirados e vinculados ao enrollment, garantindo que apenas alunos pré-cadastrados possam ativar seus dados.
+- **Ownership**: operações sensíveis (campus/program/discipline/invite) conferem o `userID` do token ao dono do recurso.
+- **Invite codes**: códigos curtos únicos por disciplina; validados como ativos/não expirados e vinculados ao enrollment, garantindo que apenas alunos pré-cadastrados possam ativar seus dados. O auto-cadastro é bloqueado depois da primeira conclusão naquele enrollment, sem impedir novos vínculos do mesmo aluno em outras disciplinas/ofertas.
 - **Backdoor**: rota administrativa protegida por `ADMIN_SECRET`; trate essa chave como segredo crítico.
   
 #### Modelo de criptografia SMTP
@@ -113,7 +113,7 @@ flowchart LR
         Auth["Auth/JWT/JWE"]
         Msg["Message Service"]
         Inv["Invite/Enrollment"]
-        SMTP["SMTP Service"]
+        SMTP["Email Service"]
         WA["WhatsApp Service"]
         Log["Message Logs"]
     end
@@ -148,12 +148,13 @@ sequenceDiagram
     participant DB as Postgres
     participant Aluno
 
-    Professor->>API: POST /invite/:courseId (Bearer)
-    API->>DB: cria invite (code, courseId, expiração)
+    Professor->>API: POST /invite/:disciplineId (Bearer)
+    API->>DB: cria invite (code, disciplineId, expiração)
     API-->>Professor: code
     Aluno->>API: POST /invite/self-register/:code {studentId, name, phone, email}
-    API->>DB: valida invite + enrollment PENDING
+    API->>DB: valida invite + enrollment não concluído
     API->>DB: atualiza aluno (contatos, status ACTIVE)
+    API->>DB: marca enrollment como concluído
     API-->>Aluno: mensagem de sucesso
 ```
 
@@ -226,8 +227,8 @@ classDiagram
       +Refresh(token)
     }
     class InviteService {
-      +Create(courseId, userId, expiresAt)
-      +SelfRegister(code, studentId, name, phone, email)
+      +Create(disciplineId, userId, expiresAt)
+      +SelfRegister(code, studentId, name, phone, email, consent)
     }
     class MessageService {
       +Send(message)
@@ -252,12 +253,12 @@ classDiagram
     class StudentService {
       +Create(studentId, name, phone, email, annotation, status)
       +Update(id, fields)
-      +ImportForCourse(courseId, mode, records)
+      +ImportForDiscipline(disciplineId, mode, records)
       +GetStudents(filters)
     }
     class EnrollmentRepo {
-      +FindByCourseAndStudent(...)
-      +DeleteByCourseID(...)
+      +FindByDisciplineAndStudent(...)
+      +DeleteByDisciplineID(...)
       +Create(...)
     }
     class StudentRepo {
@@ -266,7 +267,7 @@ classDiagram
       +FindByID(...)
       +FindByStudentID(...)
     }
-    class CourseRepo {
+    class DisciplineRepo {
       +FindByProgramID(...)
       +Update(...)
       +Delete(...)
@@ -304,9 +305,9 @@ erDiagram
     USER ||--o{ SMTP_INSTANCE : owns
 
     CAMPUS ||--o{ PROGRAM : contains
-    PROGRAM ||--o{ COURSE : contains
-    COURSE ||--o{ INVITE : issues
-    COURSE ||--o{ ENROLLMENT : has
+    PROGRAM ||--o{ DISCIPLINE : contains
+    DISCIPLINE ||--o{ INVITE : issues
+    DISCIPLINE ||--o{ ENROLLMENT : has
 
     STUDENT ||--o{ ENROLLMENT : participates
     STUDENT ||--o{ MESSAGE_LOG : receives
@@ -341,7 +342,7 @@ erDiagram
         timestamptz created_at
         timestamptz updated_at
     }
-    COURSE {
+    DISCIPLINE {
         string id
         string name
         string description
@@ -365,14 +366,16 @@ erDiagram
     }
     ENROLLMENT {
         string id
-        string course_id
+        string discipline_id
         string student_id
+        timestamptz self_registration_completed_at
+        int self_registration_count
         timestamptz created_at
         timestamptz updated_at
     }
     INVITE {
         string id
-        string course_id
+        string discipline_id
         string code
         bool active
         timestamp expires_at
@@ -427,7 +430,7 @@ flowchart TB
     Aluno["Aluno"]
     Admin["Backdoor (Admin)"]
 
-    C1["Gerir campus/program/curso"]
+    C1["Gerir campus/curso/disciplina"]
     C2["Importar alunos / criar invite"]
     C3["Auto-cadastro via invite"]
     C4["Enviar mensagens (email/WhatsApp)"]
@@ -452,7 +455,7 @@ migrate -path migrations -database "$POSTGRES_DATABASE_URL" up
 - Swagger gerado em `docs/` (origem: `cmd/main/main.go` via `swag init -g cmd/main/main.go --parseInternal --parseDependency --parseDepth 1`).
 - OAuth de email com Gmail: `docs/oauth-email-setup.md`.
 - WhatsApp/Evolution: `docs/whatsapp-evolution.md`.
-- Banco: migrations incluem `users`, `campuses`, `programs`, `courses`, `students`, `enrollments`, `invites`, `smtp_instances`, `whatsapp_instances` e `message_logs`.
+- Banco: migrations incluem `users`, `campuses`, `programs`, `disciplines`, `students`, `enrollments`, `invites`, `smtp_instances`, `whatsapp_instances` e `message_logs`. A migration `000021` renomeia `courses/course_id` para `disciplines/discipline_id`; a `000022` adiciona o controle de auto-cadastro concluído por enrollment.
 
 ### Fluxo de uso rápido
 1. Preencha `.env`/`.env.development` conforme `example.env`.
@@ -460,7 +463,7 @@ migrate -path migrations -database "$POSTGRES_DATABASE_URL" up
 3. `./run.sh` ou `air` (hot reload) para subir a API.
 4. Gere o Swagger se precisar: `swag init -g cmd/main/main.go --parseInternal --parseDependency --parseDepth 1` (ou use o gerado em `docs/`).
 5. Use `/auth/register` e `/auth/login` para obter tokens e chamar os demais endpoints protegidos (Bearer).
-6. Cadastre campus/program/course; crie instâncias de SMTP/WhatsApp; crie invites para disciplinas; importe matrículas por curso se quiser (`/course/:courseId/students/import`); alunos finalizam o cadastro via invite `POST /invite/self-register/:code`.
+6. Cadastre campus/curso/disciplina; crie instâncias de Email/WhatsApp; crie invites para disciplinas; importe matrículas por disciplina se quiser (`/discipline/:disciplineId/students/import`); alunos finalizam o cadastro via invite `POST /invite/self-register/:code`.
 7. Para testar envio, pareie uma instância WhatsApp, conecte uma conta de email por SMTP/OAuth se necessário, e use `POST /message/send` com `smtp_id`, `whatsapp_id`, ou ambos.
 
 ### To-do / Roadmap

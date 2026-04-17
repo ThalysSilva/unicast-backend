@@ -30,8 +30,8 @@ type ImportResult struct {
 }
 
 type ImportService interface {
-	ImportForCourse(ctx context.Context, courseID string, mode ImportMode, records []ImportRecord) (*ImportResult, error)
-	AddStudentToCourse(ctx context.Context, courseID, studentID string) error
+	ImportForDiscipline(ctx context.Context, disciplineID string, mode ImportMode, records []ImportRecord) (*ImportResult, error)
+	AddStudentToDiscipline(ctx context.Context, disciplineID, studentID string) error
 }
 
 type importService struct {
@@ -43,17 +43,17 @@ func NewImportService(studentsRepo Repository, enrollmentRepo enrollment.Reposit
 	return &importService{studentsRepo: studentsRepo, enrollmentRepo: enrollmentRepo}
 }
 
-func (s *importService) ImportForCourse(ctx context.Context, courseID string, mode ImportMode, records []ImportRecord) (*ImportResult, error) {
+func (s *importService) ImportForDiscipline(ctx context.Context, disciplineID string, mode ImportMode, records []ImportRecord) (*ImportResult, error) {
 	result := &ImportResult{}
 
 	if mode == ImportModeClean {
-		if err := s.enrollmentRepo.DeleteByCourseID(ctx, courseID); err != nil {
-			return nil, fmt.Errorf("falha ao limpar matrículas do curso: %w", err)
+		if err := s.enrollmentRepo.DeleteByDisciplineID(ctx, disciplineID); err != nil {
+			return nil, fmt.Errorf("falha ao limpar matrículas da disciplina: %w", err)
 		}
 	}
 
 	for idx, rec := range records {
-		if err := s.processRecord(ctx, courseID, idx, rec, result); err != nil {
+		if err := s.processRecord(ctx, disciplineID, idx, rec, result); err != nil {
 			result.Errors = append(result.Errors, err.Error())
 			continue
 		}
@@ -62,15 +62,15 @@ func (s *importService) ImportForCourse(ctx context.Context, courseID string, mo
 	return result, nil
 }
 
-func (s *importService) AddStudentToCourse(ctx context.Context, courseID, studentID string) error {
+func (s *importService) AddStudentToDiscipline(ctx context.Context, disciplineID, studentID string) error {
 	result := &ImportResult{}
-	return s.processRecord(ctx, courseID, 0, ImportRecord{
+	return s.processRecord(ctx, disciplineID, 0, ImportRecord{
 		StudentID: studentID,
 		Status:    StudentStatusPending,
 	}, result)
 }
 
-func (s *importService) processRecord(ctx context.Context, courseID string, idx int, rec ImportRecord, result *ImportResult) error {
+func (s *importService) processRecord(ctx context.Context, disciplineID string, idx int, rec ImportRecord, result *ImportResult) error {
 	if rec.StudentID == "" {
 		return fmt.Errorf("linha %d: studentId vazio", idx+1)
 	}
@@ -98,7 +98,7 @@ func (s *importService) processRecord(ctx context.Context, courseID string, idx 
 		}
 	}
 
-	if err := s.ensureEnrollment(ctx, courseID, existing.ID, idx, result); err != nil {
+	if err := s.ensureEnrollment(ctx, disciplineID, existing.ID, idx, result); err != nil {
 		return err
 	}
 
@@ -145,8 +145,8 @@ func hasCompletedContact(student *Student) bool {
 	return student.Name != nil && student.Email != nil && student.Phone != nil
 }
 
-func (s *importService) ensureEnrollment(ctx context.Context, courseID, studentUUID string, idx int, result *ImportResult) error {
-	enroll, err := s.enrollmentRepo.FindByCourseAndStudent(ctx, courseID, studentUUID)
+func (s *importService) ensureEnrollment(ctx context.Context, disciplineID, studentUUID string, idx int, result *ImportResult) error {
+	enroll, err := s.enrollmentRepo.FindByDisciplineAndStudent(ctx, disciplineID, studentUUID)
 	if err != nil {
 		return fmt.Errorf("linha %d: erro ao verificar enrollment: %v", idx+1, err)
 	}
@@ -154,7 +154,7 @@ func (s *importService) ensureEnrollment(ctx context.Context, courseID, studentU
 		return nil
 	}
 
-	if err := s.enrollmentRepo.Create(ctx, courseID, studentUUID); err != nil {
+	if err := s.enrollmentRepo.Create(ctx, disciplineID, studentUUID); err != nil {
 		return fmt.Errorf("linha %d: erro ao criar enrollment: %v", idx+1, err)
 	}
 	result.EnrollmentsAdded++

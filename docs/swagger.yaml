@@ -53,11 +53,11 @@ definitions:
       message:
         type: string
     type: object
-  github_com_ThalysSilva_unicast-backend_pkg_api.DefaultResponse-array_internal_course_Course:
+  github_com_ThalysSilva_unicast-backend_pkg_api.DefaultResponse-array_internal_discipline_Discipline:
     properties:
       data:
         items:
-          $ref: '#/definitions/internal_course.Course'
+          $ref: '#/definitions/internal_discipline.Discipline'
         type: array
       message:
         type: string
@@ -270,7 +270,7 @@ definitions:
       name:
         type: string
     type: object
-  internal_course.Course:
+  internal_discipline.Discipline:
     properties:
       description:
         type: string
@@ -287,7 +287,7 @@ definitions:
     - semester
     - year
     type: object
-  internal_course.createCourseInput:
+  internal_discipline.createDisciplineInput:
     properties:
       description:
         type: string
@@ -306,7 +306,7 @@ definitions:
     - semester
     - year
     type: object
-  internal_course.updateCourseInput:
+  internal_discipline.updateDisciplineInput:
     properties:
       description:
         type: string
@@ -323,7 +323,7 @@ definitions:
         type: boolean
       code:
         type: string
-      courseId:
+      disciplineId:
         type: string
       expiresAt:
         type: string
@@ -412,7 +412,7 @@ definitions:
     required:
     - name
     type: object
-  internal_program.createCourseInput:
+  internal_program.createProgramInput:
     properties:
       active:
         type: boolean
@@ -428,7 +428,7 @@ definitions:
     - description
     - name
     type: object
-  internal_program.updateCourseInput:
+  internal_program.updateProgramInput:
     properties:
       active:
         type: boolean
@@ -521,7 +521,7 @@ definitions:
     - StudentStatusGraduated
     - StudentStatusLocked
     - StudentStatusPending
-  internal_student.addStudentToCourseInput:
+  internal_student.addStudentToDisciplineInput:
     properties:
       studentId:
         type: string
@@ -823,7 +823,7 @@ paths:
       summary: Atualiza um campus
       tags:
       - campus
-  /course:
+  /discipline:
     get:
       parameters:
       - description: Bearer token
@@ -837,10 +837,10 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.DefaultResponse-array_internal_course_Course'
+            $ref: '#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.DefaultResponse-array_internal_discipline_Discipline'
       summary: Lista todas as disciplinas do usuário
       tags:
-      - course
+      - discipline
     post:
       consumes:
       - application/json
@@ -855,7 +855,7 @@ paths:
         name: body
         required: true
         schema:
-          $ref: '#/definitions/internal_course.createCourseInput'
+          $ref: '#/definitions/internal_discipline.createDisciplineInput'
       produces:
       - application/json
       responses:
@@ -865,8 +865,8 @@ paths:
             $ref: '#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.MessageResponse'
       summary: Cria uma disciplina
       tags:
-      - course
-  /course/{courseId}/students:
+      - discipline
+  /discipline/{disciplineId}/students:
     post:
       consumes:
       - application/json
@@ -876,9 +876,9 @@ paths:
         name: Authorization
         required: true
         type: string
-      - description: Course ID
+      - description: Discipline ID
         in: path
-        name: courseId
+        name: disciplineId
         required: true
         type: string
       - description: Matrícula do aluno
@@ -886,7 +886,7 @@ paths:
         name: body
         required: true
         schema:
-          $ref: '#/definitions/internal_student.addStudentToCourseInput'
+          $ref: '#/definitions/internal_student.addStudentToDisciplineInput'
       produces:
       - application/json
       responses:
@@ -899,7 +899,7 @@ paths:
       summary: Adiciona uma matrícula individual a uma disciplina
       tags:
       - student
-  /course/{courseId}/students/import:
+  /discipline/{disciplineId}/students/import:
     post:
       consumes:
       - multipart/form-data
@@ -909,9 +909,9 @@ paths:
         name: Authorization
         required: true
         type: string
-      - description: Course ID
+      - description: Discipline ID
         in: path
-        name: courseId
+        name: disciplineId
         required: true
         type: string
       - description: upsert ou clean
@@ -935,10 +935,10 @@ paths:
             $ref: '#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.DefaultResponse-internal_student_ImportResult'
       security:
       - BearerAuth: []
-      summary: Importa estudantes para um curso (CSV)
+      summary: Importa estudantes para uma disciplina (CSV)
       tags:
       - student
-  /course/{id}:
+  /discipline/{id}:
     delete:
       parameters:
       - description: Bearer token
@@ -946,7 +946,7 @@ paths:
         name: Authorization
         required: true
         type: string
-      - description: Course ID
+      - description: Discipline ID
         in: path
         name: id
         required: true
@@ -960,7 +960,7 @@ paths:
             $ref: '#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.MessageResponse'
       summary: Deleta uma disciplina
       tags:
-      - course
+      - discipline
     put:
       consumes:
       - application/json
@@ -970,7 +970,7 @@ paths:
         name: Authorization
         required: true
         type: string
-      - description: Course ID
+      - description: Discipline ID
         in: path
         name: id
         required: true
@@ -980,7 +980,7 @@ paths:
         name: body
         required: true
         schema:
-          $ref: '#/definitions/internal_course.updateCourseInput'
+          $ref: '#/definitions/internal_discipline.updateDisciplineInput'
       produces:
       - application/json
       responses:
@@ -990,8 +990,8 @@ paths:
             $ref: '#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.MessageResponse'
       summary: Atualiza uma disciplina
       tags:
-      - course
-  /course/{programId}:
+      - discipline
+  /discipline/{programId}:
     get:
       parameters:
       - description: Bearer token
@@ -1010,11 +1010,11 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.DefaultResponse-array_internal_course_Course'
+            $ref: '#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.DefaultResponse-array_internal_discipline_Discipline'
       summary: Lista disciplinas por curso
       tags:
-      - course
-  /invite/{courseId}:
+      - discipline
+  /invite/{disciplineId}:
     get:
       consumes:
       - application/json
@@ -1024,9 +1024,9 @@ paths:
         name: Authorization
         required: true
         type: string
-      - description: Course ID
+      - description: Discipline ID
         in: path
-        name: courseId
+        name: disciplineId
         required: true
         type: string
       produces:
@@ -1050,9 +1050,9 @@ paths:
         name: Authorization
         required: true
         type: string
-      - description: Course ID
+      - description: Discipline ID
         in: path
-        name: courseId
+        name: disciplineId
         required: true
         type: string
       - description: Expiração opcional
@@ -1069,10 +1069,10 @@ paths:
             $ref: '#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.DefaultResponse-internal_invite_Invite'
       security:
       - BearerAuth: []
-      summary: Cria um convite para um curso
+      summary: Cria um convite para uma disciplina
       tags:
       - invite
-  /invite/{courseId}/current:
+  /invite/{disciplineId}/current:
     get:
       consumes:
       - application/json
@@ -1082,9 +1082,9 @@ paths:
         name: Authorization
         required: true
         type: string
-      - description: Course ID
+      - description: Discipline ID
         in: path
-        name: courseId
+        name: disciplineId
         required: true
         type: string
       produces:
@@ -1096,7 +1096,7 @@ paths:
             $ref: '#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.DefaultResponse-internal_invite_Invite'
       security:
       - BearerAuth: []
-      summary: Busca o convite mais recente de um curso
+      summary: Busca o convite mais recente de uma disciplina
       tags:
       - invite
   /invite/{inviteId}:
@@ -1191,7 +1191,7 @@ paths:
         name: body
         required: true
         schema:
-          $ref: '#/definitions/internal_program.createCourseInput'
+          $ref: '#/definitions/internal_program.createProgramInput'
       produces:
       - application/json
       responses:
@@ -1266,7 +1266,7 @@ paths:
         name: body
         required: true
         schema:
-          $ref: '#/definitions/internal_program.updateCourseInput'
+          $ref: '#/definitions/internal_program.updateProgramInput'
       produces:
       - application/json
       responses:
@@ -1399,9 +1399,9 @@ paths:
         in: query
         name: campus
         type: string
-      - description: Course ID
+      - description: Discipline ID
         in: query
-        name: course
+        name: discipline
         type: string
       - description: User ID
         in: query

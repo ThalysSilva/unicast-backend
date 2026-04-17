@@ -7,10 +7,9 @@ import (
 	"errors"
 	"net/http"
 	"strconv"
-	"strings"
 	"time"
 
-	"github.com/ThalysSilva/unicast-backend/internal/course"
+	"github.com/ThalysSilva/unicast-backend/internal/discipline"
 	"github.com/ThalysSilva/unicast-backend/internal/enrollment"
 	"github.com/ThalysSilva/unicast-backend/internal/student"
 	"github.com/ThalysSilva/unicast-backend/pkg/customerror"
@@ -18,59 +17,59 @@ import (
 )
 
 type Service interface {
-	Create(ctx context.Context, courseID, userID string, expiresAt *time.Time) (*Invite, error)
-	GetCurrent(ctx context.Context, courseID, userID string) (*Invite, error)
-	ListByCourse(ctx context.Context, courseID, userID string) ([]*Invite, error)
+	Create(ctx context.Context, disciplineID, userID string, expiresAt *time.Time) (*Invite, error)
+	GetCurrent(ctx context.Context, disciplineID, userID string) (*Invite, error)
+	ListByDiscipline(ctx context.Context, disciplineID, userID string) ([]*Invite, error)
 	Delete(ctx context.Context, inviteID, userID string) error
 	SelfRegister(ctx context.Context, code, studentID, name, phone, email string, consent bool) error
 }
 
 type inviteService struct {
 	inviteRepository     Repository
-	courseRepository     course.Repository
+	disciplineRepository discipline.Repository
 	enrollmentRepository enrollment.Repository
 	studentRepository    student.Repository
 }
 
 var (
-	ErrInviteNotFound     = customerror.Make("convite não encontrado", http.StatusNotFound, errors.New("ErrInviteNotFound"))
-	ErrInviteInactive     = customerror.Make("convite inativo", http.StatusBadRequest, errors.New("ErrInviteInactive"))
-	ErrInviteExpired      = customerror.Make("convite expirado", http.StatusBadRequest, errors.New("ErrInviteExpired"))
-	ErrNotCourseOwner     = customerror.Make("você não tem permissão para este curso", http.StatusForbidden, errors.New("ErrNotCourseOwner"))
-	ErrEnrollmentNotFound = customerror.Make("estudante não está vinculado à disciplina", http.StatusBadRequest, errors.New("ErrEnrollmentNotFound"))
-	ErrStudentRegistered  = customerror.Make("cadastro desta matrícula já está completo", http.StatusConflict, errors.New("ErrStudentRegistered"))
-	ErrStudentNotFound    = customerror.Make("estudante não encontrado", http.StatusNotFound, errors.New("ErrStudentNotFound"))
-	ErrConsentRequired    = customerror.Make("é necessário aceitar o recebimento automatizado de notificações", http.StatusBadRequest, errors.New("ErrConsentRequired"))
+	ErrInviteNotFound                 = customerror.Make("convite não encontrado", http.StatusNotFound, errors.New("ErrInviteNotFound"))
+	ErrInviteInactive                 = customerror.Make("convite inativo", http.StatusBadRequest, errors.New("ErrInviteInactive"))
+	ErrInviteExpired                  = customerror.Make("convite expirado", http.StatusBadRequest, errors.New("ErrInviteExpired"))
+	ErrNotDisciplineOwner             = customerror.Make("você não tem permissão para esta disciplina", http.StatusForbidden, errors.New("ErrNotDisciplineOwner"))
+	ErrEnrollmentNotFound             = customerror.Make("estudante não está vinculado à disciplina", http.StatusBadRequest, errors.New("ErrEnrollmentNotFound"))
+	ErrEnrollmentRegistrationComplete = customerror.Make("cadastro desta matrícula já foi concluído para esta disciplina", http.StatusConflict, errors.New("ErrEnrollmentRegistrationComplete"))
+	ErrStudentNotFound                = customerror.Make("estudante não encontrado", http.StatusNotFound, errors.New("ErrStudentNotFound"))
+	ErrConsentRequired                = customerror.Make("é necessário aceitar o recebimento automatizado de notificações", http.StatusBadRequest, errors.New("ErrConsentRequired"))
 )
 
 func NewService(
 	inviteRepository Repository,
-	courseRepository course.Repository,
+	disciplineRepository discipline.Repository,
 	enrollmentRepository enrollment.Repository,
 	studentRepository student.Repository,
 ) Service {
 	return &inviteService{
 		inviteRepository:     inviteRepository,
-		courseRepository:     courseRepository,
+		disciplineRepository: disciplineRepository,
 		enrollmentRepository: enrollmentRepository,
 		studentRepository:    studentRepository,
 	}
 }
 
-func (s *inviteService) Create(ctx context.Context, courseID, userID string, expiresAt *time.Time) (*Invite, error) {
-	courseWithOwner, err := s.courseRepository.FindByIDWithUserOwnerID(ctx, courseID)
+func (s *inviteService) Create(ctx context.Context, disciplineID, userID string, expiresAt *time.Time) (*Invite, error) {
+	disciplineWithOwner, err := s.disciplineRepository.FindByIDWithUserOwnerID(ctx, disciplineID)
 	if err != nil {
 		return nil, err
 	}
-	if courseWithOwner == nil || courseWithOwner.UserOwnerID != userID {
-		return nil, ErrNotCourseOwner
+	if disciplineWithOwner == nil || disciplineWithOwner.UserOwnerID != userID {
+		return nil, ErrNotDisciplineOwner
 	}
 
 	// Gera código determinístico (hash curto) variando salt/tempo; evita colisão com retry em unique.
 	for attempts := 0; attempts < 10; attempts++ {
-		code := s.generateCode(courseID, attempts)
+		code := s.generateCode(disciplineID, attempts)
 
-		err = s.inviteRepository.Create(ctx, courseID, code, expiresAt)
+		err = s.inviteRepository.Create(ctx, disciplineID, code, expiresAt)
 		if err != nil {
 			if isUniqueViolation(err) {
 				continue
@@ -79,30 +78,30 @@ func (s *inviteService) Create(ctx context.Context, courseID, userID string, exp
 		}
 
 		return &Invite{
-			CourseID:  courseID,
-			Code:      code,
-			ExpiresAt: expiresAt,
-			Active:    true,
+			DisciplineID: disciplineID,
+			Code:         code,
+			ExpiresAt:    expiresAt,
+			Active:       true,
 		}, nil
 	}
 
 	return nil, customerror.Trace("inviteService.Create", errors.New("falha ao gerar código único após múltiplas tentativas"))
 }
 
-func (s *inviteService) GetCurrent(ctx context.Context, courseID, userID string) (*Invite, error) {
-	if err := s.ensureCourseOwner(ctx, courseID, userID); err != nil {
+func (s *inviteService) GetCurrent(ctx context.Context, disciplineID, userID string) (*Invite, error) {
+	if err := s.ensureDisciplineOwner(ctx, disciplineID, userID); err != nil {
 		return nil, err
 	}
 
-	return s.inviteRepository.FindLatestByCourseID(ctx, courseID)
+	return s.inviteRepository.FindLatestByDisciplineID(ctx, disciplineID)
 }
 
-func (s *inviteService) ListByCourse(ctx context.Context, courseID, userID string) ([]*Invite, error) {
-	if err := s.ensureCourseOwner(ctx, courseID, userID); err != nil {
+func (s *inviteService) ListByDiscipline(ctx context.Context, disciplineID, userID string) ([]*Invite, error) {
+	if err := s.ensureDisciplineOwner(ctx, disciplineID, userID); err != nil {
 		return nil, err
 	}
 
-	return s.inviteRepository.FindByCourseID(ctx, courseID)
+	return s.inviteRepository.FindByDisciplineID(ctx, disciplineID)
 }
 
 func (s *inviteService) Delete(ctx context.Context, inviteID, userID string) error {
@@ -113,20 +112,20 @@ func (s *inviteService) Delete(ctx context.Context, inviteID, userID string) err
 	if inviteFound == nil {
 		return ErrInviteNotFound
 	}
-	if err := s.ensureCourseOwner(ctx, inviteFound.CourseID, userID); err != nil {
+	if err := s.ensureDisciplineOwner(ctx, inviteFound.DisciplineID, userID); err != nil {
 		return err
 	}
 
 	return s.inviteRepository.Delete(ctx, inviteID)
 }
 
-func (s *inviteService) ensureCourseOwner(ctx context.Context, courseID, userID string) error {
-	courseWithOwner, err := s.courseRepository.FindByIDWithUserOwnerID(ctx, courseID)
+func (s *inviteService) ensureDisciplineOwner(ctx context.Context, disciplineID, userID string) error {
+	disciplineWithOwner, err := s.disciplineRepository.FindByIDWithUserOwnerID(ctx, disciplineID)
 	if err != nil {
 		return err
 	}
-	if courseWithOwner == nil || courseWithOwner.UserOwnerID != userID {
-		return ErrNotCourseOwner
+	if disciplineWithOwner == nil || disciplineWithOwner.UserOwnerID != userID {
+		return ErrNotDisciplineOwner
 	}
 
 	return nil
@@ -155,7 +154,7 @@ func (s *inviteService) SelfRegister(ctx context.Context, code, studentID, name,
 		return ErrStudentNotFound
 	}
 
-	enrollmentFound, err := s.enrollmentRepository.FindByCourseAndStudent(ctx, inviteFound.CourseID, studentFound.ID)
+	enrollmentFound, err := s.enrollmentRepository.FindByDisciplineAndStudent(ctx, inviteFound.DisciplineID, studentFound.ID)
 	if err != nil {
 		return err
 	}
@@ -163,8 +162,8 @@ func (s *inviteService) SelfRegister(ctx context.Context, code, studentID, name,
 		return ErrEnrollmentNotFound
 	}
 
-	if studentContactComplete(studentFound) {
-		return ErrStudentRegistered
+	if enrollmentFound.SelfRegistrationCompletedAt != nil {
+		return ErrEnrollmentRegistrationComplete
 	}
 	if !consent {
 		return ErrConsentRequired
@@ -184,26 +183,20 @@ func (s *inviteService) SelfRegister(ctx context.Context, code, studentID, name,
 		fields["email"] = email
 	}
 
-	return s.studentRepository.Update(ctx, studentFound.ID, fields)
-}
-
-func studentContactComplete(studentFound *student.Student) bool {
-	if studentFound == nil {
-		return false
+	if err := s.studentRepository.Update(ctx, studentFound.ID, fields); err != nil {
+		return err
 	}
 
-	return hasValue(studentFound.Name) &&
-		hasValue(studentFound.Phone) &&
-		hasValue(studentFound.Email)
+	now := time.Now()
+	return s.enrollmentRepository.Update(ctx, enrollmentFound.ID, map[string]any{
+		"self_registration_completed_at": now,
+		"self_registration_count":        enrollmentFound.SelfRegistrationCount + 1,
+	})
 }
 
-func hasValue(value *string) bool {
-	return value != nil && strings.TrimSpace(*value) != ""
-}
-
-func (s *inviteService) generateCode(courseID string, attempt int) string {
+func (s *inviteService) generateCode(disciplineID string, attempt int) string {
 	now := time.Now().UnixNano()
-	payload := courseID + ":" + strconv.Itoa(attempt) + ":" + strconv.FormatInt(now, 10)
+	payload := disciplineID + ":" + strconv.Itoa(attempt) + ":" + strconv.FormatInt(now, 10)
 	sum := sha256.Sum256([]byte(payload))
 
 	encoded := base32.StdEncoding.WithPadding(base32.NoPadding).EncodeToString(sum[:])

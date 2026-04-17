@@ -9,19 +9,21 @@ import (
 )
 
 type Enrollment struct {
-	ID        string    `json:"id"`
-	CourseID  string    `json:"courseId"`
-	StudentID string    `json:"studentId"`
-	CreatedAt time.Time `json:"-"`
-	UpdatedAt time.Time `json:"-"`
+	ID                          string     `json:"id"`
+	DisciplineID                string     `json:"disciplineId"`
+	StudentID                   string     `json:"studentId"`
+	SelfRegistrationCompletedAt *time.Time `json:"selfRegistrationCompletedAt"`
+	SelfRegistrationCount       int        `json:"selfRegistrationCount"`
+	CreatedAt                   time.Time  `json:"-"`
+	UpdatedAt                   time.Time  `json:"-"`
 }
 
 type Repository interface {
 	database.Transactional
-	Create(ctx context.Context, courseID, studentID string) error
+	Create(ctx context.Context, disciplineID, studentID string) error
 	FindByID(ctx context.Context, cid string) (*Enrollment, error)
-	FindByCourseAndStudent(ctx context.Context, courseID, studentID string) (*Enrollment, error)
-	DeleteByCourseID(ctx context.Context, courseID string) error
+	FindByDisciplineAndStudent(ctx context.Context, disciplineID, studentID string) (*Enrollment, error)
+	DeleteByDisciplineID(ctx context.Context, disciplineID string) error
 	Update(ctx context.Context, id string, fields map[string]any) error
 	Delete(ctx context.Context, cid string) error
 }

@@ -29,7 +29,7 @@ type updateStudentInput struct {
 	Status     StudentStatus `json:"status" binding:"omitempty,oneof=ACTIVE CANCELED GRADUATED LOCKED PENDING"`
 }
 
-type addStudentToCourseInput struct {
+type addStudentToDisciplineInput struct {
 	StudentID string `json:"studentId" binding:"required"`
 }
 
@@ -39,8 +39,8 @@ type Handler interface {
 	GetStudents() gin.HandlerFunc
 	Update() gin.HandlerFunc
 	Delete() gin.HandlerFunc
-	ImportForCourse() gin.HandlerFunc
-	AddToCourse() gin.HandlerFunc
+	ImportForDiscipline() gin.HandlerFunc
+	AddToDiscipline() gin.HandlerFunc
 }
 
 func NewHandler(service Service, importService ImportService) Handler {
@@ -108,7 +108,7 @@ func (h *handler) GetStudent() gin.HandlerFunc {
 // @Security BearerAuth
 // @Param program query string false "Program ID"
 // @Param campus query string false "Campus ID"
-// @Param course query string false "Course ID"
+// @Param discipline query string false "Discipline ID"
 // @Param user query string false "User ID"
 // @Success 200 {object} api.DefaultResponse[[]Student]
 // @Router /student [get]
@@ -116,7 +116,7 @@ func (h *handler) GetStudents() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		program := c.Query("program")
 		campus := c.Query("campus")
-		course := c.Query("course")
+		discipline := c.Query("discipline")
 		user := c.Query("user")
 		// Filtro por disciplina, campus, cursos, usuário.
 		filters := make(map[string]string)
@@ -126,8 +126,8 @@ func (h *handler) GetStudents() gin.HandlerFunc {
 		if campus != "" {
 			filters["campus"] = campus
 		}
-		if course != "" {
-			filters["course"] = course
+		if discipline != "" {
+			filters["discipline"] = discipline
 		}
 		if user != "" {
 			filters["user"] = user
@@ -214,20 +214,20 @@ func (h *handler) Delete() gin.HandlerFunc {
 	}
 }
 
-// @Summary Importa estudantes para um curso (CSV)
+// @Summary Importa estudantes para uma disciplina (CSV)
 // @Tags student
 // @Accept mpfd
 // @Produce json
 // @Param Authorization header string true "Bearer token"
 // @Security BearerAuth
-// @Param courseId path string true "Course ID"
+// @Param disciplineId path string true "Discipline ID"
 // @Param mode query string false "upsert ou clean" Enums(upsert,clean)
 // @Param file formData file true "CSV com studentId,name,phone,email,status"
 // @Success 200 {object} api.DefaultResponse[ImportResult]
-// @Router /course/{courseId}/students/import [post]
-func (h *handler) ImportForCourse() gin.HandlerFunc {
+// @Router /discipline/{disciplineId}/students/import [post]
+func (h *handler) ImportForDiscipline() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		courseID := c.Param("courseId")
+		disciplineID := c.Param("disciplineId")
 		modeParam := strings.ToLower(c.DefaultQuery("mode", string(ImportModeUpsert)))
 		mode := ImportMode(modeParam)
 		if mode != ImportModeClean && mode != ImportModeUpsert {
@@ -248,7 +248,7 @@ func (h *handler) ImportForCourse() gin.HandlerFunc {
 			return
 		}
 
-		result, err := h.importService.ImportForCourse(c.Request.Context(), courseID, mode, records)
+		result, err := h.importService.ImportForDiscipline(c.Request.Context(), disciplineID, mode, records)
 		if err != nil {
 			c.Error(err)
 			return
@@ -264,20 +264,20 @@ func (h *handler) ImportForCourse() gin.HandlerFunc {
 // @Produce json
 // @Param Authorization header string true "Bearer token"
 // @Security BearerAuth
-// @Param courseId path string true "Course ID"
-// @Param body body addStudentToCourseInput true "Matrícula do aluno"
+// @Param disciplineId path string true "Discipline ID"
+// @Param body body addStudentToDisciplineInput true "Matrícula do aluno"
 // @Success 200 {object} api.MessageResponse
-// @Router /course/{courseId}/students [post]
-func (h *handler) AddToCourse() gin.HandlerFunc {
+// @Router /discipline/{disciplineId}/students [post]
+func (h *handler) AddToDiscipline() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		courseID := c.Param("courseId")
-		var input addStudentToCourseInput
+		disciplineID := c.Param("disciplineId")
+		var input addStudentToDisciplineInput
 		if err := c.ShouldBindJSON(&input); err != nil {
 			c.Error(err)
 			return
 		}
 
-		if err := h.importService.AddStudentToCourse(c.Request.Context(), courseID, input.StudentID); err != nil {
+		if err := h.importService.AddStudentToDiscipline(c.Request.Context(), disciplineID, input.StudentID); err != nil {
 			c.Error(err)
 			return
 		}

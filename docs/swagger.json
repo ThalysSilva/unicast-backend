@@ -324,13 +324,13 @@
                 }
             }
         },
-        "/course": {
+        "/discipline": {
             "get": {
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "course"
+                    "discipline"
                 ],
                 "summary": "Lista todas as disciplinas do usuário",
                 "parameters": [
@@ -346,7 +346,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.DefaultResponse-array_internal_course_Course"
+                            "$ref": "#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.DefaultResponse-array_internal_discipline_Discipline"
                         }
                     }
                 }
@@ -359,7 +359,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "course"
+                    "discipline"
                 ],
                 "summary": "Cria uma disciplina",
                 "parameters": [
@@ -376,7 +376,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/internal_course.createCourseInput"
+                            "$ref": "#/definitions/internal_discipline.createDisciplineInput"
                         }
                     }
                 ],
@@ -390,7 +390,7 @@
                 }
             }
         },
-        "/course/{courseId}/students": {
+        "/discipline/{disciplineId}/students": {
             "post": {
                 "security": [
                     {
@@ -417,8 +417,8 @@
                     },
                     {
                         "type": "string",
-                        "description": "Course ID",
-                        "name": "courseId",
+                        "description": "Discipline ID",
+                        "name": "disciplineId",
                         "in": "path",
                         "required": true
                     },
@@ -428,7 +428,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/internal_student.addStudentToCourseInput"
+                            "$ref": "#/definitions/internal_student.addStudentToDisciplineInput"
                         }
                     }
                 ],
@@ -442,7 +442,7 @@
                 }
             }
         },
-        "/course/{courseId}/students/import": {
+        "/discipline/{disciplineId}/students/import": {
             "post": {
                 "security": [
                     {
@@ -458,7 +458,7 @@
                 "tags": [
                     "student"
                 ],
-                "summary": "Importa estudantes para um curso (CSV)",
+                "summary": "Importa estudantes para uma disciplina (CSV)",
                 "parameters": [
                     {
                         "type": "string",
@@ -469,8 +469,8 @@
                     },
                     {
                         "type": "string",
-                        "description": "Course ID",
-                        "name": "courseId",
+                        "description": "Discipline ID",
+                        "name": "disciplineId",
                         "in": "path",
                         "required": true
                     },
@@ -502,7 +502,7 @@
                 }
             }
         },
-        "/course/{id}": {
+        "/discipline/{id}": {
             "put": {
                 "consumes": [
                     "application/json"
@@ -511,7 +511,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "course"
+                    "discipline"
                 ],
                 "summary": "Atualiza uma disciplina",
                 "parameters": [
@@ -524,7 +524,7 @@
                     },
                     {
                         "type": "string",
-                        "description": "Course ID",
+                        "description": "Discipline ID",
                         "name": "id",
                         "in": "path",
                         "required": true
@@ -535,7 +535,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/internal_course.updateCourseInput"
+                            "$ref": "#/definitions/internal_discipline.updateDisciplineInput"
                         }
                     }
                 ],
@@ -553,7 +553,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "course"
+                    "discipline"
                 ],
                 "summary": "Deleta uma disciplina",
                 "parameters": [
@@ -566,7 +566,7 @@
                     },
                     {
                         "type": "string",
-                        "description": "Course ID",
+                        "description": "Discipline ID",
                         "name": "id",
                         "in": "path",
                         "required": true
@@ -582,13 +582,13 @@
                 }
             }
         },
-        "/course/{programId}": {
+        "/discipline/{programId}": {
             "get": {
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "course"
+                    "discipline"
                 ],
                 "summary": "Lista disciplinas por curso",
                 "parameters": [
@@ -611,7 +611,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.DefaultResponse-array_internal_course_Course"
+                            "$ref": "#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.DefaultResponse-array_internal_discipline_Discipline"
                         }
                     }
                 }
@@ -657,7 +657,7 @@
                 }
             }
         },
-        "/invite/{courseId}": {
+        "/invite/{disciplineId}": {
             "get": {
                 "security": [
                     {
@@ -684,8 +684,8 @@
                     },
                     {
                         "type": "string",
-                        "description": "Course ID",
-                        "name": "courseId",
+                        "description": "Discipline ID",
+                        "name": "disciplineId",
                         "in": "path",
                         "required": true
                     }
@@ -714,7 +714,7 @@
                 "tags": [
                     "invite"
                 ],
-                "summary": "Cria um convite para um curso",
+                "summary": "Cria um convite para uma disciplina",
                 "parameters": [
                     {
                         "type": "string",
@@ -725,8 +725,8 @@
                     },
                     {
                         "type": "string",
-                        "description": "Course ID",
-                        "name": "courseId",
+                        "description": "Discipline ID",
+                        "name": "disciplineId",
                         "in": "path",
                         "required": true
                     },
@@ -749,7 +749,7 @@
                 }
             }
         },
-        "/invite/{courseId}/current": {
+        "/invite/{disciplineId}/current": {
             "get": {
                 "security": [
                     {
@@ -765,7 +765,7 @@
                 "tags": [
                     "invite"
                 ],
-                "summary": "Busca o convite mais recente de um curso",
+                "summary": "Busca o convite mais recente de uma disciplina",
                 "parameters": [
                     {
                         "type": "string",
@@ -776,8 +776,8 @@
                     },
                     {
                         "type": "string",
-                        "description": "Course ID",
-                        "name": "courseId",
+                        "description": "Discipline ID",
+                        "name": "disciplineId",
                         "in": "path",
                         "required": true
                     }
@@ -898,7 +898,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/internal_program.createCourseInput"
+                            "$ref": "#/definitions/internal_program.createProgramInput"
                         }
                     }
                 ],
@@ -978,7 +978,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/internal_program.updateCourseInput"
+                            "$ref": "#/definitions/internal_program.updateProgramInput"
                         }
                     }
                 ],
@@ -1229,8 +1229,8 @@
                     },
                     {
                         "type": "string",
-                        "description": "Course ID",
-                        "name": "course",
+                        "description": "Discipline ID",
+                        "name": "discipline",
                         "in": "query"
                     },
                     {
@@ -1874,13 +1874,13 @@
                 }
             }
         },
-        "github_com_ThalysSilva_unicast-backend_pkg_api.DefaultResponse-array_internal_course_Course": {
+        "github_com_ThalysSilva_unicast-backend_pkg_api.DefaultResponse-array_internal_discipline_Discipline": {
             "type": "object",
             "properties": {
                 "data": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/internal_course.Course"
+                        "$ref": "#/definitions/internal_discipline.Discipline"
                     }
                 },
                 "message": {
@@ -2210,7 +2210,7 @@
                 }
             }
         },
-        "internal_course.Course": {
+        "internal_discipline.Discipline": {
             "type": "object",
             "required": [
                 "name",
@@ -2235,7 +2235,7 @@
                 }
             }
         },
-        "internal_course.createCourseInput": {
+        "internal_discipline.createDisciplineInput": {
             "type": "object",
             "required": [
                 "description",
@@ -2262,7 +2262,7 @@
                 }
             }
         },
-        "internal_course.updateCourseInput": {
+        "internal_discipline.updateDisciplineInput": {
             "type": "object",
             "properties": {
                 "description": {
@@ -2288,7 +2288,7 @@
                 "code": {
                     "type": "string"
                 },
-                "courseId": {
+                "disciplineId": {
                     "type": "string"
                 },
                 "expiresAt": {
@@ -2424,7 +2424,7 @@
                 }
             }
         },
-        "internal_program.createCourseInput": {
+        "internal_program.createProgramInput": {
             "type": "object",
             "required": [
                 "active",
@@ -2447,7 +2447,7 @@
                 }
             }
         },
-        "internal_program.updateCourseInput": {
+        "internal_program.updateProgramInput": {
             "type": "object",
             "properties": {
                 "active": {
@@ -2583,7 +2583,7 @@
                 "StudentStatusPending"
             ]
         },
-        "internal_student.addStudentToCourseInput": {
+        "internal_student.addStudentToDisciplineInput": {
             "type": "object",
             "required": [
                 "studentId"

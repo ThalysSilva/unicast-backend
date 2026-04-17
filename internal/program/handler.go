@@ -12,14 +12,14 @@ type handler struct {
 	service Service
 }
 
-type createCourseInput struct {
+type createProgramInput struct {
 	Name        string `json:"name" binding:"required"`
 	Description string `json:"description" binding:"required"`
 	Active      bool   `json:"active" binding:"required"`
 	CampusID    string `json:"campus_id" binding:"required"`
 }
 
-type updateCourseInput struct {
+type updateProgramInput struct {
 	Name        string `json:"name"`
 	Description string `json:"description"`
 	Active      bool   `json:"active"`
@@ -43,12 +43,12 @@ func NewHandler(service Service) Handler {
 // @Accept json
 // @Produce json
 // @Param Authorization header string true "Bearer token"
-// @Param body body createCourseInput true "Dados do programa"
+// @Param body body createProgramInput true "Dados do programa"
 // @Success 200 {object} api.MessageResponse
 // @Router /program [post]
 func (h *handler) Create() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		var input createCourseInput
+		var input createProgramInput
 		if err := c.ShouldBindJSON(&input); err != nil {
 			c.Error(err)
 			return
@@ -95,20 +95,20 @@ func (h *handler) GetProgramsByCampusID() gin.HandlerFunc {
 // @Produce json
 // @Param Authorization header string true "Bearer token"
 // @Param id path string true "Program ID"
-// @Param body body updateCourseInput true "Campos para atualizar"
+// @Param body body updateProgramInput true "Campos para atualizar"
 // @Success 200 {object} api.MessageResponse
 // @Router /program/{id} [put]
 func (h *handler) Update() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		var input updateCourseInput
+		var input updateProgramInput
 		if err := c.ShouldBindJSON(&input); err != nil {
 			c.Error(err)
 			return
 		}
 		userID := c.GetString("userID")
-		courseID := c.Param("id")
+		programID := c.Param("id")
 
-		isOwner, err := h.service.isOwner(c.Request.Context(), courseID, userID)
+		isOwner, err := h.service.isOwner(c.Request.Context(), programID, userID)
 		if err != nil {
 			c.Error(err)
 			return
@@ -135,7 +135,7 @@ func (h *handler) Update() gin.HandlerFunc {
 			return
 		}
 
-		err = h.service.Update(c.Request.Context(), courseID, fields)
+		err = h.service.Update(c.Request.Context(), programID, fields)
 		if err != nil {
 			c.Error(err)
 			return

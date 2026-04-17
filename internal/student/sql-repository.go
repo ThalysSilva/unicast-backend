@@ -122,7 +122,7 @@ func buildFilteredStudentsQuery(filters map[string]string) (string, []any) {
 		FROM students s
 	`
 
-	needsAcademicJoin := filters["course"] != "" ||
+	needsAcademicJoin := filters["discipline"] != "" ||
 		filters["program"] != "" ||
 		filters["campus"] != "" ||
 		filters["user"] != ""
@@ -130,8 +130,8 @@ func buildFilteredStudentsQuery(filters map[string]string) (string, []any) {
 	if needsAcademicJoin {
 		query += `
 			JOIN enrollments e ON e.student_id = s.id
-			JOIN courses c ON c.id = e.course_id
-			JOIN programs p ON p.id = c.program_id
+			JOIN disciplines d ON d.id = e.discipline_id
+			JOIN programs p ON p.id = d.program_id
 			JOIN campuses ca ON ca.id = p.campus_id
 		`
 	}
@@ -217,10 +217,10 @@ func buildWhereClause(filters map[string]string) (string, []any) {
 }
 
 var studentFilterColumns = map[string]string{
-	"course":  "c.id",
-	"program": "p.id",
-	"campus":  "ca.id",
-	"user":    "ca.user_owner_id",
+	"discipline": "d.id",
+	"program":    "p.id",
+	"campus":     "ca.id",
+	"user":       "ca.user_owner_id",
 }
 
 type rowScanner interface {

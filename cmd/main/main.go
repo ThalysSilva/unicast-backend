@@ -11,7 +11,7 @@ import (
 	"github.com/ThalysSilva/unicast-backend/internal/campus"
 	"github.com/ThalysSilva/unicast-backend/internal/config"
 	configenv "github.com/ThalysSilva/unicast-backend/internal/config/env"
-	"github.com/ThalysSilva/unicast-backend/internal/course"
+	"github.com/ThalysSilva/unicast-backend/internal/discipline"
 	"github.com/ThalysSilva/unicast-backend/internal/invite"
 	"github.com/ThalysSilva/unicast-backend/internal/message"
 	"github.com/ThalysSilva/unicast-backend/internal/middleware"
@@ -65,12 +65,12 @@ func main() {
 	whatsappService := whatsapp.NewService(repos.WhatsAppInstance, repos.User)
 	smtpService := smtp.NewService(repos.SmtpInstance, secrets.Jwe, envCfg.OAuth)
 	campusService := campus.NewService(repos.Campus)
-	courseService := course.NewService(repos.Course)
+	disciplineService := discipline.NewService(repos.Discipline)
 	programService := program.NewService(repos.Program)
 	studentService := student.NewService(repos.Student)
 	studentImportService := student.NewImportService(repos.Student, repos.Enrollment)
 	userService := user.NewService(repos.User)
-	inviteService := invite.NewService(repos.Invite, repos.Course, repos.Enrollment, repos.Student)
+	inviteService := invite.NewService(repos.Invite, repos.Discipline, repos.Enrollment, repos.Student)
 	messageLogRepo := message.NewLogRepository(db)
 	messageService := message.NewMessageService(repos.WhatsAppInstance, smtpService, repos.SmtpInstance, repos.User, repos.Student, messageLogRepo, secrets.Jwe)
 	backdoorService := backdoor.NewService(repos.User, envCfg.Admin.Secret)
@@ -80,7 +80,7 @@ func main() {
 	whatsappHandler := whatsapp.NewHandler(whatsappService)
 	smtpHandler := smtp.NewHandler(smtpService)
 	campusHandler := campus.NewHandler(campusService)
-	courseHandler := course.NewHandler(courseService)
+	disciplineHandler := discipline.NewHandler(disciplineService)
 	programHandler := program.NewHandler(programService)
 	studentHandler := student.NewHandler(studentService, studentImportService)
 	userHandler := user.NewHandler(userService)
@@ -113,16 +113,16 @@ func main() {
 	}
 
 	// Rotas de disciplinas
-	courseGroup := r.Group("/course")
+	disciplineGroup := r.Group("/discipline")
 	{
-		courseGroup.Use(middleware.UseAuthentication(secrets.AccessToken))
-		courseGroup.POST("", courseHandler.Create())
-		courseGroup.GET("", courseHandler.GetCourses())
-		courseGroup.GET("/:programId", courseHandler.GetCoursesByProgramID())
-		courseGroup.PUT("/:id", courseHandler.Update())
-		courseGroup.DELETE("/:id", courseHandler.Delete())
-		courseGroup.POST("/:courseId/students", studentHandler.AddToCourse())
-		courseGroup.POST("/:courseId/students/import", studentHandler.ImportForCourse())
+		disciplineGroup.Use(middleware.UseAuthentication(secrets.AccessToken))
+		disciplineGroup.POST("", disciplineHandler.Create())
+		disciplineGroup.GET("", disciplineHandler.GetDisciplines())
+		disciplineGroup.GET("/:programId", disciplineHandler.GetDisciplinesByProgramID())
+		disciplineGroup.PUT("/:id", disciplineHandler.Update())
+		disciplineGroup.DELETE("/:id", disciplineHandler.Delete())
+		disciplineGroup.POST("/:disciplineId/students", studentHandler.AddToDiscipline())
+		disciplineGroup.POST("/:disciplineId/students/import", studentHandler.ImportForDiscipline())
 	}
 
 	// Rotas de cursos
@@ -192,9 +192,9 @@ func main() {
 	inviteGroup := r.Group("/invite")
 	{
 		inviteGroup.Use(middleware.UseAuthentication(secrets.AccessToken))
-		inviteGroup.POST("/:courseId", inviteHandler.Create())
-		inviteGroup.GET("/:courseId", inviteHandler.ListByCourse())
-		inviteGroup.GET("/:courseId/current", inviteHandler.GetCurrent())
+		inviteGroup.POST("/:disciplineId", inviteHandler.Create())
+		inviteGroup.GET("/:disciplineId", inviteHandler.ListByDiscipline())
+		inviteGroup.GET("/:disciplineId/current", inviteHandler.GetCurrent())
 		inviteGroup.DELETE("/:inviteId", inviteHandler.Delete())
 	}
 	r.POST("/invite/self-register/:code", inviteHandler.SelfRegister())

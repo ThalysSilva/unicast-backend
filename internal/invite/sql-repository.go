@@ -35,12 +35,12 @@ func (r *sqlRepository) TransactionBackend() any {
 	return r.sqlDB
 }
 
-func (r *sqlRepository) Create(ctx context.Context, courseID, code string, expiresAt *time.Time) error {
+func (r *sqlRepository) Create(ctx context.Context, disciplineID, code string, expiresAt *time.Time) error {
 	query := `
-        INSERT INTO invites (course_id, code, expires_at)
+        INSERT INTO invites (discipline_id, code, expires_at)
         VALUES ($1, $2, $3)
     `
-	_, err := r.db.ExecContext(ctx, query, courseID, code, expiresAt)
+	_, err := r.db.ExecContext(ctx, query, disciplineID, code, expiresAt)
 	if err != nil {
 		return customerror.Trace("inviteRepository: create", err)
 	}
@@ -49,7 +49,7 @@ func (r *sqlRepository) Create(ctx context.Context, courseID, code string, expir
 
 func (r *sqlRepository) FindByID(ctx context.Context, id string) (*Invite, error) {
 	query := `
-        SELECT id, course_id, code, expires_at, active, created_at, updated_at
+        SELECT id, discipline_id, code, expires_at, active, created_at, updated_at
         FROM invites
         WHERE id = $1
     `
@@ -60,7 +60,7 @@ func (r *sqlRepository) FindByID(ctx context.Context, id string) (*Invite, error
 
 func (r *sqlRepository) FindByCode(ctx context.Context, code string) (*Invite, error) {
 	query := `
-        SELECT id, course_id, code, expires_at, active, created_at, updated_at
+        SELECT id, discipline_id, code, expires_at, active, created_at, updated_at
         FROM invites
         WHERE UPPER(code) = UPPER($1)
     `
@@ -69,17 +69,17 @@ func (r *sqlRepository) FindByCode(ctx context.Context, code string) (*Invite, e
 	return scanInvite(row, "inviteRepository: findByCode")
 }
 
-func (r *sqlRepository) FindLatestByCourseID(ctx context.Context, courseID string) (*Invite, error) {
+func (r *sqlRepository) FindLatestByDisciplineID(ctx context.Context, disciplineID string) (*Invite, error) {
 	query := `
-        SELECT id, course_id, code, expires_at, active, created_at, updated_at
+        SELECT id, discipline_id, code, expires_at, active, created_at, updated_at
         FROM invites
-        WHERE course_id = $1
+        WHERE discipline_id = $1
         ORDER BY created_at DESC
         LIMIT 1
     `
-	row := r.db.QueryRowContext(ctx, query, courseID)
+	row := r.db.QueryRowContext(ctx, query, disciplineID)
 
-	return scanInvite(row, "inviteRepository: findLatestByCourseID")
+	return scanInvite(row, "inviteRepository: findLatestByDisciplineID")
 }
 
 func scanInvite(scanner interface {
@@ -87,7 +87,7 @@ func scanInvite(scanner interface {
 }, trace string) (*Invite, error) {
 	invite := &Invite{}
 	var expiresAt sql.NullTime
-	err := scanner.Scan(&invite.ID, &invite.CourseID, &invite.Code, &expiresAt, &invite.Active, &invite.CreatedAt, &invite.UpdatedAt)
+	err := scanner.Scan(&invite.ID, &invite.DisciplineID, &invite.Code, &expiresAt, &invite.Active, &invite.CreatedAt, &invite.UpdatedAt)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
@@ -100,16 +100,16 @@ func scanInvite(scanner interface {
 	return invite, nil
 }
 
-func (r *sqlRepository) FindByCourseID(ctx context.Context, courseID string) ([]*Invite, error) {
+func (r *sqlRepository) FindByDisciplineID(ctx context.Context, disciplineID string) ([]*Invite, error) {
 	query := `
-        SELECT id, course_id, code, expires_at, active, created_at, updated_at
+        SELECT id, discipline_id, code, expires_at, active, created_at, updated_at
         FROM invites
-        WHERE course_id = $1
+        WHERE discipline_id = $1
         ORDER BY created_at DESC
     `
-	rows, err := r.db.QueryContext(ctx, query, courseID)
+	rows, err := r.db.QueryContext(ctx, query, disciplineID)
 	if err != nil {
-		return nil, customerror.Trace("inviteRepository: findByCourseID", err)
+		return nil, customerror.Trace("inviteRepository: findByDisciplineID", err)
 	}
 	defer rows.Close()
 
@@ -117,9 +117,9 @@ func (r *sqlRepository) FindByCourseID(ctx context.Context, courseID string) ([]
 	for rows.Next() {
 		invite := &Invite{}
 		var expiresAt sql.NullTime
-		err := rows.Scan(&invite.ID, &invite.CourseID, &invite.Code, &expiresAt, &invite.Active, &invite.CreatedAt, &invite.UpdatedAt)
+		err := rows.Scan(&invite.ID, &invite.DisciplineID, &invite.Code, &expiresAt, &invite.Active, &invite.CreatedAt, &invite.UpdatedAt)
 		if err != nil {
-			return nil, customerror.Trace("inviteRepository: findByCourseID", err)
+			return nil, customerror.Trace("inviteRepository: findByDisciplineID", err)
 		}
 		if expiresAt.Valid {
 			invite.ExpiresAt = &expiresAt.Time

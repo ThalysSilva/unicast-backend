@@ -1,4 +1,4 @@
-package course
+package discipline
 
 import (
 	"context"
@@ -8,7 +8,7 @@ import (
 	"github.com/ThalysSilva/unicast-backend/pkg/database"
 )
 
-type Course struct {
+type Discipline struct {
 	ID          string    `json:"id"`
 	Name        string    `json:"name" validate:"required"`
 	Description string    `json:"description"`
@@ -19,18 +19,18 @@ type Course struct {
 	ProgramID   string    `json:"-"`
 }
 
-type CourseWithOwnerID struct {
-	Course
+type DisciplineWithOwnerID struct {
+	Discipline
 	UserOwnerID string `json:"userOwnerId"`
 }
 
 type Repository interface {
 	database.Transactional
 	Create(ctx context.Context, name, description, programID string, year, semester int) error
-	FindByID(ctx context.Context, id string) (*Course, error)
-	FindByIDWithUserOwnerID(ctx context.Context, id string) (*CourseWithOwnerID, error)
-	FindByProgramID(ctx context.Context, programID string) ([]*Course, error)
-	FindByUserOwnerID(ctx context.Context, userOwnerID string) ([]*Course, error)
+	FindByID(ctx context.Context, id string) (*Discipline, error)
+	FindByIDWithUserOwnerID(ctx context.Context, id string) (*DisciplineWithOwnerID, error)
+	FindByProgramID(ctx context.Context, programID string) ([]*Discipline, error)
+	FindByUserOwnerID(ctx context.Context, userOwnerID string) ([]*Discipline, error)
 	// Campos disponíveis para atualização
 	//
 	// - name string
@@ -44,7 +44,7 @@ type Repository interface {
 	// - program_id string
 	Update(ctx context.Context, id string, fields map[string]any) error
 	Delete(ctx context.Context, id string) error
-	FindByNameAndProgramID(ctx context.Context, name, programID string) (*Course, error)
+	FindByNameAndProgramID(ctx context.Context, name, programID string) (*Discipline, error)
 }
 
 func NewRepository(db *sql.DB) Repository {
