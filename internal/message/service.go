@@ -89,6 +89,7 @@ func extractEmailFailedStudents(err error, students []*student.Student) ([]stude
 }
 
 func (s *service) Send(ctx context.Context, message *Message) (emailsFails, whatsappFails *[]student.Student, err error) {
+	message.To = uniqueIDs(message.To)
 	students, err := s.studentRepository.FindByIDs(ctx, message.To)
 	if err != nil {
 		return nil, nil, customerror.Trace("Send", err)
@@ -118,6 +119,26 @@ func (s *service) Send(ctx context.Context, message *Message) (emailsFails, what
 	s.logResults(ctx, students, emailFailedSlice, whatsappFailedSlice, message, attachmentNamesStr)
 
 	return &emailFailedSlice, &whatsappFailedSlice, emailErr
+}
+
+func uniqueIDs(ids []string) []string {
+	seen := make(map[string]struct{}, len(ids))
+	unique := make([]string, 0, len(ids))
+
+	for _, id := range ids {
+		id = strings.TrimSpace(id)
+		if id == "" {
+			continue
+		}
+		if _, exists := seen[id]; exists {
+			continue
+		}
+
+		seen[id] = struct{}{}
+		unique = append(unique, id)
+	}
+
+	return unique
 }
 
 func (s *service) loadSenders(ctx context.Context, smtpID, whatsappID string) (*smtp.Instance, *whatsapp.Instance, error) {
