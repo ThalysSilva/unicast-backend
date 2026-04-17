@@ -123,6 +123,7 @@ func main() {
 		disciplineGroup.DELETE("/:id", disciplineHandler.Delete())
 		disciplineGroup.POST("/:disciplineId/students", studentHandler.AddToDiscipline())
 		disciplineGroup.POST("/:disciplineId/students/import", studentHandler.ImportForDiscipline())
+		disciplineGroup.DELETE("/:id/students/:studentId", studentHandler.RemoveFromDiscipline())
 	}
 
 	// Rotas de cursos

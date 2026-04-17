@@ -899,6 +899,36 @@ paths:
       summary: Adiciona uma matrícula individual a uma disciplina
       tags:
       - student
+  /discipline/{disciplineId}/students/{studentId}:
+    delete:
+      parameters:
+      - description: Bearer token
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Discipline ID
+        in: path
+        name: disciplineId
+        required: true
+        type: string
+      - description: Student UUID
+        in: path
+        name: studentId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_ThalysSilva_unicast-backend_pkg_api.MessageResponse'
+      security:
+      - BearerAuth: []
+      summary: Desvincula uma matrícula de uma disciplina
+      tags:
+      - student
   /discipline/{disciplineId}/students/import:
     post:
       consumes:

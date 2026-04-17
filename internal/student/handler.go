@@ -41,6 +41,7 @@ type Handler interface {
 	Delete() gin.HandlerFunc
 	ImportForDiscipline() gin.HandlerFunc
 	AddToDiscipline() gin.HandlerFunc
+	RemoveFromDiscipline() gin.HandlerFunc
 }
 
 func NewHandler(service Service, importService ImportService) Handler {
@@ -283,6 +284,29 @@ func (h *handler) AddToDiscipline() gin.HandlerFunc {
 		}
 
 		c.JSON(http.StatusOK, api.MessageResponse{Message: "Matrícula vinculada à disciplina com sucesso"})
+	}
+}
+
+// @Summary Desvincula uma matrícula de uma disciplina
+// @Tags student
+// @Produce json
+// @Param Authorization header string true "Bearer token"
+// @Security BearerAuth
+// @Param disciplineId path string true "Discipline ID"
+// @Param studentId path string true "Student UUID"
+// @Success 200 {object} api.MessageResponse
+// @Router /discipline/{disciplineId}/students/{studentId} [delete]
+func (h *handler) RemoveFromDiscipline() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		disciplineID := c.Param("id")
+		studentID := c.Param("studentId")
+
+		if err := h.importService.RemoveStudentFromDiscipline(c.Request.Context(), disciplineID, studentID); err != nil {
+			c.Error(err)
+			return
+		}
+
+		c.JSON(http.StatusOK, api.MessageResponse{Message: "Matrícula desvinculada da disciplina com sucesso"})
 	}
 }
 

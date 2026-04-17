@@ -2,9 +2,12 @@ package student
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"net/http"
 
 	"github.com/ThalysSilva/unicast-backend/internal/enrollment"
+	"github.com/ThalysSilva/unicast-backend/pkg/customerror"
 )
 
 type ImportMode string
@@ -29,9 +32,12 @@ type ImportResult struct {
 	Errors           []string
 }
 
+var ErrEnrollmentNotFound = customerror.Make("vínculo com disciplina não encontrado", http.StatusNotFound, errors.New("ErrEnrollmentNotFound"))
+
 type ImportService interface {
 	ImportForDiscipline(ctx context.Context, disciplineID string, mode ImportMode, records []ImportRecord) (*ImportResult, error)
 	AddStudentToDiscipline(ctx context.Context, disciplineID, studentID string) error
+	RemoveStudentFromDiscipline(ctx context.Context, disciplineID, studentUUID string) error
 }
 
 type importService struct {
@@ -68,6 +74,21 @@ func (s *importService) AddStudentToDiscipline(ctx context.Context, disciplineID
 		StudentID: studentID,
 		Status:    StudentStatusPending,
 	}, result)
+}
+
+func (s *importService) RemoveStudentFromDiscipline(ctx context.Context, disciplineID, studentUUID string) error {
+	enroll, err := s.enrollmentRepo.FindByDisciplineAndStudent(ctx, disciplineID, studentUUID)
+	if err != nil {
+		return fmt.Errorf("erro ao verificar vínculo: %w", err)
+	}
+	if enroll == nil {
+		return ErrEnrollmentNotFound
+	}
+
+	if err := s.enrollmentRepo.Delete(ctx, enroll.ID); err != nil {
+		return fmt.Errorf("erro ao desvincular matrícula: %w", err)
+	}
+	return nil
 }
 
 func (s *importService) processRecord(ctx context.Context, disciplineID string, idx int, rec ImportRecord, result *ImportResult) error {

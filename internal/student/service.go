@@ -21,7 +21,7 @@ type studentService struct {
 }
 
 var (
-	ErrStudentNotFound = customerror.Make("o campus não foi encontrado", http.StatusNotFound, errors.New("ErrCampusNotFound"))
+	ErrStudentNotFound = customerror.Make("aluno não encontrado", http.StatusNotFound, errors.New("ErrStudentNotFound"))
 )
 
 func NewService(studentRepository Repository) Service {
