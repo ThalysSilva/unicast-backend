@@ -59,9 +59,10 @@ func SendMediaURL(instanceName, number string, mediaURL string, fileName string,
 	})
 }
 
-// NormalizeNumber sanitiza e tenta converter para um formato próximo de E.164 usando um DDI padrão.
+// NormalizeNumber sanitiza e retorna dígitos puros com DDI, no formato aceito pela Evolution.
 // Se o número for muito curto, retorna erro.
 func NormalizeNumber(raw, defaultCountryCode string) (string, error) {
+	raw = strings.TrimSpace(raw)
 	digits := make([]rune, 0, len(raw))
 	for _, r := range raw {
 		if r >= '0' && r <= '9' {
@@ -74,13 +75,20 @@ func NormalizeNumber(raw, defaultCountryCode string) (string, error) {
 	}
 
 	num := string(digits)
-	// Se já começa com o DDI informado, só prefixa o '+'
-	if strings.HasPrefix(num, defaultCountryCode) {
-		return "+" + num, nil
+	if strings.HasPrefix(raw, "+") {
+		return num, nil
 	}
 
-	// Caso contrário, prefixa o DDI e retorna.
-	return "+" + defaultCountryCode + num, nil
+	// Se já começa com o DDI informado, retorna como está.
+	if strings.HasPrefix(num, defaultCountryCode) {
+		return num, nil
+	}
+
+	if defaultCountryCode == "" {
+		return num, nil
+	}
+
+	return defaultCountryCode + num, nil
 }
 
 func evolutionRecipientJID(number string) string {

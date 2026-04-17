@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/ThalysSilva/unicast-backend/internal/user"
@@ -39,14 +40,23 @@ var (
 	UserNotFound       = customerror.Make("Usuário não encontrado", http.StatusNotFound, errors.New("userNotFound"))
 	InstanceNotFound   = customerror.Make("Instância não encontrada", http.StatusNotFound, errors.New("instanceNotFound"))
 	InstanceForbidden  = customerror.Make("Você não tem permissão para esta instância", http.StatusForbidden, errors.New("instanceForbidden"))
+	InvalidPhone       = customerror.Make("telefone deve estar em formato internacional, com DDI. Exemplo: +5511999999999", http.StatusBadRequest, errors.New("invalidPhone"))
 )
 
 func (s *service) CreateInstance(ctx context.Context, userId, phone string) (*Instance, *connectResponse, error) {
 	var instance *Instance
+	if !strings.HasPrefix(strings.TrimSpace(phone), "+") {
+		return nil, nil, customerror.Trace("CreateInstance", InvalidPhone)
+	}
+	normalizedPhone, err := NormalizeNumber(phone, "")
+	if err != nil {
+		return nil, nil, customerror.Trace("CreateInstance", err)
+	}
+	phone = normalizedPhone
 
 	// Fase 1: checa existência e usuário dentro da transação.
 	var instanceName string
-	err := s.withTransaction(ctx, func(waRepo Repository, userRepo user.Repository) error {
+	err = s.withTransaction(ctx, func(waRepo Repository, userRepo user.Repository) error {
 		if err := s.ensureNoExistingInstance(ctx, waRepo, phone, userId); err != nil {
 			return err
 		}
