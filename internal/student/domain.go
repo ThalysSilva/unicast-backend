@@ -3,6 +3,7 @@ package student
 import (
 	"context"
 	"database/sql"
+	"strings"
 	"time"
 
 	"github.com/ThalysSilva/unicast-backend/pkg/database"
@@ -30,6 +31,43 @@ type Student struct {
 	CreatedAt  time.Time     `json:"-"`
 	UpdatedAt  time.Time     `json:"-"`
 	Status     StudentStatus `json:"status"`
+}
+
+func hasText(value *string) bool {
+	return value != nil && strings.TrimSpace(*value) != ""
+}
+
+func HasCompletedContact(student *Student) bool {
+	if student == nil {
+		return false
+	}
+
+	return HasCompletedContactFields(student.Name, student.Phone, student.Email)
+}
+
+func HasCompletedContactFields(name, phone, email *string) bool {
+	return hasText(name) && hasText(phone) && hasText(email)
+}
+
+func DeriveContactAwareStatus(current, requested StudentStatus, statusProvided bool, name, phone, email *string) StudentStatus {
+	hasCompleteContact := HasCompletedContactFields(name, phone, email)
+
+	if statusProvided {
+		if requested == StudentStatusActive && !hasCompleteContact {
+			return StudentStatusPending
+		}
+		return requested
+	}
+
+	switch current {
+	case StudentStatusLocked, StudentStatusGraduated, StudentStatusCanceled:
+		return current
+	}
+
+	if hasCompleteContact {
+		return StudentStatusActive
+	}
+	return StudentStatusPending
 }
 
 type Repository interface {

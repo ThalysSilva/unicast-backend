@@ -7,6 +7,7 @@ import (
 	"errors"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/ThalysSilva/unicast-backend/internal/discipline"
@@ -40,6 +41,7 @@ var (
 	ErrEnrollmentRegistrationComplete = customerror.Make("cadastro desta matrícula já foi concluído para esta disciplina", http.StatusConflict, errors.New("ErrEnrollmentRegistrationComplete"))
 	ErrStudentNotFound                = customerror.Make("estudante não encontrado", http.StatusNotFound, errors.New("ErrStudentNotFound"))
 	ErrConsentRequired                = customerror.Make("é necessário aceitar o recebimento automatizado de notificações", http.StatusBadRequest, errors.New("ErrConsentRequired"))
+	ErrContactRequired                = customerror.Make("preencha nome, email e telefone para concluir o cadastro", http.StatusBadRequest, errors.New("ErrContactRequired"))
 )
 
 func NewService(
@@ -169,18 +171,19 @@ func (s *inviteService) SelfRegister(ctx context.Context, code, studentID, name,
 		return ErrConsentRequired
 	}
 
+	name = strings.TrimSpace(name)
+	phone = strings.TrimSpace(phone)
+	email = strings.TrimSpace(email)
+	if name == "" || phone == "" || email == "" {
+		return ErrContactRequired
+	}
+
 	fields := map[string]any{
 		"status":  student.StudentStatusActive,
 		"consent": true,
-	}
-	if name != "" {
-		fields["name"] = name
-	}
-	if phone != "" {
-		fields["phone"] = phone
-	}
-	if email != "" {
-		fields["email"] = email
+		"name":    name,
+		"phone":   phone,
+		"email":   email,
 	}
 
 	if err := s.studentRepository.Update(ctx, studentFound.ID, fields); err != nil {

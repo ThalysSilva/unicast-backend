@@ -377,17 +377,19 @@ func buildImportRecord(row []string, columns map[string]int, line int) (ImportRe
 		return &value
 	}
 
-	status, err := parseStatus(get("status"))
+	statusInput := get("status")
+	status, err := parseStatus(statusInput)
 	if err != nil {
 		return ImportRecord{}, fmt.Errorf("linha %d: %v", line, err)
 	}
 
 	return ImportRecord{
-		StudentID: get("studentid"),
-		Name:      toPtr(get("name")),
-		Phone:     toPtr(get("phone")),
-		Email:     toPtr(get("email")),
-		Status:    status,
+		StudentID:      get("studentid"),
+		Name:           toPtr(get("name")),
+		Phone:          toPtr(get("phone")),
+		Email:          toPtr(get("email")),
+		Status:         status,
+		StatusProvided: statusInput != "",
 	}, nil
 }
 

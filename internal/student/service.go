@@ -74,12 +74,30 @@ func (s *studentService) Update(ctx context.Context, id string, fields map[strin
 		return ErrStudentNotFound
 	}
 
+	name := mergeFieldString(student.Name, fields["name"])
+	phone := mergeFieldString(student.Phone, fields["phone"])
+	email := mergeFieldString(student.Email, fields["email"])
+	status, statusProvided := fields["status"].(StudentStatus)
+	fields["status"] = DeriveContactAwareStatus(student.Status, status, statusProvided, name, phone, email)
+
 	err = s.studentRepository.Update(ctx, id, fields)
 	if err != nil {
 		return err
 	}
 
 	return nil
+}
+
+func mergeFieldString(current *string, next any) *string {
+	switch value := next.(type) {
+	case *string:
+		if value != nil {
+			return value
+		}
+	case string:
+		return &value
+	}
+	return current
 }
 
 func (s *studentService) Delete(ctx context.Context, id string) error {

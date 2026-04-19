@@ -18,11 +18,12 @@ const (
 )
 
 type ImportRecord struct {
-	StudentID string
-	Name      *string
-	Phone     *string
-	Email     *string
-	Status    StudentStatus
+	StudentID      string
+	Name           *string
+	Phone          *string
+	Email          *string
+	Status         StudentStatus
+	StatusProvided bool
 }
 
 type ImportResult struct {
@@ -102,7 +103,8 @@ func (s *importService) processRecord(ctx context.Context, disciplineID string, 
 	}
 
 	if existing == nil {
-		if err := s.studentsRepo.Create(ctx, rec.StudentID, nil, nil, nil, nil, StudentStatusPending); err != nil {
+		status := DeriveContactAwareStatus("", rec.Status, rec.StatusProvided, rec.Name, rec.Phone, rec.Email)
+		if err := s.studentsRepo.Create(ctx, rec.StudentID, rec.Name, rec.Phone, rec.Email, nil, status); err != nil {
 			return fmt.Errorf("linha %d: erro ao criar student: %v", idx+1, err)
 		}
 		existing, err = s.studentsRepo.FindByStudentID(ctx, rec.StudentID)
@@ -127,28 +129,23 @@ func (s *importService) processRecord(ctx context.Context, disciplineID string, 
 }
 
 func (s *importService) updateExisting(ctx context.Context, rec ImportRecord, existing *Student, idx int, result *ImportResult) error {
-	canUpdate := existing.Phone != nil || existing.Email != nil
-	status := rec.Status
-	if status == StudentStatusPending && hasCompletedContact(existing) {
-		status = StudentStatusActive
-	}
+	name := mergeString(existing.Name, rec.Name)
+	phone := mergeString(existing.Phone, rec.Phone)
+	email := mergeString(existing.Email, rec.Email)
+	status := DeriveContactAwareStatus(existing.Status, rec.Status, rec.StatusProvided, name, phone, email)
 
 	fields := map[string]any{
 		"status": status,
 	}
 
-	if canUpdate {
-		if rec.Name != nil {
-			fields["name"] = *rec.Name
-		}
-		if rec.Phone != nil {
-			fields["phone"] = *rec.Phone
-		}
-		if rec.Email != nil {
-			fields["email"] = *rec.Email
-		}
-	} else if rec.Phone != nil || rec.Email != nil {
-		result.Errors = append(result.Errors, fmt.Sprintf("linha %d: aluno %s ainda não completou cadastro; ignorei contato, mas atualizei status", idx+1, rec.StudentID))
+	if rec.Name != nil {
+		fields["name"] = *rec.Name
+	}
+	if rec.Phone != nil {
+		fields["phone"] = *rec.Phone
+	}
+	if rec.Email != nil {
+		fields["email"] = *rec.Email
 	}
 
 	if err := s.studentsRepo.Update(ctx, existing.ID, fields); err != nil {
@@ -158,12 +155,11 @@ func (s *importService) updateExisting(ctx context.Context, rec ImportRecord, ex
 	return nil
 }
 
-func hasCompletedContact(student *Student) bool {
-	if student == nil {
-		return false
+func mergeString(current, next *string) *string {
+	if next != nil {
+		return next
 	}
-
-	return student.Name != nil && student.Email != nil && student.Phone != nil
+	return current
 }
 
 func (s *importService) ensureEnrollment(ctx context.Context, disciplineID, studentUUID string, idx int, result *ImportResult) error {
