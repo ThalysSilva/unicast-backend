@@ -45,6 +45,53 @@ air
 ```
 Swagger disponível em `http://localhost:${API_PORT}/swagger/index.html`.
 
+### Seed de demonstração
+Para apresentações do TCC, existe uma seed idempotente em `scripts/demo-seed.sql`.
+Ela cria um usuário docente, campus, cursos, disciplinas, alunos, vínculos, convites e alguns logs de mensagem.
+
+Credenciais do usuário demo:
+```
+email: demo@unicast.local
+senha: Unicast@2026
+```
+
+Com `psql` local:
+```
+psql "$POSTGRES_DATABASE_URL" -f scripts/demo-seed.sql
+```
+
+Com o comando Go, sem depender do `psql` local:
+```
+go run ./cmd/seed
+```
+
+Com Makefile:
+```
+make seed
+```
+
+Se o `.env` usa `POSTGRES_HOST=postgres-unicast` para Docker, rode a seed a partir do host/WSL com:
+```
+make seed-local
+```
+
+Opcionalmente, informe arquivos específicos:
+```
+go run ./cmd/seed --env .env.development --file scripts/demo-seed.sql
+```
+
+O Makefile também aceita sobrescrita:
+```
+make seed-local ENV_FILE=.env.development POSTGRES_PORT_OVERRIDE=5433
+```
+
+Com o Postgres do Docker Compose:
+```
+docker exec -i postgres-unicast psql -U "$POSTGRES_USER" -d unicast < scripts/demo-seed.sql
+```
+
+Observação: a seed remove e recria apenas o usuário `demo@unicast.local` e as matrículas demo (`2026001` a `2026008`).
+
 ### Fluxos principais
 - **Auth**: `/auth/register`, `/auth/login`, `/auth/refresh`, `/auth/logout` (Bearer).
 - **Campus/Program/Discipline**: CRUD protegido; ownership validado por usuário. No produto: `program` = curso e `discipline` = disciplina/oferta.
