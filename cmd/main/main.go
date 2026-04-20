@@ -4,6 +4,7 @@ import (
 	"encoding/hex"
 	"log"
 	"os"
+	"time"
 
 	_ "github.com/ThalysSilva/unicast-backend/docs"
 	"github.com/ThalysSilva/unicast-backend/internal/auth"
@@ -93,12 +94,17 @@ func main() {
 	r.Use(middleware.CORS())
 	r.Use(middleware.ValidationErrorHandler())
 
+	authRateLimit := middleware.NewRateLimiter(10, time.Minute)
+	sensitiveRateLimit := middleware.NewRateLimiter(30, time.Minute)
+	messageRateLimit := middleware.NewRateLimiter(20, time.Minute)
+	backdoorRateLimit := middleware.NewRateLimiter(5, time.Minute)
+
 	// Rotas de autenticação
 	authGroup := r.Group("/auth")
 	{
-		authGroup.POST("/register", authHandler.Register())
-		authGroup.POST("/login", authHandler.Login())
-		authGroup.POST("/refresh", authHandler.Refresh())
+		authGroup.POST("/register", authRateLimit, authHandler.Register())
+		authGroup.POST("/login", authRateLimit, authHandler.Login())
+		authGroup.POST("/refresh", authRateLimit, authHandler.Refresh())
 		// Com autenticação
 		authGroup.Use(middleware.UseAuthentication(secrets.AccessToken))
 		authGroup.POST("/logout", authHandler.Logout())
@@ -140,22 +146,22 @@ func main() {
 	whatsappGroup := r.Group("/whatsapp")
 	{
 		whatsappGroup.Use(middleware.UseAuthentication(secrets.AccessToken))
-		whatsappGroup.POST("/instance", whatsappHandler.CreateInstance())
+		whatsappGroup.POST("/instance", sensitiveRateLimit, whatsappHandler.CreateInstance())
 		whatsappGroup.GET("/instance", whatsappHandler.GetInstances())
 		whatsappGroup.DELETE("/instance/:id", whatsappHandler.DeleteInstance())
-		whatsappGroup.POST("/instance/:id/connect", whatsappHandler.ConnectInstance())
+		whatsappGroup.POST("/instance/:id/connect", sensitiveRateLimit, whatsappHandler.ConnectInstance())
 		whatsappGroup.GET("/instance/:id/status", whatsappHandler.ConnectionState())
 		whatsappGroup.DELETE("/instance/:id/logout", whatsappHandler.LogoutInstance())
-		whatsappGroup.POST("/instance/:id/restart", whatsappHandler.RestartInstance())
+		whatsappGroup.POST("/instance/:id/restart", sensitiveRateLimit, whatsappHandler.RestartInstance())
 	}
 
 	// Rotas do smtp
 	smtpGroup := r.Group("/smtp")
 	{
 		smtpGroup.Use(middleware.UseAuthentication(secrets.AccessToken))
-		smtpGroup.POST("/oauth/:provider/start", smtpHandler.StartOAuth())
-		smtpGroup.POST("/instance/test", smtpHandler.TestConnection())
-		smtpGroup.POST("/instance", smtpHandler.Create(secrets.Jwe))
+		smtpGroup.POST("/oauth/:provider/start", sensitiveRateLimit, smtpHandler.StartOAuth())
+		smtpGroup.POST("/instance/test", sensitiveRateLimit, smtpHandler.TestConnection())
+		smtpGroup.POST("/instance", sensitiveRateLimit, smtpHandler.Create(secrets.Jwe))
 		smtpGroup.GET("/instance", smtpHandler.GetInstances())
 		smtpGroup.DELETE("/instance/:id", smtpHandler.DeleteInstance())
 	}
@@ -183,11 +189,11 @@ func main() {
 	messageGroup := r.Group("/message")
 	{
 		messageGroup.Use(middleware.UseAuthentication(secrets.AccessToken))
-		messageGroup.POST("/send", messageHandler.Send())
+		messageGroup.POST("/send", messageRateLimit, messageHandler.Send())
 	}
 
 	// Backdoor administrativo (proteção via secret)
-	r.POST("/backdoor/reset-password", backdoorHandler.ResetPassword())
+	r.POST("/backdoor/reset-password", backdoorRateLimit, backdoorHandler.ResetPassword())
 
 	// Rotas de convites
 	inviteGroup := r.Group("/invite")
@@ -198,7 +204,7 @@ func main() {
 		inviteGroup.GET("/:disciplineId/current", inviteHandler.GetCurrent())
 		inviteGroup.DELETE("/:inviteId", inviteHandler.Delete())
 	}
-	r.POST("/invite/self-register/:code", inviteHandler.SelfRegister())
+	r.POST("/invite/self-register/:code", authRateLimit, inviteHandler.SelfRegister())
 
 	// Swagger
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
