@@ -105,7 +105,7 @@ Observação: a seed remove e recria apenas o usuário `demo@unicast.local` e a 
 - **OAuth de Email**: para Gmail/Google via Gmail API, veja `docs/oauth-email-setup.md`.
 - **WhatsApp Instâncias**: além do CRUD de instâncias, expõe connect/status/logout/restart; criação já retorna QR/pairing code para parear via Evolution API.
 - **Mensagens**: `POST /message/send` envia e-mail e WhatsApp para alunos; aceita anexos em base64 ou URL; logs de entrega ficam em `message_logs`. A resposta de falhas por canal retorna apenas `id` e `studentId` dos alunos afetados, evitando expor contato/anotações desnecessariamente.
-- **Backdoor admin**: `POST /backdoor/reset-password` com `ADMIN_SECRET` permite reset de senha por `userId` ou `email` para recuperar acesso.
+- **Backdoor admin**: `POST /backdoor/reset-password` com `secret`, `newPassword` e `userId` ou `email`. O `secret` deve corresponder ao `ADMIN_SECRET`; a rota permite recuperar acesso ao alterar a senha e invalidar sessões existentes do usuário.
 
 #### Envio de mensagens
 - O endpoint principal é `POST /message/send`.
@@ -262,6 +262,23 @@ sequenceDiagram
     API->>DB: grava logs de mensagens (sucesso/erro por canal)
     API-->>BFF: falhas mínimas por canal (id, studentId)
     BFF-->>Professor: resposta sem tokens/JWE
+```
+
+**Fluxo administrativo de recuperação de usuário**
+```mermaid
+sequenceDiagram
+    participant Administrador
+    participant API
+    participant DB as Postgres
+    participant Usuario as Usuário
+
+    Administrador->>API: POST /backdoor/reset-password {secret, userId ou email, newPassword}
+    API->>API: valida secret contra ADMIN_SECRET
+    API->>DB: busca usuário por userId ou email
+    API->>API: gera novo hash de senha e novo salt
+    API->>DB: atualiza senha, salt e invalida refresh token
+    API-->>Administrador: senha atualizada com sucesso
+    Usuario->>API: POST /auth/login com a nova senha
 ```
 
 **Criptografia de credenciais de email**
@@ -543,7 +560,7 @@ flowchart TB
     C3["Auto-cadastro via convite"]
     C4["Enviar mensagens (email/WhatsApp)"]
     C5["Gerir instâncias SMTP/WhatsApp"]
-    C6["Reset de senha (backdoor)"]
+    C6["Recuperar usuário / alterar senha"]
 
     Professor --> C1
     Professor --> C2

@@ -1,37 +1,4 @@
 definitions:
-  github_com_ThalysSilva_unicast-backend_internal_student.Student:
-    properties:
-      annotation:
-        type: string
-      consent:
-        type: boolean
-      email:
-        type: string
-      id:
-        type: string
-      name:
-        type: string
-      phone:
-        type: string
-      status:
-        $ref: '#/definitions/github_com_ThalysSilva_unicast-backend_internal_student.StudentStatus'
-      studentId:
-        type: string
-    type: object
-  github_com_ThalysSilva_unicast-backend_internal_student.StudentStatus:
-    enum:
-    - ACTIVE
-    - CANCELED
-    - GRADUATED
-    - LOCKED
-    - PENDING
-    type: string
-    x-enum-varnames:
-    - StudentStatusActive
-    - StudentStatusCanceled
-    - StudentStatusGraduated
-    - StudentStatusLocked
-    - StudentStatusPending
   github_com_ThalysSilva_unicast-backend_internal_user.User:
     properties:
       email:
@@ -361,15 +328,22 @@ definitions:
       url:
         type: string
     type: object
+  internal_message.FailedRecipient:
+    properties:
+      id:
+        type: string
+      studentId:
+        type: string
+    type: object
   internal_message.MessageDataResponse:
     properties:
       emailsFailed:
         items:
-          $ref: '#/definitions/github_com_ThalysSilva_unicast-backend_internal_student.Student'
+          $ref: '#/definitions/internal_message.FailedRecipient'
         type: array
       whatsappFailed:
         items:
-          $ref: '#/definitions/github_com_ThalysSilva_unicast-backend_internal_student.Student'
+          $ref: '#/definitions/internal_message.FailedRecipient'
         type: array
     type: object
   internal_message.MessageInput:

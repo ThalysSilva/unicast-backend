@@ -1854,52 +1854,6 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "github_com_ThalysSilva_unicast-backend_internal_student.Student": {
-            "type": "object",
-            "properties": {
-                "annotation": {
-                    "type": "string"
-                },
-                "consent": {
-                    "type": "boolean"
-                },
-                "email": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "string"
-                },
-                "name": {
-                    "type": "string"
-                },
-                "phone": {
-                    "type": "string"
-                },
-                "status": {
-                    "$ref": "#/definitions/github_com_ThalysSilva_unicast-backend_internal_student.StudentStatus"
-                },
-                "studentId": {
-                    "type": "string"
-                }
-            }
-        },
-        "github_com_ThalysSilva_unicast-backend_internal_student.StudentStatus": {
-            "type": "string",
-            "enum": [
-                "ACTIVE",
-                "CANCELED",
-                "GRADUATED",
-                "LOCKED",
-                "PENDING"
-            ],
-            "x-enum-varnames": [
-                "StudentStatusActive",
-                "StudentStatusCanceled",
-                "StudentStatusGraduated",
-                "StudentStatusLocked",
-                "StudentStatusPending"
-            ]
-        },
         "github_com_ThalysSilva_unicast-backend_internal_user.User": {
             "type": "object",
             "required": [
@@ -2405,19 +2359,30 @@ const docTemplate = `{
                 }
             }
         },
+        "internal_message.FailedRecipient": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string"
+                },
+                "studentId": {
+                    "type": "string"
+                }
+            }
+        },
         "internal_message.MessageDataResponse": {
             "type": "object",
             "properties": {
                 "emailsFailed": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/github_com_ThalysSilva_unicast-backend_internal_student.Student"
+                        "$ref": "#/definitions/internal_message.FailedRecipient"
                     }
                 },
                 "whatsappFailed": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/github_com_ThalysSilva_unicast-backend_internal_student.Student"
+                        "$ref": "#/definitions/internal_message.FailedRecipient"
                     }
                 }
             }
