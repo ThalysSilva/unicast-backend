@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"log"
 	"strings"
 	"time"
 
@@ -322,7 +323,7 @@ func (s *service) sendWhats(ctx context.Context, waInstance *whatsapp.Instance, 
 		}
 
 		if err := sendWhatsAppWithRetry(waInstance.InstanceName, normalized, body, 3, 1*time.Second); err != nil {
-			fmt.Printf("falha ao enviar whatsapp para %s: %v\n", *stud.Phone, err)
+			log.Printf("falha ao enviar whatsapp para %s: %v", *stud.Phone, err)
 			failed = append(failed, *stud)
 			continue
 		}
@@ -330,7 +331,7 @@ func (s *service) sendWhats(ctx context.Context, waInstance *whatsapp.Instance, 
 		for _, att := range attachments {
 			if len(att.Data) > 0 {
 				if _, err := whatsapp.SendMedia(waInstance.InstanceName, normalized, att.FileName, att.Data, body); err != nil {
-					fmt.Printf("falha ao enviar anexo via whatsapp para %s: %v\n", *stud.Phone, err)
+					log.Printf("falha ao enviar anexo via whatsapp para %s: %v", *stud.Phone, err)
 					failed = append(failed, *stud)
 					break
 				}
@@ -338,14 +339,14 @@ func (s *service) sendWhats(ctx context.Context, waInstance *whatsapp.Instance, 
 			}
 			if att.URL != "" {
 				if _, err := whatsapp.SendMediaURL(waInstance.InstanceName, normalized, att.URL, att.FileName, body); err != nil {
-					fmt.Printf("falha ao enviar anexo via url whatsapp para %s: %v\n", *stud.Phone, err)
+					log.Printf("falha ao enviar anexo via url whatsapp para %s: %v", *stud.Phone, err)
 					failed = append(failed, *stud)
 					break
 				}
 				continue
 			}
 			// Se não há data nem URL, ignora o attachment
-			fmt.Printf("falha ao enviar anexo via whatsapp para %s: %v\n", *stud.Phone, err)
+			log.Printf("falha ao enviar anexo via whatsapp para %s: anexo sem data e sem URL", *stud.Phone)
 			failed = append(failed, *stud)
 			break
 		}
@@ -378,7 +379,7 @@ func (s *service) logResults(ctx context.Context, students []*student.Student, e
 				AttachmentNames: nullableString(attachmentNames, attachmentCount > 0),
 				AttachmentCount: attachmentCount,
 			}); err != nil {
-				fmt.Printf("falha ao salvar log email student %s: %v\n", stud.ID, err)
+				log.Printf("falha ao salvar log email student %s: %v", stud.ID, err)
 			}
 		}
 	}
@@ -401,7 +402,7 @@ func (s *service) logResults(ctx context.Context, students []*student.Student, e
 				AttachmentNames:    nullableString(attachmentNames, attachmentCount > 0),
 				AttachmentCount:    attachmentCount,
 			}); err != nil {
-				fmt.Printf("falha ao salvar log whatsapp student %s: %v\n", stud.ID, err)
+				log.Printf("falha ao salvar log whatsapp student %s: %v", stud.ID, err)
 			}
 		}
 	}

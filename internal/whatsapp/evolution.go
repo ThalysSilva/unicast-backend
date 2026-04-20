@@ -176,7 +176,6 @@ func createEvolutionInstance(phone, instanceName string, qrCode bool) (createdNa
 	}
 	payload := bytes.NewBuffer(jsonData)
 	resp, err := httpClientEvolution[newEvolutionInstanceReturn]("POST", "/instance/create", payload)
-	fmt.Println("resp", resp)
 	if err != nil {
 		return "", "", customerror.Trace("createEvolutionInstance: ", err)
 	}

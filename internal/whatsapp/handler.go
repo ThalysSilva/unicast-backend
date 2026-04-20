@@ -1,7 +1,6 @@
 package whatsapp
 
 import (
-	"fmt"
 	"net/http"
 
 	"github.com/ThalysSilva/unicast-backend/pkg/api"
@@ -159,7 +158,6 @@ func (h *handler) ConnectInstance() gin.HandlerFunc {
 			customerror.HandleResponse(c, err)
 			return
 		}
-		fmt.Printf("resp: %+v\n", resp)
 
 		c.JSON(http.StatusOK, api.DefaultResponse[connectResponse]{Message: "Instância conectando...", Data: *resp})
 	}

@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"log"
 )
 
 // DB abstrai métodos de *sql.DB e *sql.Tx.
@@ -104,7 +105,7 @@ func MakeTransaction[T any](ctx context.Context, repos []Transactional, fn func(
 	defer func() {
 		if r := recover(); r != nil {
 			if err := tx.Rollback(txHandle); err != nil {
-				fmt.Printf("falha ao reverter transação: %v\n", err)
+				log.Printf("falha ao reverter transação: %v", err)
 			}
 			panic(r)
 		}
