@@ -91,6 +91,7 @@ func main() {
 
 	r := gin.Default()
 
+	r.Use(middleware.SecurityHeaders())
 	r.Use(middleware.CORS())
 	r.Use(middleware.ValidationErrorHandler())
 
