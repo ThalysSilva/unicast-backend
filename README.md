@@ -3,6 +3,8 @@
 
 Backend em Go para fortalecer a comunicação docente–discente. Permite ao professor cadastrar disciplinas e alunos (pré-cadastrados por matrícula) e enviar mensagens que chegam por múltiplos canais (WhatsApp e e-mail), reduzindo o risco de a informação passar despercebida. Inclui autenticação, gestão de campus/curso/disciplina, convites públicos com código curto para o auto-cadastro do aluno, e integrações de Email e WhatsApp.
 
+O backend foi desenhado como uma API reutilizável por diferentes clientes. O frontend oficial usa um BFF em Next/Auth.js para guardar `accessToken`, `refreshToken` e `jwe` em cookies `HttpOnly`, mas outros frontends podem consumir a API diretamente com Bearer token desde que armazenem esses artefatos com cuidado equivalente.
+
 ### Stack
 - Go 1.24.x (Gin, Swagger, JWT/JWE, PQ)
 - PostgreSQL (persistência principal)
@@ -98,11 +100,11 @@ Observação: a seed remove e recria apenas o usuário `demo@unicast.local` e a 
 - **Students**: pré-cadastro com status (PENDING, ACTIVE, etc.).
 - **Enrollments**: vínculo aluno ↔ disciplina.
 - **Invites**: professor cria código curto para a disciplina (`POST /invite/:disciplineId`); aluno usa `POST /invite/self-register/:code` com `studentId`, `name`, `phone`, `email`. Backend valida o vínculo (`enrollment`), permite uma conclusão de auto-cadastro por vínculo da disciplina e ativa o aluno ao concluir.
-- **Importação de alunos**: `POST /discipline/:disciplineId/students/import?mode=upsert|clean` (CSV multipart em `file`). Colunas aceitas: `studentId` (obrigatória), `name`, `phone`, `email`, `status` (1/2/3/4/5 ou ACTIVE/LOCKED/GRADUATED/CANCELED/PENDING). `mode=clean` remove matrículas da disciplina antes de inserir. Regras: se o aluno não existir, apenas o `studentId` é salvo com status `PENDING`; status pode ser atualizado sempre; dados de contato só são atualizados se o aluno já tiver algum contato salvo (cadastro próprio); contatos enviados para quem nunca se cadastrou são ignorados e logados.
+- **Importação de alunos**: `POST /discipline/:disciplineId/students/import?mode=upsert|clean` (CSV multipart em `file`). Colunas aceitas: `studentId` (obrigatória), `name`, `phone`, `email`, `status` (1/2/3/4/5 ou ACTIVE/LOCKED/GRADUATED/CANCELED/PENDING). Linhas com campos finais ausentes são aceitas; campos ausentes entram como vazios. `mode=clean` remove matrículas da disciplina antes de inserir. Se o aluno não existir, é criado com os dados enviados e status derivado do contato/status informado. Se já existir, campos enviados atualizam o cadastro e o vínculo com a disciplina é garantido.
 - **Email**: criação/listagem de instâncias de envio por senha SMTP ou OAuth.
 - **OAuth de Email**: para Gmail/Google via Gmail API, veja `docs/oauth-email-setup.md`.
 - **WhatsApp Instâncias**: além do CRUD de instâncias, expõe connect/status/logout/restart; criação já retorna QR/pairing code para parear via Evolution API.
-- **Mensagens**: `POST /message/send` envia e-mail e WhatsApp para alunos; aceita anexos em base64 ou URL; logs de entrega ficam em `message_logs`.
+- **Mensagens**: `POST /message/send` envia e-mail e WhatsApp para alunos; aceita anexos em base64 ou URL; logs de entrega ficam em `message_logs`. A resposta de falhas por canal retorna apenas `id` e `studentId` dos alunos afetados, evitando expor contato/anotações desnecessariamente.
 - **Backdoor admin**: `POST /backdoor/reset-password` com `ADMIN_SECRET` permite reset de senha por `userId` ou `email` para recuperar acesso.
 
 #### Envio de mensagens
@@ -133,31 +135,62 @@ Exemplo:
 }
 ```
 
+Resposta de sucesso:
+
+```json
+{
+  "message": "Mensagem enviada com sucesso",
+  "data": {
+    "emailsFailed": [
+      { "id": "uuid-do-aluno", "studentId": "2026996" }
+    ],
+    "whatsappFailed": []
+  }
+}
+```
+
 ### Segurança e credenciais
-- **Tokens**: JWT para acesso/refresh; JWE com chave de 32 bytes hex para proteger tokens sensíveis.
-- **Email**: credenciais de senha SMTP são cifradas com segredo fornecido pelo usuário; tokens OAuth ficam cifrados com o segredo global do backend.
+- **Tokens**: JWT para acesso/refresh; o backend também emite um JWE contendo a chave derivada do usuário para uso com credenciais SMTP. Esse JWE é cifrado com `JWE_SECRET`.
+- **Frontend oficial**: usa BFF em Next/Auth.js. `accessToken`, `refreshToken` e `jwe` ficam em cookie/sessão `HttpOnly`; o BFF injeta Bearer token e `jwe` server-side quando chama a API.
+- **Frontends genéricos**: podem usar os endpoints diretamente, mas devem tratar `accessToken`, `refreshToken` e `jwe` como credenciais sensíveis. Evite `localStorage` para sessões de produção; prefira BFF/cookies `HttpOnly`, armazenamento em memória com renovação controlada, proteção contra XSS e CSRF/Origin checks quando houver cookies.
+- **Email**: senhas SMTP são cifradas com chave derivada da senha do usuário; essa chave derivada é transportada dentro do JWE. Tokens OAuth ficam cifrados com o segredo global do backend.
 - **Env vars**: segredos ficam no `.env`/`.env.development`. Não commitá-los; use `example.env` como base.
 - **Ownership**: operações sensíveis (campus/program/discipline/invite) conferem o `userID` do token ao dono do recurso.
 - **Invite codes**: códigos curtos únicos por disciplina; validados como ativos/não expirados e vinculados ao enrollment, garantindo que apenas alunos pré-cadastrados possam ativar seus dados. O auto-cadastro é bloqueado depois da primeira conclusão naquele enrollment, sem impedir novos vínculos do mesmo aluno em outras disciplinas/ofertas.
 - **Backdoor**: rota administrativa protegida por `ADMIN_SECRET`; trate essa chave como segredo crítico.
+- **Rate limit**: rotas sensíveis têm limite em memória por IP + rota. Ex.: login/register/refresh e auto-cadastro, backdoor, envio de mensagens e criação/teste/conexão de integrações.
+- **Erros públicos**: respostas HTTP usam mensagens seguras; detalhes internos ficam nos logs do servidor.
+- **Headers de segurança**: a API aplica `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, `Permissions-Policy`, `Cross-Origin-Opener-Policy` e HSTS quando a request chega via TLS.
   
 #### Modelo de criptografia SMTP
-- Cada instância SMTP é criada pelo usuário fornecendo um segredo (`smtpSecret`) próprio; esse segredo não é armazenado em texto plano.
-- As credenciais SMTP (email, senha, host/porta, IV) são cifradas com JWE usando o `smtpSecret` do usuário, de modo que um vazamento de banco afeta apenas a instância/usuário que teve o segredo comprometido.
-- O `JWE_SECRET` global serve apenas para proteger dados sensíveis de tokens/JWE do sistema; o segredo específico de SMTP é fornecido pelo usuário, reduzindo o blast radius.
-- Logs não carregam dados sensíveis; recomenda-se nunca registrar host/usuário/senha do SMTP em claro.
+- No login, o backend deriva uma chave SMTP a partir da senha do usuário e do salt salvo no banco.
+- Essa chave derivada é enviada ao cliente dentro de um JWE cifrado com `JWE_SECRET`.
+- Para criar instância SMTP por senha, o cliente envia `jwe` junto com email/host/porta/senha SMTP. O backend abre o JWE, obtém a chave SMTP e cifra a senha SMTP antes de persistir.
+- Para enviar email por SMTP com senha, o cliente/BFF envia o `jwe`; o backend usa a chave derivada apenas em memória para descriptografar a senha SMTP e enviar a mensagem.
+- Tokens OAuth de email são cifrados no backend com `JWE_SECRET` e não dependem da senha do usuário.
+- As credenciais armazenadas permanecem cifradas em repouso. A segurança depende da separação entre banco, `JWE_SECRET` e artefatos de sessão do usuário; trate todos esses componentes como sensíveis e evite registrá-los em logs.
+- Logs não carregam body, headers, cookies, `Authorization`, senha ou JWE.
+
+#### Clientes, BFF e armazenamento de sessão
+- A API aceita o modelo direto: cliente chama `/auth/login`, recebe `accessToken`, `refreshToken` e `jwe`, usa `Authorization: Bearer <accessToken>` e envia `jwe` apenas nos fluxos que precisam dele.
+- O frontend oficial não expõe esses valores ao JavaScript do browser. Ele usa Auth.js/BFF: cookies `HttpOnly` guardam a sessão, e o proxy Next injeta Bearer/JWE server-side.
+- Para frontends genéricos, o contrato continua aberto, mas o cliente assume a responsabilidade de armazenamento seguro. Em aplicações web, evite persistir `refreshToken` e `jwe` em `localStorage`; prefira BFF/cookie `HttpOnly` ou estratégia equivalente.
+- Se usar cookies em um cliente próprio, proteja rotas mutáveis contra CSRF com `SameSite`, validação de `Origin` e/ou token anti-CSRF.
+- Nunca envie `accessToken`, `refreshToken` ou `jwe` por query string. Use body/header e evite registrar esses valores em logs/analytics.
 
 ### Diagramas (Mermaid)
 
 **Arquitetura geral**
 ```mermaid
 flowchart LR
-    subgraph Frontend
-        FE["Cliente Web"]
+    subgraph Clients["Clientes"]
+        OfficialFE["Frontend oficial\nNext/Auth.js BFF"]
+        GenericFE["Frontends genéricos\nWeb/mobile/integrações"]
     end
     subgraph Backend
         API["UniCast API (Gin)"]
         Auth["Auth/JWT/JWE"]
+        Security["Middleware\nCORS, rate limit,\nsecurity headers"]
         Msg["Message Service"]
         Inv["Invite/Enrollment"]
         SMTP["Email Service"]
@@ -170,7 +203,9 @@ flowchart LR
         Mail["SMTP Provider\nou Gmail API"]
     end
 
-    FE -->|HTTP/JSON| API
+    OfficialFE -->|/api/backend\ncookies HttpOnly| API
+    GenericFE -->|HTTP/JSON\nBearer + JWE quando necessário| API
+    API --> Security
     API --> Auth
     API --> Inv
     API --> Msg
@@ -198,7 +233,7 @@ sequenceDiagram
     Professor->>API: POST /invite/:disciplineId (Bearer)
     API->>DB: cria invite (code, disciplineId, expiração)
     API-->>Professor: code
-    Aluno->>API: POST /invite/self-register/:code {studentId, name, phone, email}
+    Aluno->>API: POST /invite/self-register/:code {studentId, name, phone, email, consent}
     API->>DB: valida invite + enrollment não concluído
     API->>DB: atualiza aluno (contatos, status ACTIVE)
     API->>DB: marca enrollment como concluído
@@ -209,31 +244,37 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     participant Professor
+    participant BFF as Next/Auth.js BFF
     participant API
     participant DB as Postgres
     participant Evo as Evolution API
     participant Mail as SMTP/Gmail API
 
-    Professor->>API: POST /message/send (Bearer)
+    Professor->>BFF: POST /api/backend/message/send
+    BFF->>API: POST /message/send (Bearer + JWE server-side)
     API->>DB: resolve alunos/contatos e instâncias (SMTP/WA)
     API->>Mail: envia email
     API->>Evo: envia WhatsApp (sendText/sendMedia)
     API->>DB: grava message_logs (success/error_text por canal)
-    API-->>Professor: resposta com falhas por canal (se houver)
+    API-->>BFF: falhas mínimas por canal (id, studentId)
+    BFF-->>Professor: resposta sem tokens/JWE
 ```
 
 **Criptografia de credenciais de email**
 ```mermaid
 flowchart TD
     subgraph Entrada
-      SmtpSecret["smtpSecret (fornecido pelo usuário)"]
+      UserPassword["Senha do usuário"]
+      UserSalt["Salt do usuário"]
       Creds["Credenciais SMTP (email, senha, host, port)"]
       OAuthTokens["Tokens OAuth (access/refresh/expires)"]
       JWESecret["JWE_SECRET do backend"]
     end
 
     subgraph Criptografia
+      Derive["Deriva chave SMTP\nPBKDF2"]
       JWE["JWE Encrypt/Decrypt"]
+      AES["AES-GCM\nSMTP password"]
     end
 
     subgraph Persistência
@@ -248,20 +289,24 @@ flowchart TD
       Gmail["Gmail API"]
     end
 
-    Creds --> JWE
-    SmtpSecret --> JWE
-    JWE -->|senha cifrada| DBPassword
-    DBPassword -->|ciphertext| JWE
-    SmtpSecret --> JWE
-    JWE -->|dados em claro em memória| SMTPClient
+    UserPassword --> Derive
+    UserSalt --> Derive
+    Derive -->|smtpKey| JWE
+    JWESecret --> JWE
+    JWE -->|jwe entregue ao cliente/BFF| ClientJWE["JWE do usuário"]
+    ClientJWE -->|enviado ao backend quando necessário| JWE
+    JWE -->|smtpKey em memória| AES
+    Creds --> AES
+    AES -->|senha cifrada| DBPassword
+    DBPassword -->|ciphertext| AES
+    AES -->|senha em claro só em memória| SMTPClient
     SMTPClient --> Mail
 
-    OAuthTokens --> JWE
-    JWESecret --> JWE
-    JWE -->|tokens cifrados| DBOAuth
-    DBOAuth -->|ciphertext| JWE
-    JWESecret --> JWE
-    JWE -->|access token em memória| GmailClient
+    OAuthTokens --> OAuthAES["AES-GCM\nOAuth payload"]
+    JWESecret --> OAuthAES
+    OAuthAES -->|tokens cifrados| DBOAuth
+    DBOAuth -->|ciphertext| OAuthAES
+    OAuthAES -->|access token em memória| GmailClient
     GmailClient --> Gmail
 ```
 
@@ -291,7 +336,7 @@ classDiagram
       +SendMedia(to, caption, mimetype, mediatype, media, filename, instanceName)
     }
     class SMTPService {
-      +CreateInstance(userId, jweSecret, smtpSecret, email, password, host, port)
+      +Create(userId, jwe, email, password, host, port)
       +StartOAuth(userId, provider)
       +HandleOAuthCallback(provider, code, state)
       +RefreshOAuthAccessToken(instance)
@@ -509,9 +554,10 @@ migrate -path migrations -database "$POSTGRES_DATABASE_URL" up
 2. `docker-compose -f docker-compose-dev.yaml up -d` para dependências (Postgres, Redis, Evolution, Mongo, PgAdmin).
 3. `./run.sh` ou `air` (hot reload) para subir a API.
 4. Gere o Swagger se precisar: `swag init -g cmd/main/main.go --parseInternal --parseDependency --parseDepth 1` (ou use o gerado em `docs/`).
-5. Use `/auth/register` e `/auth/login` para obter tokens e chamar os demais endpoints protegidos (Bearer).
-6. Cadastre campus/curso/disciplina; crie instâncias de Email/WhatsApp; crie invites para disciplinas; importe matrículas por disciplina se quiser (`/discipline/:disciplineId/students/import`); alunos finalizam o cadastro via invite `POST /invite/self-register/:code`.
-7. Para testar envio, pareie uma instância WhatsApp, conecte uma conta de email por SMTP/OAuth se necessário, e use `POST /message/send` com `smtp_id`, `whatsapp_id`, ou ambos.
+5. No frontend oficial, autentique pelo BFF/Auth.js. Em clientes diretos, use `/auth/register` e `/auth/login` para obter `accessToken`, `refreshToken` e `jwe`; proteja o armazenamento desses valores.
+6. Chame endpoints protegidos com `Authorization: Bearer <accessToken>`. Envie `jwe` apenas quando o contrato exigir, como em criação SMTP por senha e envio por SMTP com senha.
+7. Cadastre campus/curso/disciplina; crie instâncias de Email/WhatsApp; crie invites para disciplinas; importe matrículas por disciplina se quiser (`/discipline/:disciplineId/students/import`); alunos finalizam o cadastro via invite `POST /invite/self-register/:code`.
+8. Para testar envio, pareie uma instância WhatsApp, conecte uma conta de email por SMTP/OAuth se necessário, e use `POST /message/send` com `smtp_id`, `whatsapp_id`, ou ambos.
 
 ### To-do / Roadmap
 - Verifique o board no [Notion](https://www.notion.so/1c702239900d80b7b24dc911e23ed2a4?v=1c702239900d8012923e000c184e26af).
