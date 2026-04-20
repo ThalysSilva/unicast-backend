@@ -48,7 +48,7 @@ air
 Swagger disponível em `http://localhost:${API_PORT}/swagger/index.html`.
 
 ### Seed de demonstração
-Para apresentações do TCC, existe uma seed idempotente em `scripts/demo-seed.sql`.
+Para demonstrações e testes locais, existe uma seed idempotente em `scripts/demo-seed.sql`.
 Ela cria um usuário docente, campus, cursos, disciplinas, alunos, vínculos, convites e alguns logs de mensagem.
 
 Credenciais do usuário demo:
