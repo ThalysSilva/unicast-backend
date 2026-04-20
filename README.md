@@ -90,7 +90,7 @@ Com o Postgres do Docker Compose:
 docker exec -i postgres-unicast psql -U "$POSTGRES_USER" -d unicast < scripts/demo-seed.sql
 ```
 
-Observação: a seed remove e recria apenas o usuário `demo@unicast.local` e as matrículas demo (`2026001` a `2026008`).
+Observação: a seed remove e recria apenas o usuário `demo@unicast.local` e a faixa de matrículas demo (`2026001` a `2026999`). Essa faixa inclui os alunos fixos da seed e os alunos importados pelo CSV de demonstração.
 
 ### Fluxos principais
 - **Auth**: `/auth/register`, `/auth/login`, `/auth/refresh`, `/auth/logout` (Bearer).

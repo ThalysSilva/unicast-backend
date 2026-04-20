@@ -11,33 +11,23 @@
 --   docker exec -i postgres-unicast psql -U "$POSTGRES_USER" -d unicast < scripts/demo-seed.sql
 --
 -- A seed é idempotente para os registros abaixo. Ela remove apenas o usuário
--- demo e as matrículas demo antes de recriar o cenário.
+-- demo e a faixa de matrículas demo antes de recriar o cenário. A faixa
+-- 2026001-2026999 inclui os alunos fixos da seed e os alunos importados pelo
+-- CSV usado na demonstração.
 
 BEGIN;
 
 DELETE FROM message_logs
 WHERE student_id IN (
-  '00000000-0000-4000-8000-000000004001',
-  '00000000-0000-4000-8000-000000004002',
-  '00000000-0000-4000-8000-000000004003',
-  '00000000-0000-4000-8000-000000004004',
-  '00000000-0000-4000-8000-000000004005',
-  '00000000-0000-4000-8000-000000004006',
-  '00000000-0000-4000-8000-000000004007',
-  '00000000-0000-4000-8000-000000004008'
+  SELECT id
+  FROM students
+  WHERE student_id ~ '^[0-9]+$'
+    AND student_id::integer BETWEEN 2026001 AND 2026999
 );
 
 DELETE FROM students
-WHERE student_id IN (
-  '2026001',
-  '2026002',
-  '2026003',
-  '2026004',
-  '2026005',
-  '2026006',
-  '2026007',
-  '2026008'
-);
+WHERE student_id ~ '^[0-9]+$'
+  AND student_id::integer BETWEEN 2026001 AND 2026999;
 
 DELETE FROM users
 WHERE id = '00000000-0000-4000-8000-000000000001'

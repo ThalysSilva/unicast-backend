@@ -336,6 +336,7 @@ func parseImportCSV(file multipart.File) ([]ImportRecord, error) {
 func readCSV(file multipart.File) ([][]string, error) {
 	reader := csv.NewReader(file)
 	reader.TrimLeadingSpace = true
+	reader.FieldsPerRecord = -1
 
 	rows, err := reader.ReadAll()
 	if err != nil {
