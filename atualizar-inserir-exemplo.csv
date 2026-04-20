@@ -1,0 +1,11 @@
+studentId,name,phone,email,status
+2026001,Ana Beatriz Lima,5511987654321,ana.beatriz.teste@example.com,1
+2026002,Bruno Henrique Costa Atualizado,5521976543210,bruno.atualizado@example.com,ACTIVE
+2026003,Carla Mendes Rocha Atualizada,5521933333333,carla.rocha.novo@example.com,5
+2026991,Joao Pedro Martins,5511911112222,joao.martins@example.com,1
+2026992,Mariana Alves Souza,5521922223333,mariana.souza@example.com,PENDING
+2026993,Rafael Nogueira,5531999998888,rafael.nogueira@example.com,2
+2026994,Livia Campos,5541988887777,livia.campos@example.com,GRADUATED
+2026995,Fernando Reis,5551987651234,fernando.reis@example.com,4
+2026996,Isabela Fernandes,5561976543210
+
