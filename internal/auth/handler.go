@@ -138,7 +138,11 @@ func (s *handler) Refresh() gin.HandlerFunc {
 		response, err := s.service.RefreshToken(c.Request.Context(), input.RefreshToken)
 		if err != nil {
 			customerror.HandleResponse(c, err)
+			return
 		}
-		c.JSON(http.StatusOK, response)
+		c.JSON(http.StatusOK, api.DefaultResponse[*RefreshResponse]{
+			Message: "Token atualizado com sucesso.",
+			Data:    response,
+		})
 	}
 }
