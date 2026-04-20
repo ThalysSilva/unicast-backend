@@ -3,6 +3,7 @@ package message
 import (
 	"net/http"
 
+	"github.com/ThalysSilva/unicast-backend/internal/student"
 	"github.com/ThalysSilva/unicast-backend/pkg/api"
 	"github.com/ThalysSilva/unicast-backend/pkg/customerror"
 
@@ -57,9 +58,20 @@ func (h *handler) Send() gin.HandlerFunc {
 		c.JSON(http.StatusOK, api.DefaultResponse[MessageDataResponse]{
 			Message: "Mensagem enviada com sucesso",
 			Data: MessageDataResponse{
-				EmailsFailed:   *emailsFailed,
-				WhatsappFailed: *whatsappFailed,
+				EmailsFailed:   failedRecipients(*emailsFailed),
+				WhatsappFailed: failedRecipients(*whatsappFailed),
 			},
 		})
 	}
+}
+
+func failedRecipients(students []student.Student) []FailedRecipient {
+	recipients := make([]FailedRecipient, 0, len(students))
+	for _, student := range students {
+		recipients = append(recipients, FailedRecipient{
+			ID:        student.ID,
+			StudentID: student.StudentID,
+		})
+	}
+	return recipients
 }

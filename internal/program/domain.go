@@ -20,7 +20,7 @@ type Program struct {
 
 type ProgramWithUserOwnerID struct {
 	Program
-	UserOwnerID string `json:"owner_id"`
+	UserOwnerID string `json:"-"`
 }
 
 type Repository interface {

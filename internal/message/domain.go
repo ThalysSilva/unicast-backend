@@ -1,7 +1,5 @@
 package message
 
-import "github.com/ThalysSilva/unicast-backend/internal/student"
-
 type Attachment struct {
 	FileName string `json:"fileName"`
 	Data     []byte `json:"data,omitempty"`
@@ -30,7 +28,12 @@ type MessageInput struct {
 	Attachments *[]Attachment `json:"attachments"`
 }
 
+type FailedRecipient struct {
+	ID        string `json:"id"`
+	StudentID string `json:"studentId"`
+}
+
 type MessageDataResponse struct {
-	EmailsFailed   []student.Student `json:"emailsFailed"`
-	WhatsappFailed []student.Student `json:"whatsappFailed"`
+	EmailsFailed   []FailedRecipient `json:"emailsFailed"`
+	WhatsappFailed []FailedRecipient `json:"whatsappFailed"`
 }

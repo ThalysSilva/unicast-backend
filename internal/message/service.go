@@ -20,11 +20,6 @@ import (
 	"github.com/ThalysSilva/unicast-backend/pkg/mailer"
 )
 
-type SendResponse struct {
-	EmailsFailed   []student.Student `json:"emailsFailed"`
-	WhatsappFailed []student.Student `json:"whatsappFailed"`
-}
-
 type Service interface {
 	Send(ctx context.Context, message *Message) (emailsFails, whatsappFails *[]student.Student, err error)
 }

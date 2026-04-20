@@ -21,7 +21,7 @@ type Discipline struct {
 
 type DisciplineWithOwnerID struct {
 	Discipline
-	UserOwnerID string `json:"userOwnerId"`
+	UserOwnerID string `json:"-"`
 }
 
 type Repository interface {
