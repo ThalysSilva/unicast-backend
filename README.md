@@ -191,20 +191,20 @@ flowchart LR
         OfficialFE["Frontend oficial\nNext/Auth.js BFF"]
         GenericFE["Frontends genéricos\nWeb/mobile/integrações"]
     end
-    subgraph Backend
+    subgraph Backend["Backend"]
         API["UniCast API (Gin)"]
         Auth["Auth/JWT/JWE"]
         Security["Middleware\nCORS, rate limit,\nsecurity headers"]
-        Msg["Message Service"]
-        Inv["Invite/Enrollment"]
-        SMTP["Email Service"]
-        WA["WhatsApp Service"]
-        Log["Message Logs"]
+        Msg["Serviço de mensagens"]
+        Inv["Convites/Matrículas"]
+        SMTP["Serviço de email"]
+        WA["Serviço de WhatsApp"]
+        Log["Logs de mensagens"]
     end
-    subgraph Infra
+    subgraph Infra["Infraestrutura"]
         PG["PostgreSQL"]
         Evo["Evolution API\n(+ Redis interno)"]
-        Mail["SMTP Provider\nou Gmail API"]
+        Mail["Provedor SMTP\nou Gmail API"]
     end
 
     OfficialFE -->|/api/backend\ncookies HttpOnly| API
@@ -222,11 +222,11 @@ flowchart LR
     Log --> PG
     SMTP --> PG
     WA --> PG
-    WA -->|send/receive| Evo
-    SMTP -->|send| Mail
+    WA -->|envio/recebimento| Evo
+    SMTP -->|envio| Mail
 ```
 
-**Fluxo de auto-cadastro via invite**
+**Fluxo de auto-cadastro via convite**
 ```mermaid
 sequenceDiagram
     participant Professor
@@ -235,12 +235,12 @@ sequenceDiagram
     participant Aluno
 
     Professor->>API: POST /invite/:disciplineId (Bearer)
-    API->>DB: cria invite (code, disciplineId, expiração)
+    API->>DB: cria convite (code, disciplineId, expiração)
     API-->>Professor: code
     Aluno->>API: POST /invite/self-register/:code {studentId, name, phone, email, consent}
-    API->>DB: valida invite + enrollment não concluído
+    API->>DB: valida convite + matrícula não concluída
     API->>DB: atualiza aluno (contatos, status ACTIVE)
-    API->>DB: marca enrollment como concluído
+    API->>DB: marca matrícula como concluída
     API-->>Aluno: mensagem de sucesso
 ```
 
@@ -259,7 +259,7 @@ sequenceDiagram
     API->>DB: resolve alunos/contatos e instâncias (SMTP/WA)
     API->>Mail: envia email
     API->>Evo: envia WhatsApp (sendText/sendMedia)
-    API->>DB: grava message_logs (success/error_text por canal)
+    API->>DB: grava logs de mensagens (sucesso/erro por canal)
     API-->>BFF: falhas mínimas por canal (id, studentId)
     BFF-->>Professor: resposta sem tokens/JWE
 ```
@@ -277,8 +277,8 @@ flowchart TD
 
     subgraph Criptografia
       Derive["Deriva chave SMTP\nPBKDF2"]
-      JWE["JWE Encrypt/Decrypt"]
-      AES["AES-GCM\nSMTP password"]
+      JWE["JWE cifrar/decifrar"]
+      AES["AES-GCM\nsenha SMTP"]
     end
 
     subgraph Persistência
@@ -287,129 +287,138 @@ flowchart TD
     end
 
     subgraph Uso
-      SMTPClient["SMTP Client (em memória)"]
-      GmailClient["Gmail API Client (em memória)"]
-      Mail["SMTP Provider"]
+      SMTPClient["Cliente SMTP (em memória)"]
+      GmailClient["Cliente Gmail API (em memória)"]
+      Mail["Provedor SMTP"]
       Gmail["Gmail API"]
     end
 
     UserPassword --> Derive
     UserSalt --> Derive
-    Derive -->|smtpKey| JWE
+    Derive -->|chave SMTP| JWE
     JWESecret --> JWE
     JWE -->|jwe entregue ao cliente/BFF| ClientJWE["JWE do usuário"]
     ClientJWE -->|enviado ao backend quando necessário| JWE
-    JWE -->|smtpKey em memória| AES
+    JWE -->|chave SMTP em memória| AES
     Creds --> AES
     AES -->|senha cifrada| DBPassword
-    DBPassword -->|ciphertext| AES
+    DBPassword -->|texto cifrado| AES
     AES -->|senha em claro só em memória| SMTPClient
     SMTPClient --> Mail
 
-    OAuthTokens --> OAuthAES["AES-GCM\nOAuth payload"]
+    OAuthTokens --> OAuthAES["AES-GCM\npayload OAuth"]
     JWESecret --> OAuthAES
     OAuthAES -->|tokens cifrados| DBOAuth
-    DBOAuth -->|ciphertext| OAuthAES
-    OAuthAES -->|access token em memória| GmailClient
+    DBOAuth -->|texto cifrado| OAuthAES
+    OAuthAES -->|token de acesso em memória| GmailClient
     GmailClient --> Gmail
 ```
 
 **Diagrama de classes/serviços (alto nível)**
 ```mermaid
 classDiagram
-    class AuthService {
-      +Register(email, password, name)
-      +Login(email, password)
-      +Refresh(token)
+    class ServicoAutenticacao {
+      +Registrar(email, senha, nome)
+      +Entrar(email, senha)
+      +Renovar(token)
     }
-    class InviteService {
-      +Create(disciplineId, userId, expiresAt)
-      +SelfRegister(code, studentId, name, phone, email, consent)
+    class ServicoConvite {
+      +Criar(disciplinaId, usuarioId, expiraEm)
+      +AutoCadastrar(codigo, matricula, nome, telefone, email, consentimento)
     }
-    class MessageService {
-      +Send(message)
-      +formatWhatsAppBody(subject, body)
+    class ServicoMensagem {
+      +Enviar(mensagem)
+      +formatarCorpoWhatsApp(assunto, corpo)
     }
-    class WhatsAppService {
-      +CreateInstance(userId, phone)
-      +ConnectInstance(userId, instanceId)
-      +ConnectionState(userId, instanceId)
-      +LogoutInstance(userId, instanceId)
-      +RestartInstance(userId, instanceId)
-      +SendText(to, body, instanceName)
-      +SendMedia(to, caption, mimetype, mediatype, media, filename, instanceName)
+    class ServicoWhatsApp {
+      +CriarInstancia(usuarioId, telefone)
+      +ConectarInstancia(usuarioId, instanciaId)
+      +EstadoConexao(usuarioId, instanciaId)
+      +DesconectarInstancia(usuarioId, instanciaId)
+      +ReiniciarInstancia(usuarioId, instanciaId)
+      +EnviarTexto(destino, corpo, nomeInstancia)
+      +EnviarMidia(destino, legenda, mimetype, tipoMidia, midia, arquivo, nomeInstancia)
     }
-    class SMTPService {
-      +Create(userId, jwe, email, password, host, port)
-      +StartOAuth(userId, provider)
-      +HandleOAuthCallback(provider, code, state)
-      +RefreshOAuthAccessToken(instance)
-      +GetInstances(userId)
+    class ServicoSMTP {
+      +Criar(usuarioId, jwe, email, senha, host, porta)
+      +IniciarOAuth(usuarioId, provedor)
+      +TratarCallbackOAuth(provedor, codigo, estado)
+      +RenovarTokenOAuth(instancia)
+      +ListarInstancias(usuarioId)
     }
-    class StudentService {
-      +Create(studentId, name, phone, email, annotation, status)
-      +Update(id, fields)
-      +ImportForDiscipline(disciplineId, mode, records)
-      +GetStudents(filters)
+    class ServicoAluno {
+      +Criar(matricula, nome, telefone, email, anotacao, status)
+      +Atualizar(id, campos)
+      +ImportarParaDisciplina(disciplinaId, modo, registros)
+      +ListarAlunos(filtros)
     }
-    class EnrollmentRepo {
-      +FindByDisciplineAndStudent(...)
-      +DeleteByDisciplineID(...)
-      +Create(...)
+    class RepositorioMatricula {
+      +BuscarPorDisciplinaEAluno(...)
+      +ExcluirPorDisciplina(...)
+      +Criar(...)
     }
-    class StudentRepo {
-      +Create(...)
-      +Update(...)
-      +FindByID(...)
-      +FindByStudentID(...)
+    class RepositorioAluno {
+      +Criar(...)
+      +Atualizar(...)
+      +BuscarPorID(...)
+      +BuscarPorMatricula(...)
     }
-    class DisciplineRepo {
-      +FindByProgramID(...)
-      +Update(...)
-      +Delete(...)
+    class RepositorioDisciplina {
+      +BuscarPorPrograma(...)
+      +Atualizar(...)
+      +Excluir(...)
     }
 
-    MessageService --> WhatsAppService
-    MessageService --> SMTPService
-    InviteService --> EnrollmentRepo
-    InviteService --> StudentService
-    StudentService --> StudentRepo
-    StudentService --> EnrollmentRepo
+    ServicoMensagem --> ServicoWhatsApp
+    ServicoMensagem --> ServicoSMTP
+    ServicoConvite --> RepositorioMatricula
+    ServicoConvite --> ServicoAluno
+    ServicoAluno --> RepositorioAluno
+    ServicoAluno --> RepositorioMatricula
 ```
 
-**Estados de Invite e Student (simplificado)**
+**Estados de Convite e Aluno (simplificado)**
 ```mermaid
 stateDiagram-v2
-    [*] --> InviteActive
-    InviteActive --> InviteUsed: self-register
-    InviteActive --> InviteExpired: expiresAt (opcional)
-    InviteUsed --> [*]
-    InviteExpired --> [*]
+    state "Convite ativo" as ConviteAtivo
+    state "Convite usado" as ConviteUsado
+    state "Convite expirado" as ConviteExpirado
+    state "Aluno pendente" as AlunoPendente
+    state "Aluno ativo" as AlunoAtivo
+    state "Aluno trancado" as AlunoTrancado
+    state "Aluno cancelado" as AlunoCancelado
 
-    [*] --> StudentPending
-    StudentPending --> StudentActive: self-register + consent
-    StudentActive --> StudentLocked: admin change / status import
-    StudentActive --> StudentCanceled: admin change / status import
-    StudentLocked --> StudentActive: admin reativação
+    [*] --> ConviteAtivo
+    ConviteAtivo --> ConviteUsado: auto-cadastro
+    ConviteAtivo --> ConviteExpirado: data de expiração (opcional)
+    ConviteUsado --> [*]
+    ConviteExpirado --> [*]
+
+    [*] --> AlunoPendente
+    AlunoPendente --> AlunoAtivo: auto-cadastro + consentimento
+    AlunoAtivo --> AlunoTrancado: alteração do professor / importação de status
+    AlunoAtivo --> AlunoCancelado: alteração do professor / importação de status
+    AlunoTrancado --> AlunoAtivo: reativação pelo professor / importação de status
+    AlunoCancelado --> AlunoAtivo: reativação pelo professor / importação de status
 ```
 
 **Entidades principais (ER atual)**
 ```mermaid
 erDiagram
-    USER ||--o{ CAMPUS : owns
-    USER ||--o{ WHATSAPP_INSTANCE : owns
-    USER ||--o{ SMTP_INSTANCE : owns
+    USER ||--o{ CAMPUS : possui
+    USER ||--o{ WHATSAPP_INSTANCE : possui
+    USER ||--o{ SMTP_INSTANCE : possui
 
-    CAMPUS ||--o{ PROGRAM : contains
-    PROGRAM ||--o{ DISCIPLINE : contains
-    DISCIPLINE ||--o{ INVITE : issues
-    DISCIPLINE ||--o{ ENROLLMENT : has
+    CAMPUS ||--o{ PROGRAM : contem
+    PROGRAM ||--o{ DISCIPLINE : contem
+    DISCIPLINE ||--o{ INVITE : emite
+    DISCIPLINE ||--o{ ENROLLMENT : possui
 
-    STUDENT ||--o{ ENROLLMENT : participates
-    STUDENT ||--o{ MESSAGE_LOG : receives
+    STUDENT ||--o{ ENROLLMENT : participa
+    STUDENT ||--o{ MESSAGE_LOG : recebe
 
-    WHATSAPP_INSTANCE |o--o{ MESSAGE_LOG : delivers
-    SMTP_INSTANCE |o--o{ MESSAGE_LOG : delivers
+    WHATSAPP_INSTANCE |o--o{ MESSAGE_LOG : entrega
+    SMTP_INSTANCE |o--o{ MESSAGE_LOG : entrega
 
     USER {
         string id
@@ -524,11 +533,11 @@ erDiagram
 flowchart TB
     Professor["Professor/Coordenador"]
     Aluno["Aluno"]
-    Admin["Backdoor (Admin)"]
+    Admin["Backdoor (Administrador)"]
 
     C1["Gerir campus/curso/disciplina"]
-    C2["Importar alunos / criar invite"]
-    C3["Auto-cadastro via invite"]
+    C2["Importar alunos / criar convite"]
+    C3["Auto-cadastro via convite"]
     C4["Enviar mensagens (email/WhatsApp)"]
     C5["Gerir instâncias SMTP/WhatsApp"]
     C6["Reset de senha (backdoor)"]
