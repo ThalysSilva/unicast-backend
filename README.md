@@ -255,10 +255,10 @@ sequenceDiagram
     participant Mail as SMTP/Gmail API
 
     Professor->>BFF: POST /api/backend/message/send
-    BFF->>API: POST /message/send (Bearer + JWE server-side)
+    BFF->>API: POST /message/send (Bearer + JWE no servidor)
     API->>DB: resolve alunos/contatos e instâncias (SMTP/WA)
     API->>Mail: envia email
-    API->>Evo: envia WhatsApp (sendText/sendMedia)
+    API->>Evo: envia WhatsApp
     API->>DB: grava logs de mensagens (sucesso/erro por canal)
     API-->>BFF: falhas mínimas por canal (id, studentId)
     BFF-->>Professor: resposta sem tokens/JWE
@@ -314,67 +314,67 @@ flowchart TD
     GmailClient --> Gmail
 ```
 
-**Diagrama de classes/serviços (alto nível)**
+**Visão lógica dos serviços (alto nível)**
+
+Diagrama conceitual das responsabilidades do backend. Os nomes abaixo descrevem componentes e operações em português; nomes exatos de pacotes, structs e métodos permanecem no código.
+
 ```mermaid
 classDiagram
-    class ServicoAutenticacao {
-      +Registrar(email, senha, nome)
-      +Entrar(email, senha)
-      +Renovar(token)
+    class ServicoDeAutenticacao["Serviço de Autenticação"] {
+      +Registrar usuário
+      +Autenticar usuário
+      +Renovar sessão
     }
-    class ServicoConvite {
-      +Criar(disciplinaId, usuarioId, expiraEm)
-      +AutoCadastrar(codigo, matricula, nome, telefone, email, consentimento)
+    class ServicoDeConvites["Serviço de Convites"] {
+      +Criar convite
+      +Validar convite
+      +Concluir auto-cadastro
     }
-    class ServicoMensagem {
-      +Enviar(mensagem)
-      +formatarCorpoWhatsApp(assunto, corpo)
+    class ServicoDeMensagens["Serviço de Mensagens"] {
+      +Resolver destinatários
+      +Enviar mensagens
+      +Registrar resultado por canal
     }
-    class ServicoWhatsApp {
-      +CriarInstancia(usuarioId, telefone)
-      +ConectarInstancia(usuarioId, instanciaId)
-      +EstadoConexao(usuarioId, instanciaId)
-      +DesconectarInstancia(usuarioId, instanciaId)
-      +ReiniciarInstancia(usuarioId, instanciaId)
-      +EnviarTexto(destino, corpo, nomeInstancia)
-      +EnviarMidia(destino, legenda, mimetype, tipoMidia, midia, arquivo, nomeInstancia)
+    class ServicoDeWhatsApp["Serviço de WhatsApp"] {
+      +Gerir instâncias
+      +Consultar conexão
+      +Enviar texto
+      +Enviar mídia
     }
-    class ServicoSMTP {
-      +Criar(usuarioId, jwe, email, senha, host, porta)
-      +IniciarOAuth(usuarioId, provedor)
-      +TratarCallbackOAuth(provedor, codigo, estado)
-      +RenovarTokenOAuth(instancia)
-      +ListarInstancias(usuarioId)
+    class ServicoDeEmail["Serviço de Email"] {
+      +Gerir contas SMTP
+      +Conectar com OAuth
+      +Renovar token OAuth
+      +Enviar email
     }
-    class ServicoAluno {
-      +Criar(matricula, nome, telefone, email, anotacao, status)
-      +Atualizar(id, campos)
-      +ImportarParaDisciplina(disciplinaId, modo, registros)
-      +ListarAlunos(filtros)
+    class ServicoDeAlunos["Serviço de Alunos"] {
+      +Pré-cadastrar aluno
+      +Atualizar cadastro
+      +Importar alunos por disciplina
+      +Listar alunos
     }
-    class RepositorioMatricula {
-      +BuscarPorDisciplinaEAluno(...)
-      +ExcluirPorDisciplina(...)
-      +Criar(...)
+    class RepositorioDeMatriculas["Repositório de Matrículas"] {
+      +Buscar vínculo
+      +Criar vínculo
+      +Limpar vínculos da disciplina
     }
-    class RepositorioAluno {
-      +Criar(...)
-      +Atualizar(...)
-      +BuscarPorID(...)
-      +BuscarPorMatricula(...)
+    class RepositorioDeAlunos["Repositório de Alunos"] {
+      +Criar registro
+      +Atualizar registro
+      +Buscar aluno
     }
-    class RepositorioDisciplina {
-      +BuscarPorPrograma(...)
-      +Atualizar(...)
-      +Excluir(...)
+    class RepositorioDeDisciplinas["Repositório de Disciplinas"] {
+      +Buscar por programa
+      +Atualizar disciplina
+      +Excluir disciplina
     }
 
-    ServicoMensagem --> ServicoWhatsApp
-    ServicoMensagem --> ServicoSMTP
-    ServicoConvite --> RepositorioMatricula
-    ServicoConvite --> ServicoAluno
-    ServicoAluno --> RepositorioAluno
-    ServicoAluno --> RepositorioMatricula
+    ServicoDeMensagens --> ServicoDeWhatsApp
+    ServicoDeMensagens --> ServicoDeEmail
+    ServicoDeConvites --> RepositorioDeMatriculas
+    ServicoDeConvites --> ServicoDeAlunos
+    ServicoDeAlunos --> RepositorioDeAlunos
+    ServicoDeAlunos --> RepositorioDeMatriculas
 ```
 
 **Estados de Convite e Aluno (simplificado)**
@@ -403,6 +403,9 @@ stateDiagram-v2
 ```
 
 **Entidades principais (ER atual)**
+
+Este diagrama mantém nomes de tabelas e colunas como no banco de dados para refletir o schema atual.
+
 ```mermaid
 erDiagram
     USER ||--o{ CAMPUS : possui
