@@ -178,6 +178,10 @@ Resposta de sucesso:
 - Se usar cookies em um cliente próprio, proteja rotas mutáveis contra CSRF com `SameSite`, validação de `Origin` e/ou token anti-CSRF.
 - Nunca envie `accessToken`, `refreshToken` ou `jwe` por query string. Use body/header e evite registrar esses valores em logs/analytics.
 
+### Licença
+
+Este projeto está licenciado sob a licença MIT. Consulte o arquivo [LICENSE](./LICENSE) para mais detalhes.
+
 ### Diagramas (Mermaid)
 
 **Arquitetura geral**
