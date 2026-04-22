@@ -14,7 +14,7 @@ import (
 )
 
 type Service interface {
-	Register(ctx context.Context, email, password, name string) (userID string, err error)
+	Register(ctx context.Context, email, password, name, registrationKey string) (userID string, err error)
 	Login(ctx context.Context, email, password string) (*LoginResponse, error)
 	Logout(ctx context.Context, userID string) error
 	RefreshToken(ctx context.Context, refreshToken string) (*RefreshResponse, error)
@@ -37,13 +37,18 @@ var (
 	ErrGenerateRefreshToken = customerror.Make("Error generating refresh token", 500, errors.New("ErrGenerateRefreshToken"))
 	ErrGenerateJWE          = customerror.Make("Error generating JWE", 500, errors.New("ErrGenerateJWE"))
 	ErrSaveRefreshToken     = customerror.Make("Error saving refresh token", 500, errors.New("ErrSaveRefreshToken"))
+	ErrInvalidRegisterKey   = customerror.Make("invalid registration key", 403, errors.New("ErrInvalidRegisterKey"))
 )
 
 func NewService(userRepo user.Repository, secrets *config.Secrets) Service {
 	return &service{userRepo: userRepo, secrets: secrets}
 }
 
-func (s *service) Register(ctx context.Context, email, password, name string) (userID string, err error) {
+func (s *service) Register(ctx context.Context, email, password, name, registrationKey string) (userID string, err error) {
+	if registrationKey != s.secrets.RegisterInviteKey {
+		return "", customerror.Trace("Register", ErrInvalidRegisterKey)
+	}
+
 	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
 		return "", customerror.Trace("Register", ErrGenerateHash)

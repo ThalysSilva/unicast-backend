@@ -51,9 +51,10 @@ func main() {
 	}
 
 	secrets := &config.Secrets{
-		AccessToken:  []byte(envCfg.Auth.AccessTokenSecret),
-		RefreshToken: []byte(envCfg.Auth.RefreshTokenSecret),
-		Jwe:          jweSecret,
+		AccessToken:       []byte(envCfg.Auth.AccessTokenSecret),
+		RefreshToken:      []byte(envCfg.Auth.RefreshTokenSecret),
+		Jwe:               jweSecret,
+		RegisterInviteKey: envCfg.Auth.RegisterInviteKey,
 	}
 
 	port := os.Getenv("API_PORT")

@@ -15,6 +15,7 @@ type Auth struct {
 	AccessTokenSecret  string
 	RefreshTokenSecret string
 	JWESecret          string
+	RegisterInviteKey  string
 }
 
 type Defaults struct {
@@ -51,6 +52,7 @@ func Load() (*Config, error) {
 			AccessTokenSecret:  os.Getenv("ACCESS_TOKEN_SECRET"),
 			RefreshTokenSecret: os.Getenv("REFRESH_TOKEN_SECRET"),
 			JWESecret:          os.Getenv("JWE_SECRET"),
+			RegisterInviteKey:  os.Getenv("REGISTER_INVITE_KEY"),
 		},
 		Defaults: Defaults{
 			CountryCode: os.Getenv("DEFAULT_COUNTRY_CODE"),
@@ -82,8 +84,8 @@ func validate(cfg *Config) error {
 	if cfg.Evolution.Host == "" || cfg.Evolution.Port == "" || cfg.Evolution.APIKey == "" {
 		return fmt.Errorf("variáveis da Evolution API ausentes (EVOLUTION_HOST, EVOLUTION_PORT, AUTHENTICATION_API_KEY)")
 	}
-	if cfg.Auth.AccessTokenSecret == "" || cfg.Auth.RefreshTokenSecret == "" || cfg.Auth.JWESecret == "" {
-		return fmt.Errorf("segredos de autenticação ausentes (ACCESS_TOKEN_SECRET, REFRESH_TOKEN_SECRET, JWE_SECRET)")
+	if cfg.Auth.AccessTokenSecret == "" || cfg.Auth.RefreshTokenSecret == "" || cfg.Auth.JWESecret == "" || cfg.Auth.RegisterInviteKey == "" {
+		return fmt.Errorf("segredos de autenticação ausentes (ACCESS_TOKEN_SECRET, REFRESH_TOKEN_SECRET, JWE_SECRET, REGISTER_INVITE_KEY)")
 	}
 	if cfg.Admin.Secret == "" {
 		return fmt.Errorf("ADMIN_SECRET ausente")

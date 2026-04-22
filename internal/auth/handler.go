@@ -10,9 +10,10 @@ import (
 
 // RegisterInput Define o input para o registro do usuário
 type RegisterInput struct {
-	Email    string `json:"email" binding:"required,email"`
-	Password string `json:"password" binding:"required"`
-	Name     string `json:"name" binding:"required"`
+	Email           string `json:"email" binding:"required,email"`
+	Password        string `json:"password" binding:"required"`
+	Name            string `json:"name" binding:"required"`
+	RegistrationKey string `json:"registrationKey" binding:"required"`
 }
 
 type handler struct {
@@ -47,7 +48,7 @@ func (s *handler) Register() gin.HandlerFunc {
 			c.Error(err)
 			return
 		}
-		if _, err := s.service.Register(c.Request.Context(), input.Email, input.Password, input.Name); err != nil {
+		if _, err := s.service.Register(c.Request.Context(), input.Email, input.Password, input.Name, input.RegistrationKey); err != nil {
 			customerror.HandleResponse(c, err)
 			return
 		}
