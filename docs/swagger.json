@@ -2133,7 +2133,8 @@
             "required": [
                 "email",
                 "name",
-                "password"
+                "password",
+                "registrationKey"
             ],
             "properties": {
                 "email": {
@@ -2143,6 +2144,9 @@
                     "type": "string"
                 },
                 "password": {
+                    "type": "string"
+                },
+                "registrationKey": {
                     "type": "string"
                 }
             }

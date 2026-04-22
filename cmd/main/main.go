@@ -118,6 +118,7 @@ func main() {
 		campusGroup.POST("", campusHandler.Create())
 		campusGroup.GET("", campusHandler.GetCampuses())
 		campusGroup.PUT(":id", campusHandler.Update())
+		campusGroup.DELETE("/:id", campusHandler.Delete())
 	}
 
 	// Rotas de disciplinas

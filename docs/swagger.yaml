@@ -190,10 +190,13 @@ definitions:
         type: string
       password:
         type: string
+      registrationKey:
+        type: string
     required:
     - email
     - name
     - password
+    - registrationKey
     type: object
   internal_backdoor.resetInput:
     properties:

@@ -26,6 +26,7 @@ type Handler interface {
 	Create() gin.HandlerFunc
 	GetCampuses() gin.HandlerFunc
 	Update() gin.HandlerFunc
+	Delete() gin.HandlerFunc
 }
 
 func NewHandler(service Service) Handler {
@@ -139,5 +140,41 @@ func (h *handler) Update() gin.HandlerFunc {
 			return
 		}
 		c.JSON(200, api.MessageResponse{Message: "Campus atualizado com sucesso"})
+	}
+}
+
+// @Summary Deleta um campus
+// @Tags campus
+// @Produce json
+// @Param Authorization header string true "Bearer token"
+// @Param id path string true "Campus ID"
+// @Success 200 {object} api.MessageResponse
+// @Router /campus/{id} [delete]
+func (h *handler) Delete() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		userID := c.GetString("userID")
+		campusID := c.Param("id")
+		campusSelected, err := h.service.GetCampus(campusID)
+		if err != nil {
+			c.Error(err)
+			return
+		}
+
+		if campusSelected == nil {
+			c.JSON(http.StatusNotFound, api.ErrorResponse{Error: "Campus não encontrado"})
+			return
+		}
+
+		if campusSelected.UserOwnerID != userID {
+			c.JSON(http.StatusForbidden, api.ErrorResponse{Error: "você não tem permissão para deletar este campus"})
+			return
+		}
+
+		err = h.service.Delete(c.Request.Context(), campusID)
+		if err != nil {
+			c.Error(err)
+			return
+		}
+		c.JSON(200, api.MessageResponse{Message: "Campus deletado com sucesso"})
 	}
 }

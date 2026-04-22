@@ -2144,7 +2144,8 @@ const docTemplate = `{
             "required": [
                 "email",
                 "name",
-                "password"
+                "password",
+                "registrationKey"
             ],
             "properties": {
                 "email": {
@@ -2154,6 +2155,9 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "password": {
+                    "type": "string"
+                },
+                "registrationKey": {
                     "type": "string"
                 }
             }
