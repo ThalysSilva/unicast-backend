@@ -25,7 +25,13 @@ O backend foi desenhado como uma API reutilizável por diferentes clientes. O fr
 - Docker e Docker Compose se for subir os serviços auxiliares.
 
 ### Configuração de ambiente
-Crie um `.env` (ou `.env.development`) na raiz seguindo o `example.env`
+Crie um `.env` (ou `.env.development`) na raiz seguindo o `example.env`.
+
+Variáveis importantes para o fluxo atual:
+- `REGISTER_INVITE_KEY`: chave global exigida em `POST /auth/register` para restringir criação de contas.
+- `ADMIN_SECRET`: chave administrativa do backdoor de recuperação de senha.
+- `JWE_SECRET`: segredo global usado para cifrar o JWE e payloads OAuth.
+- `POSTGRES_DATABASE_URL`: URL do Postgres; em ambiente local pode ser sobrescrita pelos alvos `make seed-local` e `make migrate-local`.
 
 > Dica: converta o `.env` para formato Unix se estiver no WSL: `dos2unix .env`.
 
@@ -50,6 +56,8 @@ Swagger disponível em `http://localhost:${API_PORT}/swagger/index.html`.
 ### Seed de demonstração
 Para demonstrações e testes locais, existe uma seed idempotente em `scripts/demo-seed.sql`.
 Ela cria um usuário docente, campus, cursos, disciplinas, alunos, vínculos, convites e alguns logs de mensagem.
+
+Os alvos `make seed` e `make seed-local` executam as migrations antes da seed, evitando divergência de schema.
 
 Credenciais do usuário demo:
 ```
@@ -95,12 +103,12 @@ docker exec -i postgres-unicast psql -U "$POSTGRES_USER" -d unicast < scripts/de
 Observação: a seed remove e recria apenas o usuário `demo@unicast.local` e a faixa de matrículas demo (`2026001` a `2026999`). Essa faixa inclui os alunos fixos da seed e os alunos importados pelo CSV de demonstração.
 
 ### Fluxos principais
-- **Auth**: `/auth/register`, `/auth/login`, `/auth/refresh`, `/auth/logout` (Bearer).
+- **Auth**: `/auth/register`, `/auth/login`, `/auth/refresh`, `/auth/logout` (Bearer). O registro exige `registrationKey`, validada contra `REGISTER_INVITE_KEY`.
 - **Campus/Program/Discipline**: CRUD protegido; ownership validado por usuário. No produto: `program` = curso e `discipline` = disciplina/oferta.
-- **Students**: pré-cadastro com status (PENDING, ACTIVE, etc.).
-- **Enrollments**: vínculo aluno ↔ disciplina.
+- **Students**: pré-cadastro com status (PENDING, ACTIVE, etc.). Alunos agora são isolados por usuário dono (`user_owner_id`) e a unicidade funcional é `(user_owner_id, student_id)`.
+- **Enrollments**: vínculo aluno ↔ disciplina. Como disciplina pertence a um usuário, os vínculos também ficam dentro do mesmo ambiente.
 - **Invites**: professor cria código curto para a disciplina (`POST /invite/:disciplineId`); aluno usa `POST /invite/self-register/:code` com `studentId`, `name`, `phone`, `email`. Backend valida o vínculo (`enrollment`), permite uma conclusão de auto-cadastro por vínculo da disciplina e ativa o aluno ao concluir.
-- **Importação de alunos**: `POST /discipline/:disciplineId/students/import?mode=upsert|clean` (CSV multipart em `file`). Colunas aceitas: `studentId` (obrigatória), `name`, `phone`, `email`, `status` (1/2/3/4/5 ou ACTIVE/LOCKED/GRADUATED/CANCELED/PENDING). Linhas com campos finais ausentes são aceitas; campos ausentes entram como vazios. `mode=clean` remove matrículas da disciplina antes de inserir. Se o aluno não existir, é criado com os dados enviados e status derivado do contato/status informado. Se já existir, campos enviados atualizam o cadastro e o vínculo com a disciplina é garantido.
+- **Importação de alunos**: `POST /discipline/:id/students/import?mode=upsert|clean` (CSV multipart em `file`). Colunas aceitas: `studentId` (obrigatória), `name`, `phone`, `email`, `status` (1/2/3/4/5 ou ACTIVE/LOCKED/GRADUATED/CANCELED/PENDING). Linhas com campos finais ausentes são aceitas; campos ausentes entram como vazios. `mode=clean` remove matrículas da disciplina antes de inserir. Se o aluno não existir no contexto do usuário dono da disciplina, é criado com os dados enviados e status derivado do contato/status informado. Se já existir para esse usuário, campos enviados atualizam o cadastro e o vínculo com a disciplina é garantido.
 - **Email**: criação/listagem de instâncias de envio por senha SMTP ou OAuth.
 - **OAuth de Email**: para Gmail/Google via Gmail API, veja `docs/oauth-email-setup.md`.
 - **WhatsApp Instâncias**: além do CRUD de instâncias, expõe connect/status/logout/restart; criação já retorna QR/pairing code para parear via Evolution API.
@@ -155,7 +163,8 @@ Resposta de sucesso:
 - **Frontends genéricos**: podem usar os endpoints diretamente, mas devem tratar `accessToken`, `refreshToken` e `jwe` como credenciais sensíveis. Evite `localStorage` para sessões de produção; prefira BFF/cookies `HttpOnly`, armazenamento em memória com renovação controlada, proteção contra XSS e CSRF/Origin checks quando houver cookies.
 - **Email**: senhas SMTP são cifradas com chave derivada da senha do usuário; essa chave derivada é transportada dentro do JWE. Tokens OAuth ficam cifrados com o segredo global do backend.
 - **Env vars**: segredos ficam no `.env`/`.env.development`. Não commitá-los; use `example.env` como base.
-- **Ownership**: operações sensíveis (campus/program/discipline/invite) conferem o `userID` do token ao dono do recurso.
+- **Ownership**: operações sensíveis (campus/program/discipline/invite/student/message) conferem o `userID` do token ao dono do recurso ou ao contexto do recurso.
+- **Registro fechado**: o cadastro de usuário usa uma chave global em `REGISTER_INVITE_KEY`; com isso o endpoint não fica aberto publicamente mesmo sem confirmação por email.
 - **Invite codes**: códigos curtos únicos por disciplina; validados como ativos/não expirados e vinculados ao enrollment, garantindo que apenas alunos pré-cadastrados possam ativar seus dados. O auto-cadastro é bloqueado depois da primeira conclusão naquele enrollment, sem impedir novos vínculos do mesmo aluno em outras disciplinas/ofertas.
 - **Backdoor**: rota administrativa protegida por `ADMIN_SECRET`; trate essa chave como segredo crítico.
 - **Rate limit**: rotas sensíveis têm limite em memória por IP + rota. Ex.: login/register/refresh e auto-cadastro, backdoor, envio de mensagens e criação/teste/conexão de integrações.
@@ -480,6 +489,7 @@ erDiagram
     STUDENT {
         string id
         string student_id
+        string user_owner_id
         string name
         string phone
         string email
@@ -581,16 +591,18 @@ migrate -path migrations -database "$POSTGRES_DATABASE_URL" up
 - OAuth de email com Gmail: `docs/oauth-email-setup.md`.
 - WhatsApp/Evolution: `docs/whatsapp-evolution.md`.
 - Banco: migrations incluem `users`, `campuses`, `programs`, `disciplines`, `students`, `enrollments`, `invites`, `smtp_instances`, `whatsapp_instances` e `message_logs`. A migration `000021` renomeia `courses/course_id` para `disciplines/discipline_id`; a `000022` adiciona o controle de auto-cadastro concluído por enrollment.
+- A migration `000023` passa `students` a ser isolado por usuário com `user_owner_id` e unicidade por `(user_owner_id, student_id)`.
 
 ### Fluxo de uso rápido
 1. Preencha `.env`/`.env.development` conforme `example.env`.
 2. `docker-compose -f docker-compose-dev.yaml up -d` para dependências (Postgres, Redis, Evolution, Mongo, PgAdmin).
 3. `./run.sh` ou `air` (hot reload) para subir a API.
 4. Gere o Swagger se precisar: `swag init -g cmd/main/main.go --parseInternal --parseDependency --parseDepth 1` (ou use o gerado em `docs/`).
-5. No frontend oficial, autentique pelo BFF/Auth.js. Em clientes diretos, use `/auth/register` e `/auth/login` para obter `accessToken`, `refreshToken` e `jwe`; proteja o armazenamento desses valores.
-6. Chame endpoints protegidos com `Authorization: Bearer <accessToken>`. Envie `jwe` apenas quando o contrato exigir, como em criação SMTP por senha e envio por SMTP com senha.
-7. Cadastre campus/curso/disciplina; crie instâncias de Email/WhatsApp; crie invites para disciplinas; importe matrículas por disciplina se quiser (`/discipline/:disciplineId/students/import`); alunos finalizam o cadastro via invite `POST /invite/self-register/:code`.
-8. Para testar envio, pareie uma instância WhatsApp, conecte uma conta de email por SMTP/OAuth se necessário, e use `POST /message/send` com `smtp_id`, `whatsapp_id`, ou ambos.
+5. Se for usar registro direto, defina `REGISTER_INVITE_KEY` e envie `registrationKey` em `/auth/register`.
+6. No frontend oficial, autentique pelo BFF/Auth.js. Em clientes diretos, use `/auth/register` e `/auth/login` para obter `accessToken`, `refreshToken` e `jwe`; proteja o armazenamento desses valores.
+7. Chame endpoints protegidos com `Authorization: Bearer <accessToken>`. Envie `jwe` apenas quando o contrato exigir, como em criação SMTP por senha e envio por SMTP com senha.
+8. Cadastre campus/curso/disciplina; crie instâncias de Email/WhatsApp; crie invites para disciplinas; importe matrículas por disciplina se quiser (`/discipline/:id/students/import`); alunos finalizam o cadastro via invite `POST /invite/self-register/:code`.
+9. Para testar envio, pareie uma instância WhatsApp, conecte uma conta de email por SMTP/OAuth se necessário, e use `POST /message/send` com `smtp_id`, `whatsapp_id`, ou ambos.
 
 ### To-do / Roadmap
 - Verifique o board no [Notion](https://www.notion.so/1c702239900d80b7b24dc911e23ed2a4?v=1c702239900d8012923e000c184e26af).
