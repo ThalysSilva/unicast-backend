@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/ThalysSilva/unicast-backend/internal/discipline"
 	"github.com/ThalysSilva/unicast-backend/internal/enrollment"
 	"github.com/ThalysSilva/unicast-backend/pkg/customerror"
 )
@@ -36,21 +37,30 @@ type ImportResult struct {
 var ErrEnrollmentNotFound = customerror.Make("vínculo com disciplina não encontrado", http.StatusNotFound, errors.New("ErrEnrollmentNotFound"))
 
 type ImportService interface {
-	ImportForDiscipline(ctx context.Context, disciplineID string, mode ImportMode, records []ImportRecord) (*ImportResult, error)
-	AddStudentToDiscipline(ctx context.Context, disciplineID, studentID string) error
-	RemoveStudentFromDiscipline(ctx context.Context, disciplineID, studentUUID string) error
+	ImportForDiscipline(ctx context.Context, userID, disciplineID string, mode ImportMode, records []ImportRecord) (*ImportResult, error)
+	AddStudentToDiscipline(ctx context.Context, userID, disciplineID, studentID string) error
+	RemoveStudentFromDiscipline(ctx context.Context, userID, disciplineID, studentUUID string) error
 }
 
 type importService struct {
 	studentsRepo   Repository
 	enrollmentRepo enrollment.Repository
+	disciplineRepo discipline.Repository
 }
 
-func NewImportService(studentsRepo Repository, enrollmentRepo enrollment.Repository) ImportService {
-	return &importService{studentsRepo: studentsRepo, enrollmentRepo: enrollmentRepo}
+func NewImportService(studentsRepo Repository, enrollmentRepo enrollment.Repository, disciplineRepo discipline.Repository) ImportService {
+	return &importService{
+		studentsRepo:   studentsRepo,
+		enrollmentRepo: enrollmentRepo,
+		disciplineRepo: disciplineRepo,
+	}
 }
 
-func (s *importService) ImportForDiscipline(ctx context.Context, disciplineID string, mode ImportMode, records []ImportRecord) (*ImportResult, error) {
+func (s *importService) ImportForDiscipline(ctx context.Context, userID, disciplineID string, mode ImportMode, records []ImportRecord) (*ImportResult, error) {
+	if err := s.ensureDisciplineOwner(ctx, disciplineID, userID); err != nil {
+		return nil, err
+	}
+
 	result := &ImportResult{}
 
 	if mode == ImportModeClean {
@@ -60,7 +70,7 @@ func (s *importService) ImportForDiscipline(ctx context.Context, disciplineID st
 	}
 
 	for idx, rec := range records {
-		if err := s.processRecord(ctx, disciplineID, idx, rec, result); err != nil {
+		if err := s.processRecord(ctx, userID, disciplineID, idx, rec, result); err != nil {
 			result.Errors = append(result.Errors, err.Error())
 			continue
 		}
@@ -69,15 +79,23 @@ func (s *importService) ImportForDiscipline(ctx context.Context, disciplineID st
 	return result, nil
 }
 
-func (s *importService) AddStudentToDiscipline(ctx context.Context, disciplineID, studentID string) error {
+func (s *importService) AddStudentToDiscipline(ctx context.Context, userID, disciplineID, studentID string) error {
+	if err := s.ensureDisciplineOwner(ctx, disciplineID, userID); err != nil {
+		return err
+	}
+
 	result := &ImportResult{}
-	return s.processRecord(ctx, disciplineID, 0, ImportRecord{
+	return s.processRecord(ctx, userID, disciplineID, 0, ImportRecord{
 		StudentID: studentID,
 		Status:    StudentStatusPending,
 	}, result)
 }
 
-func (s *importService) RemoveStudentFromDiscipline(ctx context.Context, disciplineID, studentUUID string) error {
+func (s *importService) RemoveStudentFromDiscipline(ctx context.Context, userID, disciplineID, studentUUID string) error {
+	if err := s.ensureDisciplineOwner(ctx, disciplineID, userID); err != nil {
+		return err
+	}
+
 	enroll, err := s.enrollmentRepo.FindByDisciplineAndStudent(ctx, disciplineID, studentUUID)
 	if err != nil {
 		return fmt.Errorf("erro ao verificar vínculo: %w", err)
@@ -92,22 +110,22 @@ func (s *importService) RemoveStudentFromDiscipline(ctx context.Context, discipl
 	return nil
 }
 
-func (s *importService) processRecord(ctx context.Context, disciplineID string, idx int, rec ImportRecord, result *ImportResult) error {
+func (s *importService) processRecord(ctx context.Context, userID, disciplineID string, idx int, rec ImportRecord, result *ImportResult) error {
 	if rec.StudentID == "" {
 		return fmt.Errorf("linha %d: studentId vazio", idx+1)
 	}
 
-	existing, err := s.studentsRepo.FindByStudentID(ctx, rec.StudentID)
+	existing, err := s.studentsRepo.FindByStudentID(ctx, rec.StudentID, userID)
 	if err != nil {
 		return fmt.Errorf("linha %d: erro ao buscar student: %v", idx+1, err)
 	}
 
 	if existing == nil {
 		status := DeriveContactAwareStatus("", rec.Status, rec.StatusProvided, rec.Name, rec.Phone, rec.Email)
-		if err := s.studentsRepo.Create(ctx, rec.StudentID, rec.Name, rec.Phone, rec.Email, nil, status); err != nil {
+		if err := s.studentsRepo.Create(ctx, userID, rec.StudentID, rec.Name, rec.Phone, rec.Email, nil, status); err != nil {
 			return fmt.Errorf("linha %d: erro ao criar student: %v", idx+1, err)
 		}
-		existing, err = s.studentsRepo.FindByStudentID(ctx, rec.StudentID)
+		existing, err = s.studentsRepo.FindByStudentID(ctx, rec.StudentID, userID)
 		if err != nil {
 			return fmt.Errorf("linha %d: erro ao buscar student criado: %v", idx+1, err)
 		}
@@ -123,6 +141,21 @@ func (s *importService) processRecord(ctx context.Context, disciplineID string, 
 
 	if err := s.ensureEnrollment(ctx, disciplineID, existing.ID, idx, result); err != nil {
 		return err
+	}
+
+	return nil
+}
+
+func (s *importService) ensureDisciplineOwner(ctx context.Context, disciplineID, userID string) error {
+	discipline, err := s.disciplineRepo.FindByIDWithUserOwnerID(ctx, disciplineID)
+	if err != nil {
+		return err
+	}
+	if discipline == nil {
+		return customerror.Make("disciplina não encontrada", http.StatusNotFound, errors.New("ErrDisciplineNotFound"))
+	}
+	if discipline.UserOwnerID != userID {
+		return customerror.Make("você não tem permissão para acessar esta disciplina", http.StatusForbidden, errors.New("ErrDisciplineAccessForbidden"))
 	}
 
 	return nil

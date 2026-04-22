@@ -86,7 +86,7 @@ func extractEmailFailedStudents(err error, students []*student.Student) ([]stude
 
 func (s *service) Send(ctx context.Context, message *Message) (emailsFails, whatsappFails *[]student.Student, err error) {
 	message.To = uniqueIDs(message.To)
-	students, err := s.studentRepository.FindByIDs(ctx, message.To)
+	students, err := s.studentRepository.FindByIDs(ctx, message.UserID, message.To)
 	if err != nil {
 		return nil, nil, customerror.Trace("Send", err)
 	}
@@ -94,7 +94,7 @@ func (s *service) Send(ctx context.Context, message *Message) (emailsFails, what
 		return nil, nil, customerror.Trace("Send", ErrStudentsNotFound)
 	}
 
-	smtpInstance, waInstance, err := s.loadSenders(ctx, message.SmtpId, message.WhatsappId)
+	smtpInstance, waInstance, err := s.loadSenders(ctx, message.UserID, message.SmtpId, message.WhatsappId)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -137,7 +137,7 @@ func uniqueIDs(ids []string) []string {
 	return unique
 }
 
-func (s *service) loadSenders(ctx context.Context, smtpID, whatsappID string) (*smtp.Instance, *whatsapp.Instance, error) {
+func (s *service) loadSenders(ctx context.Context, userID, smtpID, whatsappID string) (*smtp.Instance, *whatsapp.Instance, error) {
 	if smtpID == "" && whatsappID == "" {
 		return nil, nil, customerror.Trace("Send", ErrNoChannelSelected)
 	}
@@ -153,6 +153,9 @@ func (s *service) loadSenders(ctx context.Context, smtpID, whatsappID string) (*
 		if instance == nil {
 			return nil, nil, customerror.Trace("Send", ErrSmtpNotFound)
 		}
+		if instance.UserID != userID {
+			return nil, nil, customerror.Trace("Send", ErrSmtpNotFound)
+		}
 		smtpInstance = instance
 	}
 
@@ -162,6 +165,9 @@ func (s *service) loadSenders(ctx context.Context, smtpID, whatsappID string) (*
 			return nil, nil, customerror.Trace("Send", err)
 		}
 		if instance == nil {
+			return nil, nil, customerror.Trace("Send", ErrWhatsAppNotFound)
+		}
+		if instance.UserID != userID {
 			return nil, nil, customerror.Trace("Send", ErrWhatsAppNotFound)
 		}
 		waInstance = instance

@@ -153,7 +153,7 @@ VALUES
   (
     '00000000-0000-4000-8000-000000003003',
     'Gestão de Projetos',
-    'Disciplina compartilhada com Sistemas de Informação.',
+    'Disciplina usada para demonstrar filtros e comunicação por curso.',
     2026,
     1,
     '00000000-0000-4000-8000-000000002002',
@@ -183,7 +183,7 @@ VALUES
   (
     '00000000-0000-4000-8000-000000003006',
     'Arquitetura de Computadores',
-    'Disciplina do Campus Leste com alunos compartilhados entre cursos.',
+    'Disciplina do Campus Leste com alunos do próprio ambiente do usuário demo.',
     2026,
     1,
     '00000000-0000-4000-8000-000000002004',
@@ -230,6 +230,7 @@ INSERT INTO students (
   annotation,
   status,
   consent,
+  user_owner_id,
   created_at,
   updated_at
 )
@@ -243,6 +244,7 @@ VALUES
     'Representante da turma.',
     'ACTIVE',
     true,
+    '00000000-0000-4000-8000-000000000001',
     now() - interval '15 days',
     now() - interval '12 days'
   ),
@@ -255,6 +257,7 @@ VALUES
     'Prefere comunicados por WhatsApp.',
     'ACTIVE',
     true,
+    '00000000-0000-4000-8000-000000000001',
     now() - interval '15 days',
     now() - interval '11 days'
   ),
@@ -264,9 +267,10 @@ VALUES
     'Carla Mendes Rocha',
     '5521993333333',
     'carla.rocha@example.com',
-    'Aluno de outro campus cursando disciplina optativa.',
+    'Aluno do Campus Norte cursando disciplina optativa.',
     'ACTIVE',
     true,
+    '00000000-0000-4000-8000-000000000001',
     now() - interval '14 days',
     now() - interval '10 days'
   ),
@@ -279,6 +283,7 @@ VALUES
     'Pré-cadastrado por importação; ainda não concluiu auto-cadastro.',
     'PENDING',
     false,
+    '00000000-0000-4000-8000-000000000001',
     now() - interval '13 days',
     now() - interval '13 days'
   ),
@@ -288,9 +293,10 @@ VALUES
     'Eduarda Nunes Ferreira',
     '5531995555555',
     'eduarda.ferreira@example.com',
-    'Status trancado para demonstrar gestão global do aluno.',
+    'Status trancado para demonstrar gestão de aluno dentro do usuário demo.',
     'LOCKED',
     true,
+    '00000000-0000-4000-8000-000000000001',
     now() - interval '12 days',
     now() - interval '8 days'
   ),
@@ -303,6 +309,7 @@ VALUES
     'Aluno graduado em disciplina anterior.',
     'GRADUATED',
     true,
+    '00000000-0000-4000-8000-000000000001',
     now() - interval '11 days',
     now() - interval '7 days'
   ),
@@ -315,6 +322,7 @@ VALUES
     'Aluno cancelado mantido para histórico.',
     'CANCELED',
     true,
+    '00000000-0000-4000-8000-000000000001',
     now() - interval '10 days',
     now() - interval '6 days'
   ),
@@ -327,6 +335,7 @@ VALUES
     'Cadastro completo para envio por email e WhatsApp.',
     'ACTIVE',
     true,
+    '00000000-0000-4000-8000-000000000001',
     now() - interval '9 days',
     now() - interval '5 days'
   );

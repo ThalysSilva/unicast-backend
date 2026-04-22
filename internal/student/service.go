@@ -9,11 +9,11 @@ import (
 )
 
 type Service interface {
-	Create(ctx context.Context, studentID string) error
-	GetStudent(ctx context.Context, id string) (*Student, error)
-	GetStudents(ctx context.Context, filters map[string]string) ([]*Student, error)
-	Update(ctx context.Context, id string, fields map[string]any) error
-	Delete(ctx context.Context, id string) error
+	Create(ctx context.Context, userID, studentID string) error
+	GetStudent(ctx context.Context, userID, id string) (*Student, error)
+	GetStudents(ctx context.Context, userID string, filters map[string]string) ([]*Student, error)
+	Update(ctx context.Context, userID, id string, fields map[string]any) error
+	Delete(ctx context.Context, userID, id string) error
 }
 
 type studentService struct {
@@ -30,9 +30,9 @@ func NewService(studentRepository Repository) Service {
 	}
 }
 
-func (s *studentService) Create(ctx context.Context, studentID string) error {
+func (s *studentService) Create(ctx context.Context, userID, studentID string) error {
 
-	err := s.studentRepository.Create(ctx, studentID, nil, nil, nil, nil, StudentStatusPending)
+	err := s.studentRepository.Create(ctx, userID, studentID, nil, nil, nil, nil, StudentStatusPending)
 	if err != nil {
 		return err
 	}
@@ -40,8 +40,8 @@ func (s *studentService) Create(ctx context.Context, studentID string) error {
 	return nil
 }
 
-func (s *studentService) GetStudent(ctx context.Context, id string) (*Student, error) {
-	student, err := s.studentRepository.FindByID(ctx, id)
+func (s *studentService) GetStudent(ctx context.Context, userID, id string) (*Student, error) {
+	student, err := s.studentRepository.FindByID(ctx, id, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -51,10 +51,11 @@ func (s *studentService) GetStudent(ctx context.Context, id string) (*Student, e
 	return student, nil
 }
 
-func (s *studentService) GetStudents(ctx context.Context, filters map[string]string) ([]*Student, error) {
+func (s *studentService) GetStudents(ctx context.Context, userID string, filters map[string]string) ([]*Student, error) {
 	if filters == nil {
 		filters = make(map[string]string)
 	}
+	filters["user"] = userID
 	students, err := s.studentRepository.FindByFilters(ctx, filters)
 	if err != nil {
 		return nil, err
@@ -65,8 +66,8 @@ func (s *studentService) GetStudents(ctx context.Context, filters map[string]str
 	return students, nil
 }
 
-func (s *studentService) Update(ctx context.Context, id string, fields map[string]any) error {
-	student, err := s.studentRepository.FindByID(ctx, id)
+func (s *studentService) Update(ctx context.Context, userID, id string, fields map[string]any) error {
+	student, err := s.studentRepository.FindByID(ctx, id, userID)
 	if err != nil {
 		return err
 	}
@@ -100,8 +101,8 @@ func mergeFieldString(current *string, next any) *string {
 	return current
 }
 
-func (s *studentService) Delete(ctx context.Context, id string) error {
-	student, err := s.studentRepository.FindByID(ctx, id)
+func (s *studentService) Delete(ctx context.Context, userID, id string) error {
+	student, err := s.studentRepository.FindByID(ctx, id, userID)
 	if err != nil {
 		return err
 	}

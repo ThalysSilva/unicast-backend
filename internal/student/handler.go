@@ -62,13 +62,14 @@ func NewHandler(service Service, importService ImportService) Handler {
 // @Router /student/create [post]
 func (h *handler) Create() gin.HandlerFunc {
 	return func(c *gin.Context) {
+		userID := c.GetString("userID")
 		var input createStudentInput
 		if err := c.ShouldBindJSON(&input); err != nil {
 			c.Error(err)
 			return
 		}
 
-		err := h.service.Create(c.Request.Context(), input.StudentID)
+		err := h.service.Create(c.Request.Context(), userID, input.StudentID)
 		if err != nil {
 			c.Error(err)
 			return
@@ -87,9 +88,10 @@ func (h *handler) Create() gin.HandlerFunc {
 // @Router /student/{id} [get]
 func (h *handler) GetStudent() gin.HandlerFunc {
 	return func(c *gin.Context) {
+		userID := c.GetString("userID")
 		studentID := c.Param("id")
 
-		student, err := h.service.GetStudent(c.Request.Context(), studentID)
+		student, err := h.service.GetStudent(c.Request.Context(), userID, studentID)
 		if err != nil {
 			c.Error(err)
 			return
@@ -115,10 +117,10 @@ func (h *handler) GetStudent() gin.HandlerFunc {
 // @Router /student [get]
 func (h *handler) GetStudents() gin.HandlerFunc {
 	return func(c *gin.Context) {
+		userID := c.GetString("userID")
 		program := c.Query("program")
 		campus := c.Query("campus")
 		discipline := c.Query("discipline")
-		user := c.Query("user")
 		// Filtro por disciplina, campus, cursos, usuário.
 		filters := make(map[string]string)
 		if program != "" {
@@ -130,11 +132,7 @@ func (h *handler) GetStudents() gin.HandlerFunc {
 		if discipline != "" {
 			filters["discipline"] = discipline
 		}
-		if user != "" {
-			filters["user"] = user
-		}
-
-		students, err := h.service.GetStudents(c.Request.Context(), filters)
+		students, err := h.service.GetStudents(c.Request.Context(), userID, filters)
 		if err != nil {
 			c.Error(err)
 			return
@@ -161,6 +159,7 @@ func (h *handler) GetStudents() gin.HandlerFunc {
 // @Router /student/{id} [put]
 func (h *handler) Update() gin.HandlerFunc {
 	return func(c *gin.Context) {
+		userID := c.GetString("userID")
 		studentID := c.Param("id")
 		var input updateStudentInput
 		if err := c.ShouldBindJSON(&input); err != nil {
@@ -186,7 +185,7 @@ func (h *handler) Update() gin.HandlerFunc {
 			fields["status"] = input.Status
 		}
 
-		err := h.service.Update(c.Request.Context(), studentID, fields)
+		err := h.service.Update(c.Request.Context(), userID, studentID, fields)
 		if err != nil {
 			c.Error(err)
 			return
@@ -205,8 +204,9 @@ func (h *handler) Update() gin.HandlerFunc {
 // @Router /student/{id} [delete]
 func (h *handler) Delete() gin.HandlerFunc {
 	return func(c *gin.Context) {
+		userID := c.GetString("userID")
 		studentID := c.Param("id")
-		err := h.service.Delete(c.Request.Context(), studentID)
+		err := h.service.Delete(c.Request.Context(), userID, studentID)
 		if err != nil {
 			c.Error(err)
 			return
@@ -228,7 +228,8 @@ func (h *handler) Delete() gin.HandlerFunc {
 // @Router /discipline/{disciplineId}/students/import [post]
 func (h *handler) ImportForDiscipline() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		disciplineID := c.Param("disciplineId")
+		userID := c.GetString("userID")
+		disciplineID := c.Param("id")
 		modeParam := strings.ToLower(c.DefaultQuery("mode", string(ImportModeUpsert)))
 		mode := ImportMode(modeParam)
 		if mode != ImportModeClean && mode != ImportModeUpsert {
@@ -249,7 +250,7 @@ func (h *handler) ImportForDiscipline() gin.HandlerFunc {
 			return
 		}
 
-		result, err := h.importService.ImportForDiscipline(c.Request.Context(), disciplineID, mode, records)
+		result, err := h.importService.ImportForDiscipline(c.Request.Context(), userID, disciplineID, mode, records)
 		if err != nil {
 			c.Error(err)
 			return
@@ -271,14 +272,15 @@ func (h *handler) ImportForDiscipline() gin.HandlerFunc {
 // @Router /discipline/{disciplineId}/students [post]
 func (h *handler) AddToDiscipline() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		disciplineID := c.Param("disciplineId")
+		userID := c.GetString("userID")
+		disciplineID := c.Param("id")
 		var input addStudentToDisciplineInput
 		if err := c.ShouldBindJSON(&input); err != nil {
 			c.Error(err)
 			return
 		}
 
-		if err := h.importService.AddStudentToDiscipline(c.Request.Context(), disciplineID, input.StudentID); err != nil {
+		if err := h.importService.AddStudentToDiscipline(c.Request.Context(), userID, disciplineID, input.StudentID); err != nil {
 			c.Error(err)
 			return
 		}
@@ -298,10 +300,11 @@ func (h *handler) AddToDiscipline() gin.HandlerFunc {
 // @Router /discipline/{disciplineId}/students/{studentId} [delete]
 func (h *handler) RemoveFromDiscipline() gin.HandlerFunc {
 	return func(c *gin.Context) {
+		userID := c.GetString("userID")
 		disciplineID := c.Param("id")
 		studentID := c.Param("studentId")
 
-		if err := h.importService.RemoveStudentFromDiscipline(c.Request.Context(), disciplineID, studentID); err != nil {
+		if err := h.importService.RemoveStudentFromDiscipline(c.Request.Context(), userID, disciplineID, studentID); err != nil {
 			c.Error(err)
 			return
 		}

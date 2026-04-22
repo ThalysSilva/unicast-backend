@@ -35,6 +35,7 @@ func NewHandler(service Service) Handler {
 // Send handles the sending of messages via email and WhatsApp
 func (h *handler) Send() gin.HandlerFunc {
 	return func(c *gin.Context) {
+		userID := c.GetString("userID")
 		var input MessageInput
 		if err := c.ShouldBindJSON(&input); err != nil {
 			c.Error(err)
@@ -42,6 +43,7 @@ func (h *handler) Send() gin.HandlerFunc {
 		}
 
 		emailsFailed, whatsappFailed, err := h.service.Send(c.Request.Context(), &Message{
+			UserID:      userID,
 			Jwe:         input.Jwe,
 			To:          input.To,
 			From:        input.From,

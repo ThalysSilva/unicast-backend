@@ -51,12 +51,13 @@ func NewHandler(service Service) Handler {
 // @Router /discipline [post]
 func (h *handler) Create() gin.HandlerFunc {
 	return func(c *gin.Context) {
+		userID := c.GetString("userID")
 		var input createDisciplineInput
 		if err := c.ShouldBindJSON(&input); err != nil {
 			c.Error(err)
 			return
 		}
-		err := h.service.Create(c.Request.Context(), input.ProgramID, input.Name, input.Description, input.Year, input.Semester)
+		err := h.service.Create(c.Request.Context(), userID, input.ProgramID, input.Name, input.Description, input.Year, input.Semester)
 		if err != nil {
 			c.Error(err)
 			return
@@ -99,8 +100,9 @@ func (h *handler) GetDisciplines() gin.HandlerFunc {
 // @Router /discipline/{programId} [get]
 func (h *handler) GetDisciplinesByProgramID() gin.HandlerFunc {
 	return func(c *gin.Context) {
+		userID := c.GetString("userID")
 		programID := c.Param("programId")
-		instances, err := h.service.GetDisciplinesByProgramID(c.Request.Context(), programID)
+		instances, err := h.service.GetDisciplinesByProgramID(c.Request.Context(), userID, programID)
 		if err != nil {
 			c.Error(err)
 			return

@@ -66,10 +66,10 @@ func main() {
 	whatsappService := whatsapp.NewService(repos.WhatsAppInstance, repos.User)
 	smtpService := smtp.NewService(repos.SmtpInstance, secrets.Jwe, envCfg.OAuth)
 	campusService := campus.NewService(repos.Campus)
-	disciplineService := discipline.NewService(repos.Discipline)
+	disciplineService := discipline.NewService(repos.Discipline, repos.Program)
 	programService := program.NewService(repos.Program, repos.Campus)
 	studentService := student.NewService(repos.Student)
-	studentImportService := student.NewImportService(repos.Student, repos.Enrollment)
+	studentImportService := student.NewImportService(repos.Student, repos.Enrollment, repos.Discipline)
 	userService := user.NewService(repos.User)
 	inviteService := invite.NewService(repos.Invite, repos.Discipline, repos.Enrollment, repos.Student)
 	messageLogRepo := message.NewLogRepository(db)
@@ -128,8 +128,8 @@ func main() {
 		disciplineGroup.GET("/:programId", disciplineHandler.GetDisciplinesByProgramID())
 		disciplineGroup.PUT("/:id", disciplineHandler.Update())
 		disciplineGroup.DELETE("/:id", disciplineHandler.Delete())
-		disciplineGroup.POST("/:disciplineId/students", studentHandler.AddToDiscipline())
-		disciplineGroup.POST("/:disciplineId/students/import", studentHandler.ImportForDiscipline())
+		disciplineGroup.POST("/:id/students", studentHandler.AddToDiscipline())
+		disciplineGroup.POST("/:id/students/import", studentHandler.ImportForDiscipline())
 		disciplineGroup.DELETE("/:id/students/:studentId", studentHandler.RemoveFromDiscipline())
 	}
 

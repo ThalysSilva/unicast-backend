@@ -34,56 +34,41 @@ func (r *sqlRepository) TransactionBackend() any {
 }
 
 // Insere um novo estudante
-func (r *sqlRepository) Create(ctx context.Context, studentID string, name, phone, email, annotation *string, status StudentStatus) error {
+func (r *sqlRepository) Create(ctx context.Context, userOwnerID, studentID string, name, phone, email, annotation *string, status StudentStatus) error {
 	query := `
-        INSERT INTO students (student_id, name, phone, email, annotation, status, consent)
-        VALUES ($1, $2, $3, $4, $5, $6, $7)
+        INSERT INTO students (student_id, name, phone, email, annotation, status, consent, user_owner_id)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
     `
-	_, err := r.db.ExecContext(ctx, query, studentID, name, phone, email, annotation, status, false)
+	_, err := r.db.ExecContext(ctx, query, studentID, name, phone, email, annotation, status, false, userOwnerID)
 	return err
 }
 
 // Busca um estudante pelo ID
-func (r *sqlRepository) FindByID(ctx context.Context, id string) (*Student, error) {
+func (r *sqlRepository) FindByID(ctx context.Context, id, userOwnerID string) (*Student, error) {
 	query := `
-        SELECT id, student_id, name, phone, email, annotation, consent, created_at, updated_at, status
+        SELECT id, student_id, name, phone, email, annotation, consent, created_at, updated_at, status, user_owner_id
         FROM students
-        WHERE id = $1
+        WHERE id = $1 AND user_owner_id = $2
     `
-	row := r.db.QueryRowContext(ctx, query, id)
+	row := r.db.QueryRowContext(ctx, query, id, userOwnerID)
 
-	student := &Student{}
-	var name, phone, email, annotation sql.NullString
-	err := row.Scan(&student.ID, &student.StudentID, &name, &phone, &email, &annotation, &student.Consent, &student.CreatedAt, &student.UpdatedAt, &student.Status)
+	student, err := scanStudent(row)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
 		}
 		return nil, err
 	}
-
-	if name.Valid {
-		student.Name = &name.String
-	}
-	if phone.Valid {
-		student.Phone = &phone.String
-	}
-	if email.Valid {
-		student.Email = &email.String
-	}
-	if annotation.Valid {
-		student.Annotation = &annotation.String
-	}
 	return student, nil
 }
 
-func (r *sqlRepository) FindByStudentID(ctx context.Context, studentID string) (*Student, error) {
+func (r *sqlRepository) FindByStudentID(ctx context.Context, studentID, userOwnerID string) (*Student, error) {
 	query := `
-        SELECT id, student_id, name, phone, email, annotation, consent, created_at, updated_at, status
+        SELECT id, student_id, name, phone, email, annotation, consent, created_at, updated_at, status, user_owner_id
         FROM students
-        WHERE student_id = $1
+        WHERE student_id = $1 AND user_owner_id = $2
     `
-	row := r.db.QueryRowContext(ctx, query, studentID)
+	row := r.db.QueryRowContext(ctx, query, studentID, userOwnerID)
 
 	student, err := scanStudent(row)
 	if err != nil {
@@ -118,14 +103,13 @@ func (r *sqlRepository) FindByFilters(ctx context.Context, filters map[string]st
 
 func buildFilteredStudentsQuery(filters map[string]string) (string, []any) {
 	query := `
-		SELECT DISTINCT s.id, s.student_id, s.name, s.phone, s.email, s.annotation, s.consent, s.created_at, s.updated_at, s.status
+		SELECT DISTINCT s.id, s.student_id, s.name, s.phone, s.email, s.annotation, s.consent, s.created_at, s.updated_at, s.status, s.user_owner_id
 		FROM students s
 	`
 
 	needsAcademicJoin := filters["discipline"] != "" ||
 		filters["program"] != "" ||
-		filters["campus"] != "" ||
-		filters["user"] != ""
+		filters["campus"] != ""
 
 	if needsAcademicJoin {
 		query += `
@@ -142,22 +126,23 @@ func buildFilteredStudentsQuery(filters map[string]string) (string, []any) {
 
 // Busca estudantes por IDs
 // Se a lista estiver vazia, retorna nil
-func (r *sqlRepository) FindByIDs(ctx context.Context, studentIds []string) ([]*Student, error) {
+func (r *sqlRepository) FindByIDs(ctx context.Context, userOwnerID string, studentIds []string) ([]*Student, error) {
 	if len(studentIds) == 0 {
 		return nil, nil
 	}
 
 	placeholders := make([]string, len(studentIds))
-	args := make([]interface{}, len(studentIds))
+	args := make([]interface{}, 0, len(studentIds)+1)
 	for i, id := range studentIds {
-		placeholders[i] = fmt.Sprintf("$%d", i+1)
-		args[i] = id
+		placeholders[i] = fmt.Sprintf("$%d", i+2)
+		args = append(args, id)
 	}
+	args = append([]interface{}{userOwnerID}, args...)
 
 	query := fmt.Sprintf(`
-			SELECT id, student_id, name, phone, email, annotation, consent, created_at, updated_at, status
+			SELECT id, student_id, name, phone, email, annotation, consent, created_at, updated_at, status, user_owner_id
 			FROM students
-			WHERE id IN (%s)
+			WHERE user_owner_id = $1 AND id IN (%s)
 	`, strings.Join(placeholders, ","))
 
 	rows, err := r.db.QueryContext(ctx, query, args...)
@@ -220,7 +205,7 @@ var studentFilterColumns = map[string]string{
 	"discipline": "d.id",
 	"program":    "p.id",
 	"campus":     "ca.id",
-	"user":       "ca.user_owner_id",
+	"user":       "s.user_owner_id",
 }
 
 type rowScanner interface {
@@ -242,6 +227,7 @@ func scanStudent(scanner rowScanner) (*Student, error) {
 		&student.CreatedAt,
 		&student.UpdatedAt,
 		&student.Status,
+		&student.UserOwnerID,
 	)
 	if err != nil {
 		return nil, err

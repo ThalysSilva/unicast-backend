@@ -31,6 +31,7 @@ type Student struct {
 	CreatedAt  time.Time     `json:"-"`
 	UpdatedAt  time.Time     `json:"-"`
 	Status     StudentStatus `json:"status"`
+	UserOwnerID string       `json:"-"`
 }
 
 func hasText(value *string) bool {
@@ -72,13 +73,13 @@ func DeriveContactAwareStatus(current, requested StudentStatus, statusProvided b
 
 type Repository interface {
 	database.Transactional
-	Create(ctx context.Context, studentID string, name, phone, email, annotation *string, status StudentStatus) error
-	FindByID(ctx context.Context, id string) (*Student, error)
-	FindByStudentID(ctx context.Context, studentID string) (*Student, error)
+	Create(ctx context.Context, userOwnerID, studentID string, name, phone, email, annotation *string, status StudentStatus) error
+	FindByID(ctx context.Context, id, userOwnerID string) (*Student, error)
+	FindByStudentID(ctx context.Context, studentID, userOwnerID string) (*Student, error)
 	FindByFilters(ctx context.Context, filters map[string]string) ([]*Student, error)
 	Update(ctx context.Context, id string, fields map[string]any) error
 	Delete(ctx context.Context, id string) error
-	FindByIDs(ctx context.Context, ids []string) ([]*Student, error)
+	FindByIDs(ctx context.Context, userOwnerID string, ids []string) ([]*Student, error)
 }
 
 func NewRepository(db *sql.DB) Repository {

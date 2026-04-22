@@ -7,6 +7,7 @@ type Attachment struct {
 }
 
 type Message struct {
+	UserID      string        `json:"-"`
 	Jwe         string        `json:"jwe"`
 	To          []string      `json:"to" binding:"required"`
 	From        string        `json:"from"`

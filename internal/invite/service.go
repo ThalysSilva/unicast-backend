@@ -148,7 +148,15 @@ func (s *inviteService) SelfRegister(ctx context.Context, code, studentID, name,
 		return ErrInviteExpired
 	}
 
-	studentFound, err := s.studentRepository.FindByStudentID(ctx, studentID)
+	disciplineFound, err := s.disciplineRepository.FindByIDWithUserOwnerID(ctx, inviteFound.DisciplineID)
+	if err != nil {
+		return err
+	}
+	if disciplineFound == nil {
+		return ErrInviteNotFound
+	}
+
+	studentFound, err := s.studentRepository.FindByStudentID(ctx, studentID, disciplineFound.UserOwnerID)
 	if err != nil {
 		return err
 	}
