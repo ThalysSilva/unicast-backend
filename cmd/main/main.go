@@ -67,7 +67,7 @@ func main() {
 	smtpService := smtp.NewService(repos.SmtpInstance, secrets.Jwe, envCfg.OAuth)
 	campusService := campus.NewService(repos.Campus)
 	disciplineService := discipline.NewService(repos.Discipline)
-	programService := program.NewService(repos.Program)
+	programService := program.NewService(repos.Program, repos.Campus)
 	studentService := student.NewService(repos.Student)
 	studentImportService := student.NewImportService(repos.Student, repos.Enrollment)
 	userService := user.NewService(repos.User)

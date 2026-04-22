@@ -62,12 +62,12 @@ func (r *sqlRepository) FindByID(ctx context.Context, id string) (*Program, erro
 
 func (r *sqlRepository) FindByIDWithUserOwnerID(ctx context.Context, id string) (*ProgramWithUserOwnerID, error) {
 	query := `
-				SELECT p.id, p.name, p.description, p.created_at, p.updated_at, p.campus_id, p.active, u.id
-				FROM programs p
-				JOIN campus ca ON p.campus_id = c.id
-				JOIN users u ON ca.user_owner_id = u.id
-				WHERE p.id = $1
-		`
+					SELECT p.id, p.name, p.description, p.created_at, p.updated_at, p.campus_id, p.active, u.id
+					FROM programs p
+					JOIN campuses ca ON p.campus_id = ca.id
+					JOIN users u ON ca.user_owner_id = u.id
+					WHERE p.id = $1
+			`
 
 	row := r.db.QueryRowContext(ctx, query, id)
 

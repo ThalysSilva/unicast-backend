@@ -15,14 +15,14 @@ type handler struct {
 type createProgramInput struct {
 	Name        string `json:"name" binding:"required"`
 	Description string `json:"description" binding:"required"`
-	Active      bool   `json:"active" binding:"required"`
+	Active      *bool  `json:"active" binding:"required"`
 	CampusID    string `json:"campus_id" binding:"required"`
 }
 
 type updateProgramInput struct {
 	Name        string `json:"name"`
 	Description string `json:"description"`
-	Active      bool   `json:"active"`
+	Active      *bool  `json:"active"`
 }
 
 type Handler interface {
@@ -54,7 +54,8 @@ func (h *handler) Create() gin.HandlerFunc {
 			return
 		}
 
-		err := h.service.Create(c.Request.Context(), input.CampusID, input.Name, input.Description, input.Active)
+		userID := c.GetString("userID")
+		err := h.service.Create(c.Request.Context(), userID, input.CampusID, input.Name, input.Description, *input.Active)
 		if err != nil {
 			c.Error(err)
 			return
@@ -73,8 +74,9 @@ func (h *handler) Create() gin.HandlerFunc {
 // @Router /program/{id} [get]
 func (h *handler) GetProgramsByCampusID() gin.HandlerFunc {
 	return func(c *gin.Context) {
+		userID := c.GetString("userID")
 		campusID := c.Param("campusID")
-		instances, err := h.service.GetProgramsByCampusID(c.Request.Context(), campusID)
+		instances, err := h.service.GetProgramsByCampusID(c.Request.Context(), userID, campusID)
 		if err != nil {
 			c.Error(err)
 			return
@@ -126,8 +128,8 @@ func (h *handler) Update() gin.HandlerFunc {
 		if input.Description != "" {
 			fields["description"] = input.Description
 		}
-		if input.Active {
-			fields["active"] = input.Active
+		if input.Active != nil {
+			fields["active"] = *input.Active
 		}
 
 		if len(fields) == 0 {
