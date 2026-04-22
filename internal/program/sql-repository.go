@@ -16,7 +16,8 @@ type sqlRepository struct {
 func newSQLRepository(db *sql.DB) Repository {
 	newDb := database.NewSQLTx(db)
 	return &sqlRepository{
-		db: newDb.DB,
+		db:    newDb.DB,
+		sqlDB: db,
 	}
 }
 func (r *sqlRepository) WithTransaction(tx any) any {

@@ -14,7 +14,7 @@ type handler struct {
 
 type createProgramInput struct {
 	Name        string `json:"name" binding:"required"`
-	Description string `json:"description" binding:"required"`
+	Description string `json:"description"`
 	Active      *bool  `json:"active" binding:"required"`
 	CampusID    string `json:"campus_id" binding:"required"`
 }

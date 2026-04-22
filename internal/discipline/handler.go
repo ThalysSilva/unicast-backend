@@ -14,7 +14,7 @@ type handler struct {
 
 type createDisciplineInput struct {
 	Name        string `json:"name" binding:"required"`
-	Description string `json:"description" binding:"required"`
+	Description string `json:"description"`
 	ProgramID   string `json:"program_id" binding:"required"`
 	Year        int    `json:"year" binding:"required"`
 	Semester    int    `json:"semester" binding:"required"`
