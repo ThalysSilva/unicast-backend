@@ -12,8 +12,11 @@ services:
     env_file:
       - .env
     depends_on:
-      - mongo-unicast
-      - postgres-unicast
+      mongo-unicast:
+        condition: service_started
+      postgres-unicast:
+        condition: service_healthy
+    restart: unless-stopped
     networks:
       - unicast-network
 
@@ -31,6 +34,12 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -p ${POSTGRES_PORT}"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
     networks:
       - unicast-network
 
@@ -60,8 +69,10 @@ services:
     networks:
       - unicast-network
     depends_on:
-      - postgres-unicast
-      - redis-unicast
+      postgres-unicast:
+        condition: service_healthy
+      redis-unicast:
+        condition: service_started
 
   pgadmin-unicast:
     container_name: pgadmin-unicast
