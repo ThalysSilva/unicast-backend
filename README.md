@@ -134,14 +134,14 @@ Observação: a seed remove e recria apenas o usuário `demo@unicast.local` e a 
 ### Fluxos principais
 - **Auth**: `/auth/register`, `/auth/login`, `/auth/refresh`, `/auth/logout` (Bearer). O registro exige `registrationKey`, validada contra `REGISTER_INVITE_KEY`.
 - **Campus/Program/Discipline**: CRUD protegido; ownership validado por usuário. No produto: `program` = curso e `discipline` = disciplina/oferta.
-- **Students**: pré-cadastro com status (PENDING, ACTIVE, etc.). Alunos agora são isolados por usuário dono (`user_owner_id`) e a unicidade funcional é `(user_owner_id, student_id)`.
+- **Students**: pré-cadastro com status (PENDING, ACTIVE, etc.). Alunos agora são isolados por usuário dono (`user_owner_id`) e a unicidade funcional é `(user_owner_id, student_id)`. A ativação depende de `name`, `email` e de `phone` ou `no_phone=true`.
 - **Enrollments**: vínculo aluno ↔ disciplina. Como disciplina pertence a um usuário, os vínculos também ficam dentro do mesmo ambiente.
-- **Invites**: professor cria código curto para a disciplina (`POST /invite/:disciplineId`); aluno usa `POST /invite/self-register/:code` com `studentId`, `name`, `phone`, `email`. Backend valida o vínculo (`enrollment`), permite uma conclusão de auto-cadastro por vínculo da disciplina e ativa o aluno ao concluir.
-- **Importação de alunos**: `POST /discipline/:id/students/import?mode=upsert|clean` (CSV multipart em `file`). Colunas aceitas: `studentId` (obrigatória), `name`, `phone`, `email`, `status` (1/2/3/4/5 ou ACTIVE/LOCKED/GRADUATED/CANCELED/PENDING). Linhas com campos finais ausentes são aceitas; campos ausentes entram como vazios. `mode=clean` remove matrículas da disciplina antes de inserir. Se o aluno não existir no contexto do usuário dono da disciplina, é criado com os dados enviados e status derivado do contato/status informado. Se já existir para esse usuário, campos enviados atualizam o cadastro e o vínculo com a disciplina é garantido.
+- **Invites**: professor cria código curto para a disciplina (`POST /invite/:disciplineId`); aluno usa `POST /invite/self-register/:code` com `studentId`, `name`, `email`, `consent` e `phone` ou `noPhone=true`. Backend valida o vínculo (`enrollment`), permite uma conclusão de auto-cadastro por vínculo da disciplina e ativa o aluno quando os dados mínimos são concluídos.
+- **Importação de alunos**: `POST /discipline/:id/students/import?mode=upsert|clean` (CSV multipart em `file`). Colunas aceitas: `studentId` (obrigatória), `name`, `phone`, `email`, `status` (1/2/3/4/5 ou ACTIVE/LOCKED/GRADUATED/CANCELED/PENDING). Linhas com campos finais ausentes são aceitas; campos ausentes entram como vazios. `mode=clean` remove matrículas da disciplina antes de inserir. Se o aluno não existir no contexto do usuário dono da disciplina, é criado com os dados enviados e status derivado do contato/status informado. Se já existir para esse usuário, campos enviados atualizam o cadastro e o vínculo com a disciplina é garantido. Sem email, ou sem telefone sem marcação explícita de ausência, o aluno permanece `PENDING`.
 - **Email**: criação/listagem de instâncias de envio por senha SMTP ou OAuth.
 - **OAuth de Email**: para Gmail/Google via Gmail API, veja `docs/oauth-email-setup.md`.
 - **WhatsApp Instâncias**: além do CRUD de instâncias, expõe connect/status/logout/restart; criação já retorna QR/pairing code para parear via Evolution API.
-- **Mensagens**: `POST /message/send` envia e-mail e WhatsApp para alunos; aceita anexos em base64 ou URL; logs de entrega ficam em `message_logs`. A resposta de falhas por canal retorna apenas `id` e `studentId` dos alunos afetados, evitando expor contato/anotações desnecessariamente.
+- **Mensagens**: `POST /message/send` envia e-mail e WhatsApp para alunos; aceita anexos em base64 ou URL; logs de entrega ficam em `message_logs`. A resposta de falhas por canal retorna apenas `id` e `studentId` dos alunos afetados, evitando expor contato/anotações desnecessariamente. Os logs guardam agrupamento por disparo, tipo/provedor do remetente e endereço usado no envio.
 - **Backdoor admin**: `POST /backdoor/reset-password` com `secret`, `newPassword` e `userId` ou `email`. O `secret` deve corresponder ao `ADMIN_SECRET`; a rota permite recuperar acesso ao alterar a senha e invalidar sessões existentes do usuário.
 
 #### Envio de mensagens
@@ -278,9 +278,9 @@ sequenceDiagram
     Professor->>API: POST /invite/:disciplineId (Bearer)
     API->>DB: cria convite (code, disciplineId, expiração)
     API-->>Professor: code
-    Aluno->>API: POST /invite/self-register/:code {studentId, name, phone, email, consent}
+    Aluno->>API: POST /invite/self-register/:code {studentId, name, email, phone ou noPhone, consent}
     API->>DB: valida convite + matrícula não concluída
-    API->>DB: atualiza aluno (contatos, status ACTIVE)
+    API->>DB: atualiza aluno (contatos, status ACTIVE/PENDING)
     API->>DB: marca matrícula como concluída
     API-->>Aluno: mensagem de sucesso
 ```
@@ -300,7 +300,7 @@ sequenceDiagram
     API->>DB: resolve alunos/contatos e instâncias (SMTP/WA)
     API->>Mail: envia email
     API->>Evo: envia WhatsApp
-    API->>DB: grava logs de mensagens (sucesso/erro por canal)
+    API->>DB: grava logs de mensagens (sucesso/erro por canal, lote e remetente)
     API-->>BFF: falhas mínimas por canal (id, studentId)
     BFF-->>Professor: resposta sem tokens/JWE
 ```
@@ -624,6 +624,8 @@ migrate -path migrations -database "$POSTGRES_DATABASE_URL" up
 - WhatsApp/Evolution: `docs/whatsapp-evolution.md`.
 - Banco: migrations incluem `users`, `campuses`, `programs`, `disciplines`, `students`, `enrollments`, `invites`, `smtp_instances`, `whatsapp_instances` e `message_logs`. A migration `000021` renomeia `courses/course_id` para `disciplines/discipline_id`; a `000022` adiciona o controle de auto-cadastro concluído por enrollment.
 - A migration `000023` passa `students` a ser isolado por usuário com `user_owner_id` e unicidade por `(user_owner_id, student_id)`.
+- A migration `000024` adiciona `no_phone` em `students` para permitir ativação com email mesmo sem número de contato.
+- A migration `000025` enriquece `message_logs` com `delivery_group_id`, `sender_type`, `sender_provider` e `sender_address`.
 
 ### Fluxo de uso rápido
 1. Preencha `.env`/`.env.development` conforme `example.env`.
