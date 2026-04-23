@@ -37,6 +37,21 @@ type Student struct {
 	UserOwnerID string       `json:"-"`
 }
 
+type DeliverySnapshot struct {
+	Channel        string     `json:"channel"`
+	Success        bool       `json:"success"`
+	ErrorText      *string    `json:"errorText"`
+	SenderType     *string    `json:"senderType"`
+	SenderProvider *string    `json:"senderProvider"`
+	SenderAddress  *string    `json:"senderAddress"`
+	CreatedAt      time.Time  `json:"createdAt"`
+}
+
+type DeliverySummary struct {
+	Email    *DeliverySnapshot `json:"email"`
+	WhatsApp *DeliverySnapshot `json:"whatsapp"`
+}
+
 func hasText(value *string) bool {
 	return value != nil && strings.TrimSpace(*value) != ""
 }
@@ -80,6 +95,7 @@ type Repository interface {
 	FindByID(ctx context.Context, id, userOwnerID string) (*Student, error)
 	FindByStudentID(ctx context.Context, studentID, userOwnerID string) (*Student, error)
 	FindByFilters(ctx context.Context, filters map[string]string) ([]*Student, error)
+	GetDeliverySummary(ctx context.Context, id, userOwnerID string) (*DeliverySummary, error)
 	Update(ctx context.Context, id string, fields map[string]any) error
 	Delete(ctx context.Context, id string) error
 	FindByIDs(ctx context.Context, userOwnerID string, ids []string) ([]*Student, error)

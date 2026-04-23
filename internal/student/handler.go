@@ -38,11 +38,38 @@ type Handler interface {
 	Create() gin.HandlerFunc
 	GetStudent() gin.HandlerFunc
 	GetStudents() gin.HandlerFunc
+	GetDeliverySummary() gin.HandlerFunc
 	Update() gin.HandlerFunc
 	Delete() gin.HandlerFunc
 	ImportForDiscipline() gin.HandlerFunc
 	AddToDiscipline() gin.HandlerFunc
 	RemoveFromDiscipline() gin.HandlerFunc
+}
+
+// @Summary Obtém o resumo de entrega do aluno
+// @Tags student
+// @Produce json
+// @Param Authorization header string true "Bearer token"
+// @Security BearerAuth
+// @Param id path string true "Student ID"
+// @Success 200 {object} api.DefaultResponse[DeliverySummary]
+// @Router /student/{id}/delivery-summary [get]
+func (h *handler) GetDeliverySummary() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		userID := c.GetString("userID")
+		studentID := c.Param("id")
+
+		summary, err := h.service.GetDeliverySummary(c.Request.Context(), userID, studentID)
+		if err != nil {
+			c.Error(err)
+			return
+		}
+
+		c.JSON(200, api.DefaultResponse[*DeliverySummary]{
+			Message: "Resumo de entrega carregado",
+			Data:    summary,
+		})
+	}
 }
 
 func NewHandler(service Service, importService ImportService) Handler {

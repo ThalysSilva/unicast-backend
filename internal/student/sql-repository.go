@@ -135,6 +135,23 @@ func (r *sqlRepository) FindByFilters(ctx context.Context, filters map[string]st
 	return students, nil
 }
 
+func (r *sqlRepository) GetDeliverySummary(ctx context.Context, id, userOwnerID string) (*DeliverySummary, error) {
+	email, err := r.latestDeliveryByChannel(ctx, id, userOwnerID, "EMAIL")
+	if err != nil {
+		return nil, err
+	}
+
+	whatsApp, err := r.latestDeliveryByChannel(ctx, id, userOwnerID, "WHATSAPP")
+	if err != nil {
+		return nil, err
+	}
+
+	return &DeliverySummary{
+		Email:    email,
+		WhatsApp: whatsApp,
+	}, nil
+}
+
 func buildFilteredStudentsQuery(filters map[string]string) (string, []any) {
 	query := `
 		SELECT DISTINCT s.id, s.student_id, s.name, s.phone, s.no_phone, s.email, s.annotation, s.consent,
@@ -267,6 +284,63 @@ func buildWhereClause(filters map[string]string) (string, []any) {
 	}
 
 	return " WHERE " + strings.Join(parts, " AND "), args
+}
+
+func (r *sqlRepository) latestDeliveryByChannel(ctx context.Context, id, userOwnerID, channel string) (*DeliverySnapshot, error) {
+	query := `
+		SELECT
+			ml.channel,
+			ml.success,
+			ml.error_text,
+			ml.sender_type,
+			ml.sender_provider,
+			ml.sender_address,
+			ml.created_at
+		FROM message_logs ml
+		JOIN students s ON s.id = ml.student_id
+		WHERE s.id = $1
+		  AND s.user_owner_id = $2
+		  AND ml.channel = $3
+		ORDER BY ml.created_at DESC
+		LIMIT 1
+	`
+
+	var snapshot DeliverySnapshot
+	var errorText sql.NullString
+	var senderType sql.NullString
+	var senderProvider sql.NullString
+	var senderAddress sql.NullString
+
+	err := r.db.QueryRowContext(ctx, query, id, userOwnerID, channel).Scan(
+		&snapshot.Channel,
+		&snapshot.Success,
+		&errorText,
+		&senderType,
+		&senderProvider,
+		&senderAddress,
+		&snapshot.CreatedAt,
+	)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil
+		}
+		return nil, err
+	}
+
+	if errorText.Valid {
+		snapshot.ErrorText = &errorText.String
+	}
+	if senderType.Valid {
+		snapshot.SenderType = &senderType.String
+	}
+	if senderProvider.Valid {
+		snapshot.SenderProvider = &senderProvider.String
+	}
+	if senderAddress.Valid {
+		snapshot.SenderAddress = &senderAddress.String
+	}
+
+	return &snapshot, nil
 }
 
 var studentFilterColumns = map[string]string{

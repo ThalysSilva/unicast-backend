@@ -12,6 +12,7 @@ type Service interface {
 	Create(ctx context.Context, userID, studentID string) error
 	GetStudent(ctx context.Context, userID, id string) (*Student, error)
 	GetStudents(ctx context.Context, userID string, filters map[string]string) ([]*Student, error)
+	GetDeliverySummary(ctx context.Context, userID, id string) (*DeliverySummary, error)
 	Update(ctx context.Context, userID, id string, fields map[string]any) error
 	Delete(ctx context.Context, userID, id string) error
 }
@@ -64,6 +65,18 @@ func (s *studentService) GetStudents(ctx context.Context, userID string, filters
 		return nil, nil
 	}
 	return students, nil
+}
+
+func (s *studentService) GetDeliverySummary(ctx context.Context, userID, id string) (*DeliverySummary, error) {
+	student, err := s.studentRepository.FindByID(ctx, id, userID)
+	if err != nil {
+		return nil, err
+	}
+	if student == nil {
+		return nil, ErrStudentNotFound
+	}
+
+	return s.studentRepository.GetDeliverySummary(ctx, id, userID)
 }
 
 func (s *studentService) Update(ctx context.Context, userID, id string, fields map[string]any) error {
