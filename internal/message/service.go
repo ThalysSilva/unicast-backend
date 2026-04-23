@@ -2,6 +2,7 @@ package message
 
 import (
 	"context"
+	"crypto/rand"
 	"encoding/base64"
 	"errors"
 	"fmt"
@@ -147,7 +148,7 @@ func (s *service) Send(ctx context.Context, message *Message) (emailsFails, what
 		whatsappFailedSlice = s.sendWhats(ctx, waInstance, students, formatWhatsAppBody(message.Subject, message.Body), rawAttachments)
 	}
 
-	s.logResults(ctx, students, emailFailedSlice, whatsappFailedSlice, message, attachmentNamesStr)
+	s.logResults(ctx, students, emailFailedSlice, whatsappFailedSlice, message, attachmentNamesStr, smtpInstance, waInstance)
 
 	return &emailFailedSlice, &whatsappFailedSlice, emailErr
 }
@@ -534,26 +535,41 @@ func (s *service) sendWhats(ctx context.Context, waInstance *whatsapp.Instance, 
 	return failed
 }
 
-func (s *service) logResults(ctx context.Context, students []*student.Student, emailFailed, whatsappFailed []student.Student, message *Message, attachmentNames string) {
+func (s *service) logResults(ctx context.Context, students []*student.Student, emailFailed, whatsappFailed []student.Student, message *Message, attachmentNames string, smtpInstance *smtp.Instance, waInstance *whatsapp.Instance) {
 	attachmentCount := 0
 	if attachmentNames != "" {
 		attachmentCount = len(strings.Split(attachmentNames, ","))
 	}
+	deliveryGroupID := newDeliveryGroupID()
 
 	if message.SmtpId != "" {
 		emailFailedSet := make(map[string]string)
 		for _, s := range emailFailed {
 			emailFailedSet[s.ID] = "failed to send email"
 		}
+		senderType := "EMAIL_SMTP"
+		senderProvider := ""
+		senderAddress := ""
+		if smtpInstance != nil {
+			senderAddress = smtpInstance.Email
+			if smtpInstance.AuthMode == smtp.AuthModeOAuth {
+				senderType = "EMAIL_OAUTH"
+				senderProvider = smtpInstance.Provider
+			}
+		}
 		for _, stud := range students {
 			errText, failed := emailFailedSet[stud.ID]
 			if err := s.logRepository.Save(ctx, &Log{
+				DeliveryGroupID: deliveryGroupID,
 				StudentID:       stud.ID,
 				Channel:         ChannelEmail,
 				Success:         !failed,
 				ErrorText:       nullableString(errText, failed),
 				Subject:         &message.Subject,
 				Body:            &message.Body,
+				SenderType:      nullableString(senderType, senderType != ""),
+				SenderProvider:  nullableString(senderProvider, senderProvider != ""),
+				SenderAddress:   nullableString(senderAddress, senderAddress != ""),
 				SMTPID:          &message.SmtpId,
 				AttachmentNames: nullableString(attachmentNames, attachmentCount > 0),
 				AttachmentCount: attachmentCount,
@@ -568,15 +584,25 @@ func (s *service) logResults(ctx context.Context, students []*student.Student, e
 		for _, s := range whatsappFailed {
 			whatsFailedSet[s.ID] = "failed to send whatsapp"
 		}
+		senderType := "WHATSAPP"
+		senderProvider := "evolution"
+		senderAddress := ""
+		if waInstance != nil {
+			senderAddress = waInstance.Phone
+		}
 		for _, stud := range students {
 			errText, failed := whatsFailedSet[stud.ID]
 			if err := s.logRepository.Save(ctx, &Log{
+				DeliveryGroupID:    deliveryGroupID,
 				StudentID:          stud.ID,
 				Channel:            ChannelWhatsApp,
 				Success:            !failed,
 				ErrorText:          nullableString(errText, failed),
 				Subject:            &message.Subject,
 				Body:               &message.Body,
+				SenderType:         nullableString(senderType, senderType != ""),
+				SenderProvider:     nullableString(senderProvider, senderProvider != ""),
+				SenderAddress:      nullableString(senderAddress, senderAddress != ""),
 				WhatsAppInstanceID: &message.WhatsappId,
 				AttachmentNames:    nullableString(attachmentNames, attachmentCount > 0),
 				AttachmentCount:    attachmentCount,
@@ -607,4 +633,24 @@ func nullableString(val string, set bool) *string {
 		return nil
 	}
 	return &val
+}
+
+func newDeliveryGroupID() string {
+	buf := make([]byte, 16)
+	if _, err := rand.Read(buf); err != nil {
+		now := time.Now().UnixNano()
+		return fmt.Sprintf("%08x-%04x-%04x-%04x-%012x", uint32(now>>32), uint16(now>>16), uint16(now), uint16(now>>8), uint64(now)&0xffffffffffff)
+	}
+
+	buf[6] = (buf[6] & 0x0f) | 0x40
+	buf[8] = (buf[8] & 0x3f) | 0x80
+
+	return fmt.Sprintf(
+		"%08x-%04x-%04x-%04x-%012x",
+		uint32(buf[0])<<24|uint32(buf[1])<<16|uint32(buf[2])<<8|uint32(buf[3]),
+		uint16(buf[4])<<8|uint16(buf[5]),
+		uint16(buf[6])<<8|uint16(buf[7]),
+		uint16(buf[8])<<8|uint16(buf[9]),
+		uint64(buf[10])<<40|uint64(buf[11])<<32|uint64(buf[12])<<24|uint64(buf[13])<<16|uint64(buf[14])<<8|uint64(buf[15]),
+	)
 }

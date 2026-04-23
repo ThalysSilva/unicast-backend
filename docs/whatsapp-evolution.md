@@ -15,7 +15,7 @@ email-do-professor:telefone-da-instancia
 Exemplo:
 
 ```txt
-thalysfarias14@hotmail.com:5521997523518
+professor@example.com:5500000000000
 ```
 
 ## Endpoints da Evolution Usados
@@ -44,10 +44,10 @@ Content-Type: application/json
 A Evolution espera o destinatário como JID:
 
 ```txt
-5521997860923@s.whatsapp.net
+5500000000001@s.whatsapp.net
 ```
 
-O backend aceita telefones como `+5521997860923`, `5521997860923` ou formatos com pontuação, e converte para JID antes de chamar a Evolution.
+O backend aceita telefones como `+5500000000001`, `5500000000001` ou formatos com pontuação, e converte para JID antes de chamar a Evolution.
 
 ## Texto
 
@@ -55,7 +55,7 @@ Payload enviado para a Evolution:
 
 ```json
 {
-  "number": "5521997860923@s.whatsapp.net",
+  "number": "5500000000001@s.whatsapp.net",
   "text": "*Aviso importante*\n\nA aula foi remarcada para sexta-feira."
 }
 ```
@@ -74,7 +74,7 @@ Payload base:
 
 ```json
 {
-  "number": "5521997860923@s.whatsapp.net",
+  "number": "5500000000001@s.whatsapp.net",
   "mediatype": "image",
   "mimetype": "image/webp",
   "caption": "*Aviso importante*\n\nSegue o arquivo.",
@@ -98,7 +98,7 @@ Imagem `.webp`:
 
 ```json
 {
-  "number": "5521997860923@s.whatsapp.net",
+  "number": "5500000000001@s.whatsapp.net",
   "mediatype": "image",
   "mimetype": "image/webp",
   "caption": "texto com imagem",
@@ -111,7 +111,7 @@ Vídeo `.mp4`:
 
 ```json
 {
-  "number": "5521997860923@s.whatsapp.net",
+  "number": "5500000000001@s.whatsapp.net",
   "mediatype": "video",
   "mimetype": "video/mp4",
   "caption": "Video teste com texto",
@@ -124,7 +124,7 @@ Documento `.pdf`:
 
 ```json
 {
-  "number": "5521997860923@s.whatsapp.net",
+  "number": "5500000000001@s.whatsapp.net",
   "mediatype": "document",
   "mimetype": "application/pdf",
   "caption": "envio de arquivos como documento",
@@ -147,7 +147,7 @@ Exemplo simplificado:
 ```json
 {
   "key": {
-    "remoteJid": "5521997860923@s.whatsapp.net",
+    "remoteJid": "5500000000001@s.whatsapp.net",
     "fromMe": true,
     "id": "3EB020BC7FEB8824CB9BC4"
   },

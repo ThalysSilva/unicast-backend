@@ -22,6 +22,7 @@ type ImportRecord struct {
 	StudentID      string
 	Name           *string
 	Phone          *string
+	NoPhone        bool
 	Email          *string
 	Status         StudentStatus
 	StatusProvided bool
@@ -88,6 +89,7 @@ func (s *importService) AddStudentToDiscipline(ctx context.Context, userID, disc
 	return s.processRecord(ctx, userID, disciplineID, 0, ImportRecord{
 		StudentID: studentID,
 		Status:    StudentStatusPending,
+		NoPhone:   false,
 	}, result)
 }
 
@@ -121,8 +123,8 @@ func (s *importService) processRecord(ctx context.Context, userID, disciplineID 
 	}
 
 	if existing == nil {
-		status := DeriveContactAwareStatus("", rec.Status, rec.StatusProvided, rec.Name, rec.Phone, rec.Email)
-		if err := s.studentsRepo.Create(ctx, userID, rec.StudentID, rec.Name, rec.Phone, rec.Email, nil, status); err != nil {
+		status := DeriveContactAwareStatus("", rec.Status, rec.StatusProvided, rec.Name, rec.Phone, rec.Email, rec.NoPhone)
+		if err := s.studentsRepo.Create(ctx, userID, rec.StudentID, rec.Name, rec.Phone, rec.Email, nil, rec.NoPhone, status); err != nil {
 			return fmt.Errorf("linha %d: erro ao criar student: %v", idx+1, err)
 		}
 		existing, err = s.studentsRepo.FindByStudentID(ctx, rec.StudentID, userID)
@@ -165,10 +167,15 @@ func (s *importService) updateExisting(ctx context.Context, rec ImportRecord, ex
 	name := mergeString(existing.Name, rec.Name)
 	phone := mergeString(existing.Phone, rec.Phone)
 	email := mergeString(existing.Email, rec.Email)
-	status := DeriveContactAwareStatus(existing.Status, rec.Status, rec.StatusProvided, name, phone, email)
+	noPhone := existing.NoPhone
+	if rec.Phone != nil && *rec.Phone != "" {
+		noPhone = false
+	}
+	status := DeriveContactAwareStatus(existing.Status, rec.Status, rec.StatusProvided, name, phone, email, noPhone)
 
 	fields := map[string]any{
-		"status": status,
+		"status":   status,
+		"no_phone": noPhone,
 	}
 
 	if rec.Name != nil {

@@ -34,17 +34,36 @@ func (r *logRepository) TransactionBackend() any {
 
 func (r *logRepository) Save(ctx context.Context, log *Log) error {
 	query := `
-		INSERT INTO message_logs (student_id, channel, success, error_text, subject, body, smtp_id, whatsapp_instance_id, attachment_names, attachment_count)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+		INSERT INTO message_logs (
+			delivery_group_id,
+			student_id,
+			channel,
+			success,
+			error_text,
+			subject,
+			body,
+			sender_type,
+			sender_provider,
+			sender_address,
+			smtp_id,
+			whatsapp_instance_id,
+			attachment_names,
+			attachment_count
+		)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
 	`
 
 	_, err := r.db.ExecContext(ctx, query,
+		log.DeliveryGroupID,
 		log.StudentID,
 		string(log.Channel),
 		log.Success,
 		log.ErrorText,
 		log.Subject,
 		log.Body,
+		log.SenderType,
+		log.SenderProvider,
+		log.SenderAddress,
 		log.SMTPID,
 		log.WhatsAppInstanceID,
 		log.AttachmentNames,

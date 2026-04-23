@@ -21,13 +21,15 @@ DELETE FROM message_logs
 WHERE student_id IN (
   SELECT id
   FROM students
-  WHERE student_id ~ '^[0-9]+$'
-    AND student_id::integer BETWEEN 2026001 AND 2026999
+  WHERE (student_id ~ '^[0-9]+$'
+    AND student_id::integer BETWEEN 2026001 AND 2026999)
+     OR user_owner_id = '00000000-0000-4000-8000-000000000001'
 );
 
 DELETE FROM students
-WHERE student_id ~ '^[0-9]+$'
-  AND student_id::integer BETWEEN 2026001 AND 2026999;
+WHERE (student_id ~ '^[0-9]+$'
+  AND student_id::integer BETWEEN 2026001 AND 2026999)
+   OR user_owner_id = '00000000-0000-4000-8000-000000000001';
 
 DELETE FROM users
 WHERE id = '00000000-0000-4000-8000-000000000001'
@@ -239,7 +241,7 @@ VALUES
     '00000000-0000-4000-8000-000000004001',
     '2026001',
     'Ana Beatriz Lima',
-    '5511991111111',
+    '5500000001001',
     'ana.lima@example.com',
     'Representante da turma.',
     'ACTIVE',
@@ -252,7 +254,7 @@ VALUES
     '00000000-0000-4000-8000-000000004002',
     '2026002',
     'Bruno Henrique Souza',
-    '5511992222222',
+    '5500000001002',
     'bruno.souza@example.com',
     'Prefere comunicados por WhatsApp.',
     'ACTIVE',
@@ -265,7 +267,7 @@ VALUES
     '00000000-0000-4000-8000-000000004003',
     '2026003',
     'Carla Mendes Rocha',
-    '5521993333333',
+    '5500000001003',
     'carla.rocha@example.com',
     'Aluno do Campus Norte cursando disciplina optativa.',
     'ACTIVE',
@@ -291,7 +293,7 @@ VALUES
     '00000000-0000-4000-8000-000000004005',
     '2026005',
     'Eduarda Nunes Ferreira',
-    '5531995555555',
+    '5500000001005',
     'eduarda.ferreira@example.com',
     'Status trancado para demonstrar gestão de aluno dentro do usuário demo.',
     'LOCKED',
@@ -304,7 +306,7 @@ VALUES
     '00000000-0000-4000-8000-000000004006',
     '2026006',
     'Felipe Costa Ribeiro',
-    '5541996666666',
+    '5500000001006',
     'felipe.ribeiro@example.com',
     'Aluno graduado em disciplina anterior.',
     'GRADUATED',
@@ -317,7 +319,7 @@ VALUES
     '00000000-0000-4000-8000-000000004007',
     '2026007',
     'Gabriela Torres Almeida',
-    '5551997777777',
+    '5500000001007',
     'gabriela.almeida@example.com',
     'Aluno cancelado mantido para histórico.',
     'CANCELED',
@@ -330,7 +332,7 @@ VALUES
     '00000000-0000-4000-8000-000000004008',
     '2026008',
     'Henrique Barros Pereira',
-    '5521998888888',
+    '5500000001008',
     'henrique.pereira@example.com',
     'Cadastro completo para envio por email e WhatsApp.',
     'ACTIVE',

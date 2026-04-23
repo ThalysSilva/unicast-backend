@@ -24,6 +24,7 @@ type createStudentInput struct {
 type updateStudentInput struct {
 	Name       *string       `json:"name"`
 	Phone      *string       `json:"phone"`
+	NoPhone    *bool         `json:"noPhone"`
 	Email      *string       `json:"email" binding:"omitempty,email"`
 	Annotation *string       `json:"annotation"`
 	Status     StudentStatus `json:"status" binding:"omitempty,oneof=ACTIVE CANCELED GRADUATED LOCKED PENDING"`
@@ -173,6 +174,9 @@ func (h *handler) Update() gin.HandlerFunc {
 		}
 		if input.Phone != nil {
 			fields["phone"] = input.Phone
+		}
+		if input.NoPhone != nil {
+			fields["no_phone"] = *input.NoPhone
 		}
 		if input.Email != nil {
 			fields["email"] = input.Email

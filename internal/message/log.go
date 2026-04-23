@@ -10,12 +10,16 @@ import (
 
 type Log struct {
 	ID                 string
+	DeliveryGroupID    string
 	StudentID          string
 	Channel            Channel
 	Success            bool
 	ErrorText          *string
 	Subject            *string
 	Body               *string
+	SenderType         *string
+	SenderProvider     *string
+	SenderAddress      *string
 	SMTPID             *string
 	WhatsAppInstanceID *string
 	AttachmentNames    *string

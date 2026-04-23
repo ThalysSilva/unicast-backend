@@ -8,7 +8,7 @@ import (
 
 func TestFailedRecipientsOmitsContactData(t *testing.T) {
 	name := "Aluno Teste"
-	phone := "5511999999999"
+	phone := "5500000000099"
 	email := "aluno@example.com"
 	annotation := "observação interna"
 

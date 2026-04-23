@@ -14,7 +14,7 @@ func (f testMultipartFile) Close() error {
 }
 
 func TestParseImportCSVAcceptsMissingTrailingFields(t *testing.T) {
-	file := testMultipartFile{strings.NewReader("studentId,name,phone,email,status\n2026996,Isabela Fernandes,5561976543210\n")}
+	file := testMultipartFile{strings.NewReader("studentId,name,phone,email,status\n2026996,Isabela Fernandes,5500000000010\n")}
 
 	records, err := parseImportCSV(file)
 	if err != nil {
@@ -31,8 +31,8 @@ func TestParseImportCSVAcceptsMissingTrailingFields(t *testing.T) {
 	if record.Name == nil || *record.Name != "Isabela Fernandes" {
 		t.Fatalf("Name = %v, want Isabela Fernandes", record.Name)
 	}
-	if record.Phone == nil || *record.Phone != "5561976543210" {
-		t.Fatalf("Phone = %v, want 5561976543210", record.Phone)
+	if record.Phone == nil || *record.Phone != "5500000000010" {
+		t.Fatalf("Phone = %v, want 5500000000010", record.Phone)
 	}
 	if record.Email != nil {
 		t.Fatalf("Email = %v, want nil", record.Email)

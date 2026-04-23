@@ -25,7 +25,7 @@ func TestSendEvolutionTextUsesInstancePathAndJIDPayload(t *testing.T) {
 		require.NoError(t, json.NewDecoder(r.Body).Decode(&gotPayload))
 		w.Header().Set("Content-Type", "application/json")
 		_, _ = w.Write([]byte(`{
-			"key":{"remoteJid":"5521997860923@s.whatsapp.net","fromMe":true,"id":"3EB0313C9EA80A7ED95190"},
+			"key":{"remoteJid":"5500000000001@s.whatsapp.net","fromMe":true,"id":"3EB0313C9EA80A7ED95190"},
 			"status":"PENDING",
 			"message":{"conversation":"enviando mensagem de teste"}
 		}`))
@@ -34,13 +34,13 @@ func TestSendEvolutionTextUsesInstancePathAndJIDPayload(t *testing.T) {
 
 	setEvolutionTestConfig(t, server.URL, "test-api-key")
 
-	err := sendEvolutionText("thalysfarias14@hotmail.com:5521997523518", "+5521997860923", "enviando mensagem de teste")
+	err := sendEvolutionText("professor@example.com:5500000000000", "+5500000000001", "enviando mensagem de teste")
 
 	require.NoError(t, err)
-	assert.Equal(t, "/message/sendText/thalysfarias14@hotmail.com:5521997523518", gotPath)
+	assert.Equal(t, "/message/sendText/professor@example.com:5500000000000", gotPath)
 	assert.Equal(t, "test-api-key", gotAPIKey)
 	assert.Equal(t, sendTextPayload{
-		Number: "5521997860923@s.whatsapp.net",
+		Number: "5500000000001@s.whatsapp.net",
 		Text:   "enviando mensagem de teste",
 	}, gotPayload)
 }
@@ -51,10 +51,10 @@ func TestEvolutionRecipientJID(t *testing.T) {
 		in   string
 		want string
 	}{
-		{name: "digits only", in: "5521997860923", want: "5521997860923@s.whatsapp.net"},
-		{name: "plus prefixed", in: "+5521997860923", want: "5521997860923@s.whatsapp.net"},
-		{name: "formatted", in: "+55 (21) 99786-0923", want: "5521997860923@s.whatsapp.net"},
-		{name: "already jid", in: "5521997860923@s.whatsapp.net", want: "5521997860923@s.whatsapp.net"},
+		{name: "digits only", in: "5500000000001", want: "5500000000001@s.whatsapp.net"},
+		{name: "plus prefixed", in: "+5500000000001", want: "5500000000001@s.whatsapp.net"},
+		{name: "formatted", in: "+55 (00) 00000-0001", want: "5500000000001@s.whatsapp.net"},
+		{name: "already jid", in: "5500000000001@s.whatsapp.net", want: "5500000000001@s.whatsapp.net"},
 	}
 
 	for _, tt := range tests {
@@ -74,7 +74,7 @@ func TestSendMediaUsesEvolutionMediaContract(t *testing.T) {
 		require.NoError(t, json.NewDecoder(r.Body).Decode(&gotPayload))
 		w.Header().Set("Content-Type", "application/json")
 		_, _ = w.Write([]byte(`{
-			"key":{"remoteJid":"5521997860923@s.whatsapp.net","fromMe":true,"id":"3EB045EE1466BB3440F04F"},
+			"key":{"remoteJid":"5500000000001@s.whatsapp.net","fromMe":true,"id":"3EB045EE1466BB3440F04F"},
 			"status":"PENDING",
 			"message":{"imageMessage":{"mimetype":"image/webp","caption":"texto com imagem"}},
 			"messageTimestamp":1776300381
@@ -85,8 +85,8 @@ func TestSendMediaUsesEvolutionMediaContract(t *testing.T) {
 	setEvolutionTestConfig(t, server.URL, "test-api-key")
 
 	resp, err := SendMedia(
-		"thalysfarias14@hotmail.com:5521997523518",
-		"+5521997860923",
+		"professor@example.com:5500000000000",
+		"+5500000000001",
 		"3.webp",
 		[]byte("test image data"),
 		"texto com imagem",
@@ -94,9 +94,9 @@ func TestSendMediaUsesEvolutionMediaContract(t *testing.T) {
 
 	require.NoError(t, err)
 	require.NotNil(t, resp)
-	assert.Equal(t, "/message/sendMedia/thalysfarias14@hotmail.com:5521997523518", gotPath)
+	assert.Equal(t, "/message/sendMedia/professor@example.com:5500000000000", gotPath)
 	assert.Equal(t, sendMediaPayload{
-		Number:    "5521997860923@s.whatsapp.net",
+		Number:    "5500000000001@s.whatsapp.net",
 		Media:     "dGVzdCBpbWFnZSBkYXRh",
 		MediaType: "image",
 		MimeType:  "image/webp",
@@ -116,7 +116,7 @@ func TestSendMediaUsesEvolutionVideoContract(t *testing.T) {
 		require.NoError(t, json.NewDecoder(r.Body).Decode(&gotPayload))
 		w.Header().Set("Content-Type", "application/json")
 		_, _ = w.Write([]byte(`{
-			"key":{"remoteJid":"5521997860923@s.whatsapp.net","fromMe":true,"id":"3EB0673A06EC8F9FB8D059"},
+			"key":{"remoteJid":"5500000000001@s.whatsapp.net","fromMe":true,"id":"3EB0673A06EC8F9FB8D059"},
 			"status":"PENDING",
 			"message":{"videoMessage":{"mimetype":"video/mp4","caption":"Video teste com texto","gifPlayback":false}},
 			"messageType":"videoMessage",
@@ -128,8 +128,8 @@ func TestSendMediaUsesEvolutionVideoContract(t *testing.T) {
 	setEvolutionTestConfig(t, server.URL, "test-api-key")
 
 	resp, err := SendMedia(
-		"thalysfarias14@hotmail.com:5521997523518",
-		"+5521997860923",
+		"professor@example.com:5500000000000",
+		"+5500000000001",
 		"Clair_Obscure_Expedition_.mp4",
 		[]byte("test video data"),
 		"Video teste com texto",
@@ -137,9 +137,9 @@ func TestSendMediaUsesEvolutionVideoContract(t *testing.T) {
 
 	require.NoError(t, err)
 	require.NotNil(t, resp)
-	assert.Equal(t, "/message/sendMedia/thalysfarias14@hotmail.com:5521997523518", gotPath)
+	assert.Equal(t, "/message/sendMedia/professor@example.com:5500000000000", gotPath)
 	assert.Equal(t, sendMediaPayload{
-		Number:    "5521997860923@s.whatsapp.net",
+		Number:    "5500000000001@s.whatsapp.net",
 		Media:     "dGVzdCB2aWRlbyBkYXRh",
 		MediaType: "video",
 		MimeType:  "video/mp4",
@@ -159,7 +159,7 @@ func TestSendMediaUsesEvolutionDocumentContract(t *testing.T) {
 		require.NoError(t, json.NewDecoder(r.Body).Decode(&gotPayload))
 		w.Header().Set("Content-Type", "application/json")
 		_, _ = w.Write([]byte(`{
-			"key":{"remoteJid":"5521997860923@s.whatsapp.net","fromMe":true,"id":"3EB020BC7FEB8824CB9BC4"},
+			"key":{"remoteJid":"5500000000001@s.whatsapp.net","fromMe":true,"id":"3EB020BC7FEB8824CB9BC4"},
 			"status":"PENDING",
 			"message":{"documentMessage":{"mimetype":"application/pdf","fileName":"ML-INFORME-RENDIMENTOS-2025 (2).pdf","caption":"envio de arquivos como documento"}},
 			"messageType":"documentMessage",
@@ -171,8 +171,8 @@ func TestSendMediaUsesEvolutionDocumentContract(t *testing.T) {
 	setEvolutionTestConfig(t, server.URL, "test-api-key")
 
 	resp, err := SendMedia(
-		"thalysfarias14@hotmail.com:5521997523518",
-		"+5521997860923",
+		"professor@example.com:5500000000000",
+		"+5500000000001",
 		"ML-INFORME-RENDIMENTOS-2025 (2).pdf",
 		[]byte("test pdf data"),
 		"envio de arquivos como documento",
@@ -180,9 +180,9 @@ func TestSendMediaUsesEvolutionDocumentContract(t *testing.T) {
 
 	require.NoError(t, err)
 	require.NotNil(t, resp)
-	assert.Equal(t, "/message/sendMedia/thalysfarias14@hotmail.com:5521997523518", gotPath)
+	assert.Equal(t, "/message/sendMedia/professor@example.com:5500000000000", gotPath)
 	assert.Equal(t, sendMediaPayload{
-		Number:    "5521997860923@s.whatsapp.net",
+		Number:    "5500000000001@s.whatsapp.net",
 		Media:     "dGVzdCBwZGYgZGF0YQ==",
 		MediaType: "document",
 		MimeType:  "application/pdf",
@@ -190,6 +190,22 @@ func TestSendMediaUsesEvolutionDocumentContract(t *testing.T) {
 		Caption:   "envio de arquivos como documento",
 	}, gotPayload)
 	assert.JSONEq(t, `1776300800`, string(resp.MessageTimestamp))
+}
+
+func TestSendEvolutionTextIncludesEvolutionBodyOnHTTPError(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusForbidden)
+		_, _ = w.Write([]byte(`{"response":{"message":["Unauthorized"]}}`))
+	}))
+	defer server.Close()
+
+	setEvolutionTestConfig(t, server.URL, "test-api-key")
+
+	err := sendEvolutionText("professor@example.com:5500000000000", "+5500000000001", "enviando mensagem de teste")
+
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "Evolution API retornou status 403 em POST /message/sendText/professor@example.com:5500000000000")
+	assert.Contains(t, err.Error(), `body="{\"response\":{\"message\":[\"Unauthorized\"]}}"`)
 }
 
 func setEvolutionTestConfig(t *testing.T, rawURL, apiKey string) {

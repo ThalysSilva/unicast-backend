@@ -3,10 +3,12 @@ package whatsapp
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
 	"net/url"
+	"strings"
 	"time"
 
 	"github.com/ThalysSilva/unicast-backend/internal/config/env"
@@ -135,33 +137,55 @@ func httpClientEvolution[responseType any](method, uri string, payload *bytes.Bu
 	req, err := http.NewRequest(method, evolutionUrl, payload)
 	if err != nil {
 		err := customerror.Make("Falha ao criar a requisição", http.StatusInternalServerError, err)
-		return nil, customerror.Trace("HTTPClientEvolution: ", err)
+		return nil, customerror.Trace("HTTPClientEvolution", err)
 	}
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Add("apikey", evolutionApiKey)
 	resp, err := client.Do(req)
 	if err != nil {
 		err := customerror.Make("Falha ao fazer a requisição", http.StatusBadGateway, err)
-		return nil, customerror.Trace("HTTPClientEvolution: ", err)
+		return nil, customerror.Trace("HTTPClientEvolution", err)
 	}
 	defer resp.Body.Close()
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		err := customerror.Make("Falha ao ler o corpo da resposta", http.StatusInternalServerError, err)
-		return nil, customerror.Trace("HTTPClientEvolution: ", err)
+		return nil, customerror.Trace("HTTPClientEvolution", err)
 	}
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		err := customerror.Make(fmt.Sprintf("Evolution API retornou status %d", resp.StatusCode), resp.StatusCode, fmt.Errorf("status %d", resp.StatusCode))
-		return nil, customerror.Trace("HTTPClientEvolution: ", err)
+		responseSnippet := compactResponseBody(body)
+		detail := fmt.Sprintf("%s %s -> status %d", method, uri, resp.StatusCode)
+		if responseSnippet != "" {
+			detail += fmt.Sprintf(", body=%q", responseSnippet)
+		}
+		err := customerror.Make(
+			fmt.Sprintf("Evolution API retornou status %d em %s %s", resp.StatusCode, method, uri),
+			resp.StatusCode,
+			errors.New(detail),
+		)
+		return nil, customerror.Trace("HTTPClientEvolution", err)
 	}
 	var responseData responseType
 	err = json.Unmarshal(body, &responseData)
 	if err != nil {
 
 		err := customerror.Make("Falha ao decodificar a resposta", http.StatusInternalServerError, err)
-		return nil, customerror.Trace("HTTPClientEvolution: ", err)
+		return nil, customerror.Trace("HTTPClientEvolution", err)
 	}
 	return &responseData, nil
+}
+
+func compactResponseBody(body []byte) string {
+	text := strings.TrimSpace(string(body))
+	if text == "" {
+		return ""
+	}
+	text = strings.Join(strings.Fields(text), " ")
+	const maxLen = 300
+	if len(text) > maxLen {
+		return text[:maxLen] + "..."
+	}
+	return text
 }
 
 func createEvolutionInstance(phone, instanceName string, qrCode bool) (createdName, qrCodeString string, err error) {
@@ -177,7 +201,7 @@ func createEvolutionInstance(phone, instanceName string, qrCode bool) (createdNa
 	payload := bytes.NewBuffer(jsonData)
 	resp, err := httpClientEvolution[newEvolutionInstanceReturn]("POST", "/instance/create", payload)
 	if err != nil {
-		return "", "", customerror.Trace("createEvolutionInstance: ", err)
+		return "", "", customerror.Trace("createEvolutionInstance", err)
 	}
 
 	createdName = resp.Instance.InstanceName

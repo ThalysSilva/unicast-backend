@@ -22,6 +22,7 @@ type selfRegisterInput struct {
 	StudentID string `json:"studentId" binding:"required"`
 	Name      string `json:"name"`
 	Phone     string `json:"phone"`
+	NoPhone   bool   `json:"noPhone"`
 	Email     string `json:"email"`
 	Consent   bool   `json:"consent"`
 }
@@ -169,7 +170,7 @@ func (h *handler) SelfRegister() gin.HandlerFunc {
 
 		code := strings.ToUpper(strings.TrimSpace(c.Param("code")))
 
-		err := h.service.SelfRegister(c.Request.Context(), code, input.StudentID, input.Name, input.Phone, input.Email, input.Consent)
+		err := h.service.SelfRegister(c.Request.Context(), code, input.StudentID, input.Name, input.Phone, input.NoPhone, input.Email, input.Consent)
 		if err != nil {
 			customerror.HandleResponse(c, err)
 			return

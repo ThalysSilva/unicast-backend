@@ -21,7 +21,7 @@ case "$MODE" in
         exec go run ./cmd/seed --env "$ENV_FILE_OVERRIDE" --file "$SEED_FILE"
         ;;
     local)
-        unset POSTGRES_DATABASE_URL
+        export POSTGRES_DATABASE_URL=""
         export POSTGRES_HOST="${POSTGRES_HOST_OVERRIDE:-localhost}"
         if [[ -n "$POSTGRES_PORT_OVERRIDE" ]]; then
             export POSTGRES_PORT="$POSTGRES_PORT_OVERRIDE"

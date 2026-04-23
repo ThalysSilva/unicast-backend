@@ -21,16 +21,19 @@ const (
 )
 
 type Student struct {
-	ID         string        `json:"id"`
-	StudentID  string        `json:"studentId"`
-	Name       *string       `json:"name"`
-	Phone      *string       `json:"phone"`
-	Email      *string       `json:"email" validate:"email"`
-	Annotation *string       `json:"annotation"`
-	Consent    bool          `json:"consent"`
-	CreatedAt  time.Time     `json:"-"`
-	UpdatedAt  time.Time     `json:"-"`
-	Status     StudentStatus `json:"status"`
+	ID          string        `json:"id"`
+	StudentID   string        `json:"studentId"`
+	Name        *string       `json:"name"`
+	Phone       *string       `json:"phone"`
+	NoPhone     bool          `json:"noPhone"`
+	Email       *string       `json:"email" validate:"email"`
+	Annotation  *string       `json:"annotation"`
+	Consent     bool          `json:"consent"`
+	EmailDeliveryIssue    bool      `json:"emailDeliveryIssue"`
+	WhatsAppDeliveryIssue bool      `json:"whatsappDeliveryIssue"`
+	CreatedAt   time.Time     `json:"-"`
+	UpdatedAt   time.Time     `json:"-"`
+	Status      StudentStatus `json:"status"`
 	UserOwnerID string       `json:"-"`
 }
 
@@ -43,15 +46,15 @@ func HasCompletedContact(student *Student) bool {
 		return false
 	}
 
-	return HasCompletedContactFields(student.Name, student.Phone, student.Email)
+	return HasCompletedContactFields(student.Name, student.Phone, student.Email, student.NoPhone)
 }
 
-func HasCompletedContactFields(name, phone, email *string) bool {
-	return hasText(name) && hasText(phone) && hasText(email)
+func HasCompletedContactFields(name, phone, email *string, noPhone bool) bool {
+	return hasText(name) && hasText(email) && (noPhone || hasText(phone))
 }
 
-func DeriveContactAwareStatus(current, requested StudentStatus, statusProvided bool, name, phone, email *string) StudentStatus {
-	hasCompleteContact := HasCompletedContactFields(name, phone, email)
+func DeriveContactAwareStatus(current, requested StudentStatus, statusProvided bool, name, phone, email *string, noPhone bool) StudentStatus {
+	hasCompleteContact := HasCompletedContactFields(name, phone, email, noPhone)
 
 	if statusProvided {
 		if requested == StudentStatusActive && !hasCompleteContact {
@@ -73,7 +76,7 @@ func DeriveContactAwareStatus(current, requested StudentStatus, statusProvided b
 
 type Repository interface {
 	database.Transactional
-	Create(ctx context.Context, userOwnerID, studentID string, name, phone, email, annotation *string, status StudentStatus) error
+	Create(ctx context.Context, userOwnerID, studentID string, name, phone, email, annotation *string, noPhone bool, status StudentStatus) error
 	FindByID(ctx context.Context, id, userOwnerID string) (*Student, error)
 	FindByStudentID(ctx context.Context, studentID, userOwnerID string) (*Student, error)
 	FindByFilters(ctx context.Context, filters map[string]string) ([]*Student, error)

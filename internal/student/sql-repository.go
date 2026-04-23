@@ -34,19 +34,36 @@ func (r *sqlRepository) TransactionBackend() any {
 }
 
 // Insere um novo estudante
-func (r *sqlRepository) Create(ctx context.Context, userOwnerID, studentID string, name, phone, email, annotation *string, status StudentStatus) error {
+func (r *sqlRepository) Create(ctx context.Context, userOwnerID, studentID string, name, phone, email, annotation *string, noPhone bool, status StudentStatus) error {
 	query := `
-        INSERT INTO students (student_id, name, phone, email, annotation, status, consent, user_owner_id)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+        INSERT INTO students (student_id, name, phone, no_phone, email, annotation, status, consent, user_owner_id)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
     `
-	_, err := r.db.ExecContext(ctx, query, studentID, name, phone, email, annotation, status, false, userOwnerID)
+	_, err := r.db.ExecContext(ctx, query, studentID, name, phone, noPhone, email, annotation, status, false, userOwnerID)
 	return err
 }
 
 // Busca um estudante pelo ID
 func (r *sqlRepository) FindByID(ctx context.Context, id, userOwnerID string) (*Student, error) {
 	query := `
-        SELECT id, student_id, name, phone, email, annotation, consent, created_at, updated_at, status, user_owner_id
+        SELECT id, student_id, name, phone, no_phone, email, annotation, consent,
+               COALESCE((
+                 SELECT MAX(created_at) FROM message_logs ml
+                 WHERE ml.student_id = students.id AND ml.channel = 'EMAIL' AND ml.success = false
+               ), '-infinity'::timestamptz) >
+               COALESCE((
+                 SELECT MAX(created_at) FROM message_logs ml
+                 WHERE ml.student_id = students.id AND ml.channel = 'EMAIL' AND ml.success = true
+               ), '-infinity'::timestamptz) AS email_delivery_issue,
+               COALESCE((
+                 SELECT MAX(created_at) FROM message_logs ml
+                 WHERE ml.student_id = students.id AND ml.channel = 'WHATSAPP' AND ml.success = false
+               ), '-infinity'::timestamptz) >
+               COALESCE((
+                 SELECT MAX(created_at) FROM message_logs ml
+                 WHERE ml.student_id = students.id AND ml.channel = 'WHATSAPP' AND ml.success = true
+               ), '-infinity'::timestamptz) AS whatsapp_delivery_issue,
+               created_at, updated_at, status, user_owner_id
         FROM students
         WHERE id = $1 AND user_owner_id = $2
     `
@@ -64,7 +81,24 @@ func (r *sqlRepository) FindByID(ctx context.Context, id, userOwnerID string) (*
 
 func (r *sqlRepository) FindByStudentID(ctx context.Context, studentID, userOwnerID string) (*Student, error) {
 	query := `
-        SELECT id, student_id, name, phone, email, annotation, consent, created_at, updated_at, status, user_owner_id
+        SELECT id, student_id, name, phone, no_phone, email, annotation, consent,
+               COALESCE((
+                 SELECT MAX(created_at) FROM message_logs ml
+                 WHERE ml.student_id = students.id AND ml.channel = 'EMAIL' AND ml.success = false
+               ), '-infinity'::timestamptz) >
+               COALESCE((
+                 SELECT MAX(created_at) FROM message_logs ml
+                 WHERE ml.student_id = students.id AND ml.channel = 'EMAIL' AND ml.success = true
+               ), '-infinity'::timestamptz) AS email_delivery_issue,
+               COALESCE((
+                 SELECT MAX(created_at) FROM message_logs ml
+                 WHERE ml.student_id = students.id AND ml.channel = 'WHATSAPP' AND ml.success = false
+               ), '-infinity'::timestamptz) >
+               COALESCE((
+                 SELECT MAX(created_at) FROM message_logs ml
+                 WHERE ml.student_id = students.id AND ml.channel = 'WHATSAPP' AND ml.success = true
+               ), '-infinity'::timestamptz) AS whatsapp_delivery_issue,
+               created_at, updated_at, status, user_owner_id
         FROM students
         WHERE student_id = $1 AND user_owner_id = $2
     `
@@ -103,7 +137,24 @@ func (r *sqlRepository) FindByFilters(ctx context.Context, filters map[string]st
 
 func buildFilteredStudentsQuery(filters map[string]string) (string, []any) {
 	query := `
-		SELECT DISTINCT s.id, s.student_id, s.name, s.phone, s.email, s.annotation, s.consent, s.created_at, s.updated_at, s.status, s.user_owner_id
+		SELECT DISTINCT s.id, s.student_id, s.name, s.phone, s.no_phone, s.email, s.annotation, s.consent,
+		       COALESCE((
+		         SELECT MAX(created_at) FROM message_logs ml
+		         WHERE ml.student_id = s.id AND ml.channel = 'EMAIL' AND ml.success = false
+		       ), '-infinity'::timestamptz) >
+		       COALESCE((
+		         SELECT MAX(created_at) FROM message_logs ml
+		         WHERE ml.student_id = s.id AND ml.channel = 'EMAIL' AND ml.success = true
+		       ), '-infinity'::timestamptz) AS email_delivery_issue,
+		       COALESCE((
+		         SELECT MAX(created_at) FROM message_logs ml
+		         WHERE ml.student_id = s.id AND ml.channel = 'WHATSAPP' AND ml.success = false
+		       ), '-infinity'::timestamptz) >
+		       COALESCE((
+		         SELECT MAX(created_at) FROM message_logs ml
+		         WHERE ml.student_id = s.id AND ml.channel = 'WHATSAPP' AND ml.success = true
+		       ), '-infinity'::timestamptz) AS whatsapp_delivery_issue,
+		       s.created_at, s.updated_at, s.status, s.user_owner_id
 		FROM students s
 	`
 
@@ -140,7 +191,24 @@ func (r *sqlRepository) FindByIDs(ctx context.Context, userOwnerID string, stude
 	args = append([]interface{}{userOwnerID}, args...)
 
 	query := fmt.Sprintf(`
-			SELECT id, student_id, name, phone, email, annotation, consent, created_at, updated_at, status, user_owner_id
+			SELECT id, student_id, name, phone, no_phone, email, annotation, consent,
+			       COALESCE((
+			         SELECT MAX(created_at) FROM message_logs ml
+			         WHERE ml.student_id = students.id AND ml.channel = 'EMAIL' AND ml.success = false
+			       ), '-infinity'::timestamptz) >
+			       COALESCE((
+			         SELECT MAX(created_at) FROM message_logs ml
+			         WHERE ml.student_id = students.id AND ml.channel = 'EMAIL' AND ml.success = true
+			       ), '-infinity'::timestamptz) AS email_delivery_issue,
+			       COALESCE((
+			         SELECT MAX(created_at) FROM message_logs ml
+			         WHERE ml.student_id = students.id AND ml.channel = 'WHATSAPP' AND ml.success = false
+			       ), '-infinity'::timestamptz) >
+			       COALESCE((
+			         SELECT MAX(created_at) FROM message_logs ml
+			         WHERE ml.student_id = students.id AND ml.channel = 'WHATSAPP' AND ml.success = true
+			       ), '-infinity'::timestamptz) AS whatsapp_delivery_issue,
+			       created_at, updated_at, status, user_owner_id
 			FROM students
 			WHERE user_owner_id = $1 AND id IN (%s)
 	`, strings.Join(placeholders, ","))
@@ -221,9 +289,12 @@ func scanStudent(scanner rowScanner) (*Student, error) {
 		&student.StudentID,
 		&name,
 		&phone,
+		&student.NoPhone,
 		&email,
 		&annotation,
 		&student.Consent,
+		&student.EmailDeliveryIssue,
+		&student.WhatsAppDeliveryIssue,
 		&student.CreatedAt,
 		&student.UpdatedAt,
 		&student.Status,

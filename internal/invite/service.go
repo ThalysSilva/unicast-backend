@@ -22,7 +22,7 @@ type Service interface {
 	GetCurrent(ctx context.Context, disciplineID, userID string) (*Invite, error)
 	ListByDiscipline(ctx context.Context, disciplineID, userID string) ([]*Invite, error)
 	Delete(ctx context.Context, inviteID, userID string) error
-	SelfRegister(ctx context.Context, code, studentID, name, phone, email string, consent bool) error
+	SelfRegister(ctx context.Context, code, studentID, name, phone string, noPhone bool, email string, consent bool) error
 }
 
 type inviteService struct {
@@ -41,7 +41,7 @@ var (
 	ErrEnrollmentRegistrationComplete = customerror.Make("cadastro desta matrícula já foi concluído para esta disciplina", http.StatusConflict, errors.New("ErrEnrollmentRegistrationComplete"))
 	ErrStudentNotFound                = customerror.Make("estudante não encontrado", http.StatusNotFound, errors.New("ErrStudentNotFound"))
 	ErrConsentRequired                = customerror.Make("é necessário aceitar o recebimento automatizado de notificações", http.StatusBadRequest, errors.New("ErrConsentRequired"))
-	ErrContactRequired                = customerror.Make("preencha nome, email e telefone para concluir o cadastro", http.StatusBadRequest, errors.New("ErrContactRequired"))
+	ErrContactRequired                = customerror.Make("preencha nome, email e telefone, ou informe que não possui telefone, para concluir o cadastro", http.StatusBadRequest, errors.New("ErrContactRequired"))
 )
 
 func NewService(
@@ -133,7 +133,7 @@ func (s *inviteService) ensureDisciplineOwner(ctx context.Context, disciplineID,
 	return nil
 }
 
-func (s *inviteService) SelfRegister(ctx context.Context, code, studentID, name, phone, email string, consent bool) error {
+func (s *inviteService) SelfRegister(ctx context.Context, code, studentID, name, phone string, noPhone bool, email string, consent bool) error {
 	inviteFound, err := s.inviteRepository.FindByCode(ctx, code)
 	if err != nil {
 		return err
@@ -182,16 +182,20 @@ func (s *inviteService) SelfRegister(ctx context.Context, code, studentID, name,
 	name = strings.TrimSpace(name)
 	phone = strings.TrimSpace(phone)
 	email = strings.TrimSpace(email)
-	if name == "" || phone == "" || email == "" {
+	if name == "" || email == "" || (!noPhone && phone == "") {
 		return ErrContactRequired
+	}
+	if noPhone {
+		phone = ""
 	}
 
 	fields := map[string]any{
-		"status":  student.StudentStatusActive,
-		"consent": true,
-		"name":    name,
-		"phone":   phone,
-		"email":   email,
+		"status":   student.StudentStatusActive,
+		"consent":  true,
+		"name":     name,
+		"phone":    nullableValue(phone),
+		"no_phone": noPhone,
+		"email":    email,
 	}
 
 	if err := s.studentRepository.Update(ctx, studentFound.ID, fields); err != nil {
@@ -203,6 +207,13 @@ func (s *inviteService) SelfRegister(ctx context.Context, code, studentID, name,
 		"self_registration_completed_at": now,
 		"self_registration_count":        enrollmentFound.SelfRegistrationCount + 1,
 	})
+}
+
+func nullableValue(value string) any {
+	if value == "" {
+		return nil
+	}
+	return value
 }
 
 func (s *inviteService) generateCode(disciplineID string, attempt int) string {

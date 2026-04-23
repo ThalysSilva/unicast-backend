@@ -32,7 +32,7 @@ func NewService(studentRepository Repository) Service {
 
 func (s *studentService) Create(ctx context.Context, userID, studentID string) error {
 
-	err := s.studentRepository.Create(ctx, userID, studentID, nil, nil, nil, nil, StudentStatusPending)
+	err := s.studentRepository.Create(ctx, userID, studentID, nil, nil, nil, nil, false, StudentStatusPending)
 	if err != nil {
 		return err
 	}
@@ -78,8 +78,21 @@ func (s *studentService) Update(ctx context.Context, userID, id string, fields m
 	name := mergeFieldString(student.Name, fields["name"])
 	phone := mergeFieldString(student.Phone, fields["phone"])
 	email := mergeFieldString(student.Email, fields["email"])
+	noPhone := student.NoPhone
+	if value, ok := fields["no_phone"].(bool); ok {
+		noPhone = value
+	}
+
+	if noPhone {
+		fields["phone"] = nil
+		phone = nil
+	}
+	if phone != nil && *phone != "" {
+		fields["no_phone"] = false
+		noPhone = false
+	}
 	status, statusProvided := fields["status"].(StudentStatus)
-	fields["status"] = DeriveContactAwareStatus(student.Status, status, statusProvided, name, phone, email)
+	fields["status"] = DeriveContactAwareStatus(student.Status, status, statusProvided, name, phone, email, noPhone)
 
 	err = s.studentRepository.Update(ctx, id, fields)
 	if err != nil {
