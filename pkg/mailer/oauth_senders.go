@@ -57,12 +57,8 @@ func buildMessageBytes(data *MailerData) ([]byte, error) {
 	default:
 		msg.Text = []byte(data.Body)
 	}
-	if data.Attachments != nil {
-		for _, attachment := range *data.Attachments {
-			if _, err := msg.Attach(bytes.NewReader(attachment.Data), attachment.FileName, ""); err != nil {
-				return nil, err
-			}
-		}
+	if err := attachEmailAttachments(msg, data.Attachments); err != nil {
+		return nil, err
 	}
 	return msg.Bytes()
 }

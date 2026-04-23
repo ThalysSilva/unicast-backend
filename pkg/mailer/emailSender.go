@@ -1,6 +1,7 @@
 package mailer
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"math"
@@ -61,6 +62,7 @@ type EmailToRetry struct {
 	To      string
 	Subject string
 	Body    string
+	Attachments *[]Attachment
 }
 
 func (e *EmailSentError) Error() string {
@@ -229,6 +231,12 @@ func (m *emailSenderImpl) SendEmails(poolsForSend int, poolsForRetry int, groupS
 				case TextHTML:
 					email.HTML = []byte(retryEmail.Body)
 				}
+				if err := attachEmailAttachments(email, retryEmail.Attachments); err != nil {
+					mu.Lock()
+					emailsWithErrors.To = append(emailsWithErrors.To, retryEmail.To)
+					mu.Unlock()
+					continue
+				}
 				if err := pool.Send(email, timeout); err != nil {
 					mu.Lock()
 					emailsWithErrors.To = append(emailsWithErrors.To, retryEmail.To)
@@ -249,6 +257,7 @@ func (m *emailSenderImpl) SendEmails(poolsForSend int, poolsForRetry int, groupS
 							To:      emailToRetry,
 							Subject: data.Subject,
 							Body:    data.Body,
+							Attachments: data.Attachments,
 						}
 						emailsRetryChan <- retryEmail
 					}
@@ -262,16 +271,19 @@ func (m *emailSenderImpl) SendEmails(poolsForSend int, poolsForRetry int, groupS
 		email := &email.Email{
 			From:    data.From,
 			To:      data.To[i:end],
-			Subject: data.Subject,
+				Subject: data.Subject,
+			}
+			switch data.ContentType {
+			case TextPlain:
+				email.Text = []byte(data.Body)
+			case TextHTML:
+				email.HTML = []byte(data.Body)
+			}
+			if err := attachEmailAttachments(email, data.Attachments); err != nil {
+				return err
+			}
+			emailsChan <- email
 		}
-		switch data.ContentType {
-		case TextPlain:
-			email.Text = []byte(data.Body)
-		case TextHTML:
-			email.HTML = []byte(data.Body)
-		}
-		emailsChan <- email
-	}
 
 	close(emailsChan)
 	wgEmailsDispatch.Wait()
@@ -285,6 +297,20 @@ func (m *emailSenderImpl) SendEmails(poolsForSend int, poolsForRetry int, groupS
 	if len(emailsWithErrors.To) > 0 {
 		return &emailsWithErrors
 	}
+	return nil
+}
+
+func attachEmailAttachments(msg *email.Email, attachments *[]Attachment) error {
+	if attachments == nil {
+		return nil
+	}
+
+	for _, attachment := range *attachments {
+		if _, err := msg.Attach(bytes.NewReader(attachment.Data), attachment.FileName, ""); err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 

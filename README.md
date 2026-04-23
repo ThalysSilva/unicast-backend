@@ -31,15 +31,44 @@ Variáveis importantes para o fluxo atual:
 - `REGISTER_INVITE_KEY`: chave global exigida em `POST /auth/register` para restringir criação de contas.
 - `ADMIN_SECRET`: chave administrativa do backdoor de recuperação de senha.
 - `JWE_SECRET`: segredo global usado para cifrar o JWE e payloads OAuth.
-- `POSTGRES_DATABASE_URL`: URL do Postgres; em ambiente local pode ser sobrescrita pelos alvos `make seed-local` e `make migrate-local`.
+- `POSTGRES_DATABASE_URL`: URL do Postgres; para tarefas locais via `mise`, as migrations montam a URL a partir de `POSTGRES_HOST`, `POSTGRES_PORT`, `POSTGRES_USER`, `POSTGRES_PASSWORD` e `POSTGRES_DB`.
 
 > Dica: converta o `.env` para formato Unix se estiver no WSL: `dos2unix .env`.
 
+### Fluxo operacional com mise
+O padrão do projeto passa a ser o `mise`. Depois de instalar o `mise`, confie no projeto e instale as ferramentas declaradas:
+
+```bash
+mise trust
+mise install
+```
+
+Principais comandos:
+
+```bash
+mise run free-port-dev
+mise run compose-up-dev
+mise run compose-down-dev
+mise run migrate-dev
+mise run bootstrap-dev
+
+mise run free-port-prod
+mise run compose-up-prod
+mise run compose-down-prod
+mise run migrate-prod
+mise run bootstrap-prod
+```
+
+As tasks `bootstrap-dev` e `bootstrap-prod` executam o fluxo completo:
+1. liberar a porta do Postgres configurado
+2. subir o `docker compose` correspondente
+3. aplicar as migrations
+
 ### Subir dependências com Docker Compose (dev)
 ```
-docker-compose -f docker-compose-dev.yaml up -d
+mise run compose-up-dev
 ```
-Sobe Postgres, Redis, Evolution API, Mongo e PgAdmin com base nas variáveis do `.env`.
+Sobe Postgres, Redis, Evolution API, Mongo e PgAdmin com base nas variáveis do `.env.development`.
 
 ### Rodando a API
 Opção 1) Script padrão (gera Swagger e executa):
@@ -57,7 +86,7 @@ Swagger disponível em `http://localhost:${API_PORT}/swagger/index.html`.
 Para demonstrações e testes locais, existe uma seed idempotente em `scripts/demo-seed.sql`.
 Ela cria um usuário docente, campus, cursos, disciplinas, alunos, vínculos, convites e alguns logs de mensagem.
 
-Os alvos `make seed` e `make seed-local` executam as migrations antes da seed, evitando divergência de schema.
+Antes da seed, aplique as migrations com `mise run migrate-dev` ou `mise run migrate-prod`.
 
 Credenciais do usuário demo:
 ```
@@ -75,24 +104,24 @@ Com o comando Go, sem depender do `psql` local:
 go run ./cmd/seed
 ```
 
-Com Makefile:
+Com mise:
 ```
-make seed
+mise run seed
 ```
 
 Se o `.env` usa `POSTGRES_HOST=postgres-unicast` para Docker, rode a seed a partir do host/WSL com:
 ```
-make seed-local
+mise run seed-local
 ```
 
 Opcionalmente, informe arquivos específicos:
 ```
-go run ./cmd/seed --env .env.development --file scripts/demo-seed.sql
+ENV_FILE=.env.development SEED_FILE=scripts/demo-seed.sql mise run seed
 ```
 
-O Makefile também aceita sobrescrita:
+O `mise` também aceita sobrescrita:
 ```
-make seed-local ENV_FILE=.env.development POSTGRES_PORT_OVERRIDE=5433
+ENV_FILE=.env.development POSTGRES_PORT_OVERRIDE=5433 mise run seed-local
 ```
 
 Com o Postgres do Docker Compose:
@@ -122,7 +151,10 @@ Observação: a seed remove e recria apenas o usuário `demo@unicast.local` e a 
 - `subject` é usado como assunto no e-mail e como título em negrito no WhatsApp: `*Assunto*`, seguido de uma linha em branco e do corpo.
 - `body` é o corpo enviado por e-mail e WhatsApp.
 - `attachments` aceita itens com `fileName` e `data` em base64, ou `fileName` e `url`.
-- No WhatsApp, anexos são enviados pela Evolution como `image`, `video`, `audio` ou `document`, conforme o MIME/extensão do arquivo.
+- E-mail por SMTP e OAuth usa anexos com `data` em base64 ou faz download do arquivo quando vier `url`.
+- No WhatsApp, anexos são enviados pela Evolution como `image`, `video`, `audio` ou `document`, conforme o MIME/extensão do arquivo. O texto principal vai primeiro, e os anexos seguem sem legenda.
+- Limites atuais: até `5` anexos, `10 MB` por arquivo, `25 MB` somando anexos do email e `15 MB` somando anexos enviados no payload do WhatsApp.
+- Tipos perigosos como `exe`, `msi`, `bat`, `cmd`, `sh`, `ps1`, `apk`, `jar` e similares são bloqueados.
 - Para detalhes do contrato WhatsApp/Evolution, veja `docs/whatsapp-evolution.md`.
 
 Exemplo:
@@ -595,7 +627,7 @@ migrate -path migrations -database "$POSTGRES_DATABASE_URL" up
 
 ### Fluxo de uso rápido
 1. Preencha `.env`/`.env.development` conforme `example.env`.
-2. `docker-compose -f docker-compose-dev.yaml up -d` para dependências (Postgres, Redis, Evolution, Mongo, PgAdmin).
+2. `mise run bootstrap-dev` para liberar a porta, subir dependências e aplicar migrations.
 3. `./run.sh` ou `air` (hot reload) para subir a API.
 4. Gere o Swagger se precisar: `swag init -g cmd/main/main.go --parseInternal --parseDependency --parseDepth 1` (ou use o gerado em `docs/`).
 5. Se for usar registro direto, defina `REGISTER_INVITE_KEY` e envie `registrationKey` em `/auth/register`.

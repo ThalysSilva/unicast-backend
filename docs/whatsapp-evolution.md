@@ -88,7 +88,7 @@ Campos:
 - `number`: JID do destinatário.
 - `mediatype`: `image`, `video`, `audio` ou `document`.
 - `mimetype`: MIME detectado pelo backend a partir da extensão e/ou conteúdo.
-- `caption`: texto do WhatsApp, já com assunto formatado quando houver.
+- `caption`: opcional. No fluxo atual do backend, a mensagem de texto é enviada antes e os anexos seguem sem legenda.
 - `media`: base64 do arquivo ou URL pública.
 - `fileName`: nome do arquivo exibido/associado pela Evolution.
 

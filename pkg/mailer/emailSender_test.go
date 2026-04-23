@@ -22,6 +22,8 @@ type mockEmailPool struct {
 	sendCount int
 	// Mutex para controle de concorrência
 	mu sync.Mutex
+	// Emails enviados para inspeção
+	sentEmails []*email.Email
 }
 
 const qtyMillisecondsToSleep = 5
@@ -32,6 +34,7 @@ func (m *mockEmailPool) Send(e *email.Email, timeout time.Duration) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	m.sendCount++
+	m.sentEmails = append(m.sentEmails, e)
 	if m.failFirstSend && m.sendCount == 1 {
 		return errors.New("failed to send email on first attempt")
 	}
@@ -262,11 +265,12 @@ func TestSendEmails_Massive(t *testing.T) {
 
 // Verificar Retry Bem-Sucedido
 func TestSendEmails_RetrySuccess(t *testing.T) {
+	pool := &mockEmailPool{
+		failFirstSend: true,
+		sendErr:       nil,
+	}
 	newPoolFunc = func(host string, pools int, auth smtp.Auth) (emailPool, error) {
-		return &mockEmailPool{
-			failFirstSend: true,
-			sendErr:       nil,
-		}, nil
+		return pool, nil
 	}
 	t.Cleanup(func() {
 		newPoolFunc = originalNewPoolFunc
@@ -289,6 +293,7 @@ func TestSendEmails_RetrySuccess(t *testing.T) {
 
 	err := sender.SendEmails(1, 1, 1, 5*time.Second)
 	assert.Nil(t, err, "Esperado sucesso após retry")
+	assert.Len(t, pool.sentEmails, 3)
 
 	// O mock falha no primeiro envio, mas succeeds no retry, então o resultado deve ser nil
 }
@@ -322,4 +327,88 @@ func TestSendEmails_PersistentFailure(t *testing.T) {
 	err := sender.SendEmails(1, 1, 1, 5*time.Second)
 	assert.NotNil(t, err, "Esperado erro após falha persistente")
 	assert.Equal(t, "todos os emails falharam", err.Error())
+}
+
+func TestSendEmails_InterceptedEmailIncludesAttachments(t *testing.T) {
+	newPoolFunc = mockNewPoolFunc
+	t.Cleanup(func() {
+		newPoolFunc = originalNewPoolFunc
+	})
+
+	interceptChan := make(chan *email.Email, 1)
+	sender := NewEmailSender(SmtpAuthentication{
+		Host:     "smtp.example.com",
+		Port:     587,
+		Username: "user",
+		Password: "pass",
+	}, WithInterceptChan(interceptChan))
+
+	err := sender.SetData(&MailerData{
+		From:    "sender@example.com",
+		To:      []string{"recipient@example.com"},
+		Subject: "Teste com anexo",
+		Body:    "Esse email deve conter anexo.",
+		Attachments: &[]Attachment{{
+			FileName: "arquivo.txt",
+			Data:     []byte("conteudo do anexo"),
+		}},
+		ContentType: TextPlain,
+	})
+	assert.Nil(t, err)
+
+	err = sender.SendEmails(1, 1, 1, 5*time.Second)
+	assert.Nil(t, err)
+
+	var captured *email.Email
+	for msg := range interceptChan {
+		captured = msg
+	}
+
+	if assert.NotNil(t, captured) {
+		raw, bytesErr := captured.Bytes()
+		assert.Nil(t, bytesErr)
+		assert.Contains(t, string(raw), "filename=\"arquivo.txt\"")
+	}
+}
+
+func TestSendEmails_RetryPreservesAttachments(t *testing.T) {
+	pool := &mockEmailPool{
+		failFirstSend: true,
+		sendErr:       nil,
+	}
+	newPoolFunc = func(host string, pools int, auth smtp.Auth) (emailPool, error) {
+		return pool, nil
+	}
+	t.Cleanup(func() {
+		newPoolFunc = originalNewPoolFunc
+	})
+
+	sender := NewEmailSender(SmtpAuthentication{
+		Host:     "smtp.example.com",
+		Port:     587,
+		Username: "user",
+		Password: "pass",
+	})
+
+	err := sender.SetData(&MailerData{
+		From:    "sender@example.com",
+		To:      []string{"recipient@example.com"},
+		Subject: "Retry com anexo",
+		Body:    "Corpo",
+		Attachments: &[]Attachment{{
+			FileName: "retry.txt",
+			Data:     []byte("retry attachment"),
+		}},
+		ContentType: TextPlain,
+	})
+	assert.Nil(t, err)
+
+	err = sender.SendEmails(1, 1, 1, 5*time.Second)
+	assert.Nil(t, err)
+
+	if assert.GreaterOrEqual(t, len(pool.sentEmails), 2) {
+		raw, bytesErr := pool.sentEmails[1].Bytes()
+		assert.Nil(t, bytesErr)
+		assert.Contains(t, string(raw), "filename=\"retry.txt\"")
+	}
 }
