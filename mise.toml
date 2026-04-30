@@ -35,6 +35,11 @@ description = "Executa migrations no banco local do ambiente de producao"
 env = { _.file = ".env" }
 run = "./scripts/mise/migrate.sh"
 
+[tasks.migrate-docker]
+description = "Executa migrations dentro do container unicast-api"
+env = { _.file = ".env" }
+run = "./scripts/mise/migrate-docker.sh"
+
 [tasks.bootstrap-dev]
 description = "Fluxo completo: liberar porta, subir compose dev e aplicar migrations"
 run = [
@@ -58,3 +63,8 @@ run = "./scripts/mise/seed.sh direct"
 [tasks.seed-local]
 description = "Executa a seed localmente sobrescrevendo host/porta sem usar POSTGRES_DATABASE_URL"
 run = "./scripts/mise/seed.sh local"
+
+[tasks.seed-docker]
+description = "Executa a seed SQL dentro do container postgres-unicast"
+env = { _.file = ".env" }
+run = "./scripts/mise/seed-docker.sh"
