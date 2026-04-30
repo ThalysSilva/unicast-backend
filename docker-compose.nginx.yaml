@@ -1,0 +1,33 @@
+services:
+  nginx-unicast:
+    container_name: nginx-unicast
+    image: nginx:1.27-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      - NGINX_DOMAIN=${NGINX_DOMAIN}
+      - FRONTEND_UPSTREAM=${FRONTEND_UPSTREAM:-http://host.docker.internal:3000}
+      - API_UPSTREAM=${API_UPSTREAM:-http://unicast-api:8080}
+    volumes:
+      - ./nginx/templates:/etc/nginx/templates:ro
+      - ./nginx/certbot/www:/var/www/certbot:ro
+      - ./nginx/certbot/conf:/etc/letsencrypt:ro
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - unicast-network
+
+  certbot-unicast:
+    container_name: certbot-unicast
+    image: certbot/certbot:latest
+    volumes:
+      - ./nginx/certbot/www:/var/www/certbot
+      - ./nginx/certbot/conf:/etc/letsencrypt
+    profiles:
+      - certbot
+
+networks:
+  unicast-network:
+    external: true
