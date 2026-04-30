@@ -9,7 +9,7 @@ services:
     environment:
       - NGINX_DOMAIN=${NGINX_DOMAIN}
       - FRONTEND_UPSTREAM=${FRONTEND_UPSTREAM:-http://host.docker.internal:3000}
-      - API_UPSTREAM=${API_UPSTREAM:-http://unicast-api:8080}
+      - API_UPSTREAM=${API_UPSTREAM:-http://unicast-api:8070}
     volumes:
       - ./nginx/templates:/etc/nginx/templates:ro
       - ./nginx/certbot/www:/var/www/certbot:ro
