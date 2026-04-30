@@ -1,7 +1,7 @@
 server {
     listen 80;
     listen [::]:80;
-    server_name ${NGINX_DOMAIN};
+    server_name ${NGINX_DOMAIN} www.${NGINX_DOMAIN};
 
     location /.well-known/acme-challenge/ {
         root /var/www/certbot;
@@ -15,7 +15,7 @@ server {
 server {
     listen 443 ssl http2;
     listen [::]:443 ssl http2;
-    server_name ${NGINX_DOMAIN};
+    server_name ${NGINX_DOMAIN} www.${NGINX_DOMAIN};
 
     ssl_certificate /etc/letsencrypt/live/${NGINX_DOMAIN}/fullchain.pem;
     ssl_certificate_key /etc/letsencrypt/live/${NGINX_DOMAIN}/privkey.pem;
