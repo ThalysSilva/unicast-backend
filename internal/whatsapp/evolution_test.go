@@ -64,6 +64,43 @@ func TestEvolutionRecipientJID(t *testing.T) {
 	}
 }
 
+func TestBuildEvolutionURL(t *testing.T) {
+	tests := []struct {
+		name string
+		host string
+		port string
+		want string
+	}{
+		{
+			name: "docker service uses configured port",
+			host: "evolution-api-unicast",
+			port: "8080",
+			want: "http://evolution-api-unicast:8080/instance/create",
+		},
+		{
+			name: "host with scheme uses configured port",
+			host: "http://localhost",
+			port: "8081",
+			want: "http://localhost:8081/instance/create",
+		},
+		{
+			name: "explicit host port is preserved",
+			host: "http://localhost:9090",
+			port: "8081",
+			want: "http://localhost:9090/instance/create",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := buildEvolutionURL(tt.host, tt.port, "/instance/create")
+
+			require.NoError(t, err)
+			assert.Equal(t, tt.want, got)
+		})
+	}
+}
+
 func TestSendMediaUsesEvolutionMediaContract(t *testing.T) {
 	var gotPath string
 	var gotPayload sendMediaPayload

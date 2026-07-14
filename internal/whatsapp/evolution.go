@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"net/url"
 	"strings"
@@ -117,7 +118,6 @@ type statusResponse struct {
 }
 
 var jsonFunc = json.Marshal
-var evolutionBaseURL = ""
 var cachedConfig *env.Config
 
 func httpClientEvolution[responseType any](method, uri string, payload *bytes.Buffer) (*responseType, error) {
@@ -131,10 +131,18 @@ func httpClientEvolution[responseType any](method, uri string, payload *bytes.Bu
 		}
 		cachedConfig = cfg
 	}
-	evolutionUrl := fmt.Sprintf("http://%s:%s", cachedConfig.Evolution.Host, cachedConfig.Evolution.Port) + uri
+	evolutionURL, err := buildEvolutionURL(
+		cachedConfig.Evolution.Host,
+		cachedConfig.Evolution.Port,
+		uri,
+	)
+	if err != nil {
+		err := customerror.Make("Falha ao montar a URL da Evolution API", http.StatusInternalServerError, err)
+		return nil, customerror.Trace("HTTPClientEvolution", err)
+	}
 
 	evolutionApiKey := cachedConfig.Evolution.APIKey
-	req, err := http.NewRequest(method, evolutionUrl, payload)
+	req, err := http.NewRequest(method, evolutionURL, payload)
 	if err != nil {
 		err := customerror.Make("Falha ao criar a requisição", http.StatusInternalServerError, err)
 		return nil, customerror.Trace("HTTPClientEvolution", err)
@@ -173,6 +181,26 @@ func httpClientEvolution[responseType any](method, uri string, payload *bytes.Bu
 		return nil, customerror.Trace("HTTPClientEvolution", err)
 	}
 	return &responseData, nil
+}
+
+func buildEvolutionURL(host, port, uri string) (string, error) {
+	baseURL := strings.TrimSpace(host)
+	if !strings.Contains(baseURL, "://") {
+		baseURL = "http://" + baseURL
+	}
+
+	parsedURL, err := url.Parse(baseURL)
+	if err != nil {
+		return "", err
+	}
+	if parsedURL.Hostname() == "" {
+		return "", fmt.Errorf("host inválido: %q", host)
+	}
+	if parsedURL.Port() == "" {
+		parsedURL.Host = net.JoinHostPort(parsedURL.Hostname(), port)
+	}
+
+	return strings.TrimRight(parsedURL.String(), "/") + uri, nil
 }
 
 func compactResponseBody(body []byte) string {
