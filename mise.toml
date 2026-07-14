@@ -69,7 +69,7 @@ description = "Executa a seed SQL dentro do container postgres-unicast"
 env = { _.file = ".env" }
 run = "./scripts/mise/seed-docker.sh"
 
-[task.seed-demo]
+[tasks.seed-demo]
 description = "Executa a seed demo dentro do container postgres-unicast"
 env = { _.file = ".env" }
 run = "docker exec -i postgres-unicast psql -p 5433 -U root -d unicast < scripts/demo-seed.sql"
